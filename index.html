@@ -22,8 +22,8 @@
       --border: #2e2e2e;
       --accent: #4ade80;
       --text: #f0f0f0;
-      --text2: #999;
-      --text3: #666;
+      --text2: #bbb;
+      --text3: #888;
       --red: #f87171;
       --orange: #fb923c;
       --blue: #60a5fa;
@@ -74,8 +74,8 @@
       position: sticky; top: 0; background: var(--bg);
       z-index: 10; border-bottom: 1px solid var(--border);
     }
-    .view-title { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; color: var(--text2); text-transform: uppercase; }
-    .view-sub { font-family: var(--mono); font-size: 10px; color: var(--text3); margin-top: 3px; }
+    .view-title { font-family: var(--mono); font-size: 13px; letter-spacing: .12em; color: var(--text); text-transform: uppercase; }
+    .view-sub { font-family: var(--mono); font-size: 11px; color: var(--text2); margin-top: 3px; }
 
     /* ── MACRO SUMMARY ── */
     .macro-summary { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; border-bottom: 1px solid var(--border); }
@@ -85,20 +85,20 @@
     .kcal-remaining { font-family: var(--mono); font-size: 12px; color: var(--text2); text-align: right; }
     .macro-bars { display: flex; flex-direction: column; gap: 7px; }
     .macro-bar-row { display: flex; align-items: center; gap: 10px; }
-    .mbl { font-family: var(--mono); font-size: 10px; color: var(--text3); width: 12px; text-transform: uppercase; }
+    .mbl { font-family: var(--mono); font-size: 11px; color: var(--text2); width: 12px; text-transform: uppercase; }
     .mbt { flex: 1; height: 4px; background: var(--surface3); border-radius: 2px; overflow: hidden; }
     .mbf { height: 100%; border-radius: 2px; transition: width .4s ease; }
     .mbf.p { background: var(--blue); }
     .mbf.c { background: var(--yellow); }
     .mbf.g { background: var(--orange); }
     .mbf.f { background: var(--accent); }
-    .mbv { font-family: var(--mono); font-size: 10px; color: var(--text2); width: 82px; text-align: right; }
+    .mbv { font-family: var(--mono); font-size: 11px; color: var(--text2); width: 82px; text-align: right; }
 
     /* ── MEAL SECTIONS ── */
     .meal-section { border-bottom: 1px solid var(--border); }
     .meal-header { padding: 12px 20px 8px; display: flex; justify-content: space-between; align-items: center; }
-    .meal-name { font-size: 10px; font-family: var(--mono); color: var(--text3); text-transform: uppercase; letter-spacing: .12em; }
-    .meal-kcal { font-family: var(--mono); font-size: 10px; color: var(--text2); }
+    .meal-name { font-size: 11px; font-family: var(--mono); color: var(--text2); text-transform: uppercase; letter-spacing: .12em; }
+    .meal-kcal { font-family: var(--mono); font-size: 11px; color: var(--text2); }
     .diary-entry {
       padding: 10px 20px; display: flex; align-items: center;
       justify-content: space-between; border-top: 1px solid var(--border); gap: 12px;
@@ -106,7 +106,7 @@
     .diary-entry:active { background: var(--surface); }
     .entry-info { flex: 1; min-width: 0; }
     .entry-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .entry-detail { font-family: var(--mono); font-size: 10px; color: var(--text3); margin-top: 2px; }
+    .entry-detail { font-family: var(--mono); font-size: 12px; color: var(--text2); margin-top: 2px; }
     .entry-kcal { font-family: var(--mono); font-size: 14px; font-weight: 500; min-width: 40px; text-align: right; }
     .entry-del { color: var(--text3); font-size: 18px; padding: 4px 2px; cursor: pointer; line-height: 1; }
     .entry-del:active { color: var(--red); }
@@ -126,7 +126,7 @@
     }
     .nav-btn.active { color: var(--accent); }
     .nav-btn svg { width: 22px; height: 22px; }
-    .nav-label { font-size: 10px; letter-spacing: .02em; }
+    .nav-label { font-size: 11px; letter-spacing: .02em; }
     .nav-log-wrap { background: var(--accent); border-radius: 14px; padding: 6px; margin-top: -8px; }
     .nav-log-wrap svg { width: 20px; height: 20px; }
     .nav-btn.log-btn { color: #0a0a0a; }
@@ -156,7 +156,7 @@
     /* ── FORMS ── */
     .form-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
     label { display: flex; flex-direction: column; gap: 6px; }
-    .lt { font-family: var(--mono); font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; }
+    .lt { font-family: var(--mono); font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: .08em; }
     input, select {
       background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
       color: var(--text); font-family: var(--sans); font-size: 15px;
@@ -190,7 +190,7 @@
     }
     .sr-item:active { background: var(--surface2); }
     .sr-name { font-size: 14px; font-weight: 500; }
-    .sr-detail { font-size: 11px; color: var(--text3); margin-top: 2px; font-family: var(--mono); }
+    .sr-detail { font-size: 12px; color: var(--text2); margin-top: 2px; font-family: var(--mono); }
     .sr-kcal { font-family: var(--mono); font-size: 12px; color: var(--text2); white-space: nowrap; }
 
     /* ── FOOD LIST ── */
@@ -201,8 +201,8 @@
     .food-item:active { background: var(--surface); }
     .fi-info { flex: 1; min-width: 0; }
     .fi-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .fi-detail { font-size: 11px; color: var(--text3); margin-top: 2px; font-family: var(--mono); }
-    .fi-kcal { font-family: var(--mono); font-size: 12px; color: var(--text2); white-space: nowrap; }
+    .fi-detail { font-size: 13px; color: var(--text2); margin-top: 3px; font-family: var(--mono); }
+    .fi-kcal { font-family: var(--mono); font-size: 13px; color: var(--text2); white-space: nowrap; }
 
     /* ── MEAL TABS ── */
     .meal-tabs {

@@ -91,6 +91,8 @@
     .mbf.p { background: var(--blue); }
     .mbf.c { background: var(--yellow); }
     .mbf.g { background: var(--orange); }
+    .mbf.gs { background: #f97316; }
+    .mbf.a { background: #e879f9; }
     .mbf.f { background: var(--accent); }
     .mbv { font-family: var(--mono); font-size: 11px; color: var(--text2); width: 82px; text-align: right; }
 
@@ -318,10 +320,12 @@
         <div class="kcal-remaining" id="kcal-rem"></div>
       </div>
       <div class="macro-bars">
-        <div class="macro-bar-row"><div class="mbl">P</div><div class="mbt"><div class="mbf p" id="bar-p" style="width:0%"></div></div><div class="mbv" id="val-p">0 / 0g</div></div>
-        <div class="macro-bar-row"><div class="mbl">C</div><div class="mbt"><div class="mbf c" id="bar-c" style="width:0%"></div></div><div class="mbv" id="val-c">0 / 0g</div></div>
         <div class="macro-bar-row"><div class="mbl">G</div><div class="mbt"><div class="mbf g" id="bar-g" style="width:0%"></div></div><div class="mbv" id="val-g">0 / 0g</div></div>
-        <div class="macro-bar-row"><div class="mbl">F</div><div class="mbt"><div class="mbf f" id="bar-f" style="width:0%"></div></div><div class="mbv" id="val-f">0 / 0g</div></div>
+        <div class="macro-bar-row"><div class="mbl">GS</div><div class="mbt"><div class="mbf gs" id="bar-gs" style="width:0%"></div></div><div class="mbv" id="val-gs">0 / 0g</div></div>
+        <div class="macro-bar-row"><div class="mbl">H</div><div class="mbt"><div class="mbf c" id="bar-c" style="width:0%"></div></div><div class="mbv" id="val-c">0 / 0g</div></div>
+        <div class="macro-bar-row"><div class="mbl">A</div><div class="mbt"><div class="mbf a" id="bar-a" style="width:0%"></div></div><div class="mbv" id="val-a">0g</div></div>
+        <div class="macro-bar-row"><div class="mbl">Fb</div><div class="mbt"><div class="mbf f" id="bar-f" style="width:0%"></div></div><div class="mbv" id="val-f">0 / 0g</div></div>
+        <div class="macro-bar-row"><div class="mbl">P</div><div class="mbt"><div class="mbf p" id="bar-p" style="width:0%"></div></div><div class="mbv" id="val-p">0 / 0g</div></div>
       </div>
     </div>
     <div id="diary-container"></div>
@@ -335,10 +339,11 @@
     <div class="log-meal-wrap" style="padding-top:14px">
       <div class="log-meal-label">Refeição</div>
       <div class="meal-tabs" id="log-meal-tabs">
-        <button class="meal-tab active" data-meal="breakfast" onclick="selectMeal(this)">Pequeno-almoço</button>
-        <button class="meal-tab" data-meal="lunch"     onclick="selectMeal(this)">Almoço</button>
-        <button class="meal-tab" data-meal="dinner"    onclick="selectMeal(this)">Jantar</button>
-        <button class="meal-tab" data-meal="snack"     onclick="selectMeal(this)">Snack</button>
+        <button class="meal-tab active" data-meal="morning"    onclick="selectMeal(this)">Manhã</button>
+        <button class="meal-tab" data-meal="lunch"             onclick="selectMeal(this)">Almoço</button>
+        <button class="meal-tab" data-meal="afternoon"         onclick="selectMeal(this)">Tarde</button>
+        <button class="meal-tab" data-meal="dinner"            onclick="selectMeal(this)">Jantar</button>
+        <button class="meal-tab" data-meal="extra"             onclick="selectMeal(this)">Extra</button>
       </div>
     </div>
     <div class="log-actions">
@@ -374,12 +379,16 @@
       <div style="display:flex;flex-direction:column;gap:12px">
         <label><span class="lt">Calorias (kcal)</span><input type="number" id="t-kcal" inputmode="decimal"></label>
         <div class="r2">
-          <label><span class="lt">Proteína (g)</span><input type="number" id="t-prot" inputmode="decimal"></label>
-          <label><span class="lt">Hidratos (g)</span><input type="number" id="t-carb" inputmode="decimal"></label>
+          <label><span class="lt">Gordura (g)</span><input type="number" id="t-fat" inputmode="decimal"></label>
+          <label><span class="lt">Gord. Saturada (g)</span><input type="number" id="t-satfat" inputmode="decimal"></label>
         </div>
         <div class="r2">
-          <label><span class="lt">Gordura (g)</span><input type="number" id="t-fat" inputmode="decimal"></label>
+          <label><span class="lt">Hidratos (g)</span><input type="number" id="t-carb" inputmode="decimal"></label>
+          <label><span class="lt">Açúcar (g)</span><input type="number" id="t-sugar" inputmode="decimal"></label>
+        </div>
+        <div class="r2">
           <label><span class="lt">Fibra (g)</span><input type="number" id="t-fiber" inputmode="decimal"></label>
+          <label><span class="lt">Proteína (g)</span><input type="number" id="t-prot" inputmode="decimal"></label>
         </div>
         <button class="btn btn-primary" onclick="saveTargets()">Guardar targets</button>
       </div>
@@ -451,21 +460,21 @@
       </div>
     </div>
 
-    <!-- QUICK MODE -->
     <div id="log-quick" style="display:none">
       <div class="form-body">
         <label><span class="lt">Nome</span><input type="text" id="q-name" placeholder="ex: Frango assado no restaurante"></label>
+        <label><span class="lt">Calorias</span><input type="number" id="q-kcal" inputmode="decimal" placeholder="0"></label>
         <div class="r2">
-          <label><span class="lt">Calorias</span><input type="number" id="q-kcal" inputmode="decimal" placeholder="0"></label>
-          <label><span class="lt">Proteína (g)</span><input type="number" id="q-prot" inputmode="decimal" placeholder="0"></label>
+          <label><span class="lt">Gordura (g)</span><input type="number" id="q-fat" inputmode="decimal" placeholder="0"></label>
+          <label><span class="lt">Gord. Sat. (g)</span><input type="number" id="q-satfat" inputmode="decimal" placeholder="0"></label>
         </div>
         <div class="r2">
           <label><span class="lt">Hidratos (g)</span><input type="number" id="q-carb" inputmode="decimal" placeholder="0"></label>
-          <label><span class="lt">Gordura (g)</span><input type="number" id="q-fat" inputmode="decimal" placeholder="0"></label>
+          <label><span class="lt">Açúcar (g)</span><input type="number" id="q-sugar" inputmode="decimal" placeholder="0"></label>
         </div>
         <div class="r2">
           <label><span class="lt">Fibra (g)</span><input type="number" id="q-fiber" inputmode="decimal" placeholder="0"></label>
-          <label><span class="lt">Açúcar (g)</span><input type="number" id="q-sugar" inputmode="decimal" placeholder="0"></label>
+          <label><span class="lt">Proteína (g)</span><input type="number" id="q-prot" inputmode="decimal" placeholder="0"></label>
         </div>
         <button class="btn btn-primary" onclick="saveQuick()">Guardar</button>
       </div>
@@ -514,16 +523,16 @@
 const { createClient } = supabase;
 let db = null;
 let currentDate = new Date().toISOString().split('T')[0];
-let selectedMeal = 'breakfast';
+let selectedMeal = 'morning';
 let selectedFood = null;
 let editingFoodId = null;
 let allFoods = [];
 
-const MEALS = { breakfast:'Pequeno-almoço', lunch:'Almoço', dinner:'Jantar', snack:'Snack' };
+const MEALS = { morning:'Manhã', lunch:'Almoço', afternoon:'Tarde', dinner:'Jantar', extra:'Extra' };
 
 // ── CONFIG ──
 function getTargets() {
-  return JSON.parse(localStorage.getItem('nt_targets')) || { calories:2300, protein:160, carbs:230, fat:70, fiber:30 };
+  return JSON.parse(localStorage.getItem('nt_targets')) || { calories:2300, fat:70, satfat:20, carbs:230, sugar:150, fiber:30, protein:160 };
 }
 
 function init() {
@@ -583,8 +592,16 @@ async function loadToday() {
 
 function renderToday(entries) {
   const t = getTargets();
-  const tot = {kcal:0, prot:0, carb:0, fat:0, fiber:0};
-  entries.forEach(e => { tot.kcal+=+e.calories; tot.prot+=+e.protein; tot.carb+=+e.carbs; tot.fat+=+e.fat; tot.fiber+=+(e.fiber||0); });
+  const tot = {kcal:0, fat:0, satfat:0, carb:0, sugar:0, fiber:0, prot:0};
+  entries.forEach(e => {
+    tot.kcal  += +e.calories;
+    tot.fat   += +e.fat;
+    tot.satfat+= +(e.saturated_fat||0);
+    tot.carb  += +e.carbs;
+    tot.sugar += +(e.sugar||0);
+    tot.fiber += +(e.fiber||0);
+    tot.prot  += +e.protein;
+  });
 
   const r = n => Math.round(n);
   document.getElementById('tot-kcal').textContent = r(tot.kcal);
@@ -595,14 +612,18 @@ function renderToday(entries) {
   remEl.style.color = rem>=0 ? 'var(--text2)' : 'var(--red)';
 
   const pct=(v,m)=>Math.min(100,m>0?v/m*100:0)+'%';
-  document.getElementById('bar-p').style.width = pct(tot.prot, t.protein);
-  document.getElementById('bar-c').style.width = pct(tot.carb,  t.carbs);
-  document.getElementById('bar-g').style.width = pct(tot.fat,   t.fat);
-  document.getElementById('bar-f').style.width = pct(tot.fiber, t.fiber);
-  document.getElementById('val-p').textContent = `${r(tot.prot)}/${t.protein}g`;
-  document.getElementById('val-c').textContent = `${r(tot.carb)}/${t.carbs}g`;
-  document.getElementById('val-g').textContent = `${r(tot.fat)}/${t.fat}g`;
-  document.getElementById('val-f').textContent = `${r(tot.fiber)}/${t.fiber}g`;
+  document.getElementById('bar-g').style.width  = pct(tot.fat,    t.fat);
+  document.getElementById('bar-gs').style.width = pct(tot.satfat, t.satfat);
+  document.getElementById('bar-c').style.width  = pct(tot.carb,   t.carbs);
+  document.getElementById('bar-a').style.width  = pct(tot.sugar,  t.sugar);
+  document.getElementById('bar-f').style.width  = pct(tot.fiber,  t.fiber);
+  document.getElementById('bar-p').style.width  = pct(tot.prot,   t.protein);
+  document.getElementById('val-g').textContent  = `${r(tot.fat)}/${t.fat}g`;
+  document.getElementById('val-gs').textContent = `${r(tot.satfat)}/${t.satfat}g`;
+  document.getElementById('val-c').textContent  = `${r(tot.carb)}/${t.carbs}g`;
+  document.getElementById('val-a').textContent  = `${r(tot.sugar)}g`;
+  document.getElementById('val-f').textContent  = `${r(tot.fiber)}/${t.fiber}g`;
+  document.getElementById('val-p').textContent  = `${r(tot.prot)}/${t.protein}g`;
 
   const container = document.getElementById('diary-container');
   container.innerHTML = '';
@@ -744,19 +765,20 @@ async function saveQuick() {
   if (!name) { toast('Indica o nome'); return; }
   const {error} = await db.from('diary').insert({
     date:currentDate, meal:selectedMeal, food_name:name, grams:null,
-    calories: parseFloat(document.getElementById('q-kcal').value)||0,
-    protein:  parseFloat(document.getElementById('q-prot').value)||0,
-    carbs:    parseFloat(document.getElementById('q-carb').value)||0,
-    fat:      parseFloat(document.getElementById('q-fat').value)||0,
-    fiber:    parseFloat(document.getElementById('q-fiber').value)||0,
-    sugar:    parseFloat(document.getElementById('q-sugar').value)||0
+    calories:      parseFloat(document.getElementById('q-kcal').value)||0,
+    fat:           parseFloat(document.getElementById('q-fat').value)||0,
+    saturated_fat: parseFloat(document.getElementById('q-satfat').value)||0,
+    carbs:         parseFloat(document.getElementById('q-carb').value)||0,
+    sugar:         parseFloat(document.getElementById('q-sugar').value)||0,
+    fiber:         parseFloat(document.getElementById('q-fiber').value)||0,
+    protein:       parseFloat(document.getElementById('q-prot').value)||0
   });
   if (error) { toast('Erro ao guardar'); return; }
   toast('Registado'); closeLog(); clearQuick(); loadToday(); go('today');
 }
 
 function clearQuick() {
-  ['q-name','q-kcal','q-prot','q-carb','q-fat','q-fiber','q-sugar'].forEach(id=>document.getElementById(id).value='');
+  ['q-name','q-kcal','q-fat','q-satfat','q-carb','q-sugar','q-fiber','q-prot'].forEach(id=>document.getElementById(id).value='');
 }
 
 // ── FOODS ──
@@ -856,19 +878,23 @@ async function deleteFood() {
 function loadTargetsForm() {
   const t=getTargets();
   document.getElementById('t-kcal').value=t.calories;
-  document.getElementById('t-prot').value=t.protein;
-  document.getElementById('t-carb').value=t.carbs;
   document.getElementById('t-fat').value=t.fat;
+  document.getElementById('t-satfat').value=t.satfat;
+  document.getElementById('t-carb').value=t.carbs;
+  document.getElementById('t-sugar').value=t.sugar;
   document.getElementById('t-fiber').value=t.fiber;
+  document.getElementById('t-prot').value=t.protein;
 }
 
 function saveTargets() {
   localStorage.setItem('nt_targets', JSON.stringify({
-    calories:parseFloat(document.getElementById('t-kcal').value)||2300,
-    protein:parseFloat(document.getElementById('t-prot').value)||160,
-    carbs:parseFloat(document.getElementById('t-carb').value)||230,
-    fat:parseFloat(document.getElementById('t-fat').value)||70,
-    fiber:parseFloat(document.getElementById('t-fiber').value)||30
+    calories: parseFloat(document.getElementById('t-kcal').value)||2300,
+    fat:      parseFloat(document.getElementById('t-fat').value)||70,
+    satfat:   parseFloat(document.getElementById('t-satfat').value)||20,
+    carbs:    parseFloat(document.getElementById('t-carb').value)||230,
+    sugar:    parseFloat(document.getElementById('t-sugar').value)||150,
+    fiber:    parseFloat(document.getElementById('t-fiber').value)||30,
+    protein:  parseFloat(document.getElementById('t-prot').value)||160
   }));
   toast('Targets guardados'); loadToday();
 }

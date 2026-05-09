@@ -353,7 +353,7 @@
   <div id="view-today" class="view active">
     <div class="view-header">
       <div>
-        <div class="view-title">Hoje</div>
+        <div class="view-title" id="today-title">Hoje</div>
         <div class="view-sub" id="today-date-label"></div>
       </div>
       <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:13px" onclick="pickDate()">📅</button>
@@ -384,6 +384,11 @@
       <div class="view-title">Registar</div>
     </div>
     <div class="log-meal-wrap" style="padding-top:14px">
+      <div class="log-meal-label" style="margin-bottom:8px">Data</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <div class="view-sub" id="log-date-label" style="flex:1;font-size:14px"></div>
+        <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:13px" onclick="pickLogDate()">📅</button>
+      </div>
       <div class="log-meal-label">Refeição</div>
       <div class="meal-tabs" id="log-meal-tabs">
         <button class="meal-tab active" data-meal="morning"    onclick="selectMeal(this)">Manhã</button>
@@ -590,6 +595,7 @@ function init() {
     document.getElementById('setup-screen').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
     setDateLabel();
+    updateLogDateLabel();
     loadTargetsForm();
     loadToday();
     loadFoods();
@@ -622,11 +628,14 @@ function go(view) {
   if (nb) nb.classList.add('active');
   if (view==='today') loadToday();
   if (view==='foods') loadFoods();
+  if (view==='log') updateLogDateLabel();
 }
 
 // ── TODAY ──
 function setDateLabel() {
+  const today = new Date().toISOString().split('T')[0];
   const d = new Date(currentDate+'T12:00:00');
+  document.getElementById('today-title').textContent = currentDate === today ? 'Hoje' : 'Diário';
   document.getElementById('today-date-label').textContent = d.toLocaleDateString('pt-PT',{weekday:'long',day:'numeric',month:'long'});
 }
 
@@ -702,7 +711,23 @@ async function delEntry(id) {
   toast('Eliminado'); loadToday();
 }
 
-function pickDate() {
+function pickLogDate() {
+  const inp = document.createElement('input');
+  inp.type='date'; inp.value=currentDate;
+  inp.style.cssText='position:fixed;opacity:0;top:0;pointer-events:none';
+  document.body.appendChild(inp);
+  inp.addEventListener('change',()=>{ currentDate=inp.value; setDateLabel(); updateLogDateLabel(); document.body.removeChild(inp); });
+  inp.addEventListener('blur',()=>{ if(document.body.contains(inp)) document.body.removeChild(inp); });
+  inp.click(); inp.showPicker?.();
+}
+
+function updateLogDateLabel() {
+  const today = new Date().toISOString().split('T')[0];
+  const d = new Date(currentDate+'T12:00:00');
+  const dateStr = d.toLocaleDateString('pt-PT',{weekday:'long',day:'numeric',month:'long'});
+  const el = document.getElementById('log-date-label');
+  if (el) el.textContent = currentDate === today ? `Hoje — ${dateStr}` : dateStr;
+}
   const inp = document.createElement('input');
   inp.type='date'; inp.value=currentDate;
   inp.style.cssText='position:fixed;opacity:0;top:0;pointer-events:none';
@@ -744,7 +769,7 @@ function closeLog() {
 async function searchDB() {
   const q = document.getElementById('log-q').value.trim().toLowerCase();
   const res = document.getElementById('log-results');
-  if (q.length<2) { res.innerHTML='<div class="loading">Mínimo 2 caracteres</div>'; return; }
+  if (q.length<1) { res.innerHTML='<div class="loading">Começa a escrever para pesquisar</div>'; return; }
   const {data} = await db.from('foods').select('*').ilike('name',`%${q}%`).limit(25);
   if (!data||!data.length) { res.innerHTML='<div class="loading">Sem resultados</div>'; return; }
   res.innerHTML = data.map(f=>`

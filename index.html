@@ -230,7 +230,10 @@
     .mp-val.kcal { color: var(--accent); }
     .mp-val.prot { color: var(--blue); }
     .mp-val.carb { color: var(--yellow); }
-    .mp-val.fat  { color: var(--orange); }
+    .mp-val.fat, .mp-val.g  { color: var(--orange); }
+    .mp-val.gs   { color: #f97316; }
+    .mp-val.a    { color: #e879f9; }
+    .mp-val.f    { color: var(--accent); }
     .mp-lbl { font-size: 10px; color: var(--text3); font-family: var(--mono); text-transform: uppercase; margin-top: 2px; }
 
     /* ── FAB ── */
@@ -500,11 +503,14 @@
             <span class="lt">Quantidade (gramas)</span>
             <input type="number" id="log-grams" inputmode="decimal" placeholder="0" oninput="updatePreview()">
           </label>
-          <div class="macro-preview">
+          <div class="macro-preview" style="flex-wrap:wrap;gap:6px">
             <div class="mp-chip"><div class="mp-val kcal" id="prev-kcal">0</div><div class="mp-lbl">kcal</div></div>
-            <div class="mp-chip"><div class="mp-val prot" id="prev-prot">0</div><div class="mp-lbl">prot</div></div>
+            <div class="mp-chip"><div class="mp-val g" id="prev-fat">0</div><div class="mp-lbl">gord</div></div>
+            <div class="mp-chip"><div class="mp-val gs" id="prev-satfat">0</div><div class="mp-lbl">g.sat</div></div>
             <div class="mp-chip"><div class="mp-val carb" id="prev-carb">0</div><div class="mp-lbl">hidr</div></div>
-            <div class="mp-chip"><div class="mp-val fat"  id="prev-fat">0</div><div class="mp-lbl">gord</div></div>
+            <div class="mp-chip"><div class="mp-val a" id="prev-sugar">0</div><div class="mp-lbl">açúcar</div></div>
+            <div class="mp-chip"><div class="mp-val f" id="prev-fiber">0</div><div class="mp-lbl">fibra</div></div>
+            <div class="mp-chip"><div class="mp-val prot" id="prev-prot">0</div><div class="mp-lbl">prot</div></div>
           </div>
           <button class="btn btn-secondary" onclick="backToSearch()">← Voltar</button>
           <button class="btn btn-primary" onclick="saveDiary()">Guardar</button>
@@ -787,11 +793,18 @@ async function pickFood(id) {
   selectedFood=data;
   document.getElementById('log-stage-search').classList.remove('active');
   document.getElementById('log-stage-grams').classList.add('active');
+
+  const servingBtn = data.serving_size_g
+    ? `<button class="btn btn-secondary" style="margin-top:8px;padding:8px 14px;font-size:13px;width:auto" onclick="document.getElementById('log-grams').value=${data.serving_size_g};updatePreview()">1 porção (${data.serving_size_g}g)</button>`
+    : '';
+
   document.getElementById('log-food-card').innerHTML=`
     <div class="food-card-name">${data.name}</div>
-    <div class="food-card-sub">${data.brand?data.brand+' · ':''}${data.calories_per_100g} kcal/100g · P${data.protein_per_100g}g C${data.carbs_per_100g}g G${data.fat_per_100g}g</div>`;
+    <div class="food-card-sub">${data.brand?data.brand+' · ':''}${data.calories_per_100g} kcal/100g · P${data.protein_per_100g}g C${data.carbs_per_100g}g G${data.fat_per_100g}g</div>
+    ${servingBtn}`;
+
   const gi = document.getElementById('log-grams');
-  gi.value = data.serving_size_g||'';
+  gi.value = '';
   updatePreview();
   setTimeout(()=>gi.focus(),100);
 }
@@ -800,10 +813,13 @@ function updatePreview() {
   if (!selectedFood) return;
   const g = parseFloat(document.getElementById('log-grams').value)||0;
   const c = v=>Math.round((parseFloat(v)||0)/100*g);
-  document.getElementById('prev-kcal').textContent = c(selectedFood.calories_per_100g);
-  document.getElementById('prev-prot').textContent = c(selectedFood.protein_per_100g);
-  document.getElementById('prev-carb').textContent = c(selectedFood.carbs_per_100g);
-  document.getElementById('prev-fat').textContent  = c(selectedFood.fat_per_100g);
+  document.getElementById('prev-kcal').textContent   = c(selectedFood.calories_per_100g);
+  document.getElementById('prev-fat').textContent    = c(selectedFood.fat_per_100g);
+  document.getElementById('prev-satfat').textContent = c(selectedFood.saturated_fat_per_100g);
+  document.getElementById('prev-carb').textContent   = c(selectedFood.carbs_per_100g);
+  document.getElementById('prev-sugar').textContent  = c(selectedFood.sugar_per_100g);
+  document.getElementById('prev-fiber').textContent  = c(selectedFood.fiber_per_100g);
+  document.getElementById('prev-prot').textContent   = c(selectedFood.protein_per_100g);
 }
 
 function backToSearch() {

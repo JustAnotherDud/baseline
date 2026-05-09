@@ -728,6 +728,8 @@ function updateLogDateLabel() {
   const el = document.getElementById('log-date-label');
   if (el) el.textContent = currentDate === today ? `Hoje — ${dateStr}` : dateStr;
 }
+
+function pickDate() {
   const inp = document.createElement('input');
   inp.type='date'; inp.value=currentDate;
   inp.style.cssText='position:fixed;opacity:0;top:0;pointer-events:none';

@@ -100,7 +100,7 @@
     .meal-section { border-bottom: 1px solid var(--border); }
     .meal-header { padding: 10px 20px 8px; background: var(--surface2); border-top: 1px solid var(--surface3); }
     .meal-header-top { display: flex; justify-content: space-between; align-items: center; }
-    .meal-name { font-size: 11px; font-family: var(--mono); color: var(--text2); text-transform: uppercase; letter-spacing: .12em; }
+    .meal-name { font-size: 13px; font-family: var(--mono); color: var(--text2); text-transform: uppercase; letter-spacing: .12em; }
     .meal-kcal { font-family: var(--mono); font-size: 13px; color: var(--text); font-weight: 600; }
     .meal-macros { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-top: 3px; }
     .diary-entry {
@@ -573,18 +573,18 @@
       <label><span class="lt">Tamanho da porção (g)</span><input type="number" id="f-serving" inputmode="decimal" placeholder="ex: 150 — pré-preenche ao registar"></label>
       <div class="divider"></div>
       <div class="section-label">Valores por 100g</div>
+      <label><span class="lt">Calorias (kcal) *</span><input type="number" id="f-kcal" inputmode="decimal" placeholder="0"></label>
       <div class="r2">
-        <label><span class="lt">Calorias *</span><input type="number" id="f-kcal" inputmode="decimal" placeholder="0"></label>
-        <label><span class="lt">Proteína (g) *</span><input type="number" id="f-prot" inputmode="decimal" placeholder="0"></label>
+        <label><span class="lt">Gordura (g) *</span><input type="number" id="f-fat" inputmode="decimal" placeholder="0"></label>
+        <label><span class="lt">Gord. Saturada (g)</span><input type="number" id="f-satfat" inputmode="decimal" placeholder="0"></label>
       </div>
       <div class="r2">
         <label><span class="lt">Hidratos (g) *</span><input type="number" id="f-carb" inputmode="decimal" placeholder="0"></label>
-        <label><span class="lt">Gordura (g) *</span><input type="number" id="f-fat" inputmode="decimal" placeholder="0"></label>
+        <label><span class="lt">Açúcar (g)</span><input type="number" id="f-sugar" inputmode="decimal" placeholder="0"></label>
       </div>
-      <div class="r3">
-        <label><span class="lt">Gord. Sat.</span><input type="number" id="f-satfat" inputmode="decimal" placeholder="0"></label>
-        <label><span class="lt">Açúcar</span><input type="number" id="f-sugar" inputmode="decimal" placeholder="0"></label>
-        <label><span class="lt">Fibra</span><input type="number" id="f-fiber" inputmode="decimal" placeholder="0"></label>
+      <div class="r2">
+        <label><span class="lt">Fibra (g)</span><input type="number" id="f-fiber" inputmode="decimal" placeholder="0"></label>
+        <label><span class="lt">Proteína (g) *</span><input type="number" id="f-prot" inputmode="decimal" placeholder="0"></label>
       </div>
       <button class="btn btn-primary" onclick="saveFood()">Guardar alimento</button>
       <button class="btn btn-danger" id="del-food-btn" style="display:none" onclick="deleteFood()">Eliminar alimento</button>

@@ -630,7 +630,10 @@
       <div class="macro-preview" style="flex-wrap:wrap;gap:6px" id="edit-preview">
         <div class="mp-chip"><div class="mp-val kcal" id="ep-kcal">0</div><div class="mp-lbl">kcal</div></div>
         <div class="mp-chip"><div class="mp-val g"    id="ep-fat">0</div><div class="mp-lbl">gord</div></div>
+        <div class="mp-chip"><div class="mp-val gs"   id="ep-satfat">0</div><div class="mp-lbl">g.sat</div></div>
         <div class="mp-chip"><div class="mp-val carb" id="ep-carb">0</div><div class="mp-lbl">hidr</div></div>
+        <div class="mp-chip"><div class="mp-val a"    id="ep-sugar">0</div><div class="mp-lbl">açúcar</div></div>
+        <div class="mp-chip"><div class="mp-val f"    id="ep-fiber">0</div><div class="mp-lbl">fibra</div></div>
         <div class="mp-chip"><div class="mp-val prot" id="ep-prot">0</div><div class="mp-lbl">prot</div></div>
       </div>
       <div style="display:flex;gap:10px">
@@ -1255,14 +1258,16 @@ function closeEditEntry() {
 function updateEditPreview() {
   if (!editingEntry) return;
   const g = parseFloat(document.getElementById('edit-grams').value) || 0;
-  if (!editingEntry.food_id || !g) return;
-  // Calculate from original per-100g values if we have grams
   const orig = editingEntry.grams || 1;
   const factor = g / orig;
-  document.getElementById('ep-kcal').textContent = Math.round(editingEntry.calories * factor);
-  document.getElementById('ep-prot').textContent = Math.round(editingEntry.protein * factor);
-  document.getElementById('ep-carb').textContent = Math.round(editingEntry.carbs * factor);
-  document.getElementById('ep-fat').textContent  = Math.round(editingEntry.fat * factor);
+  const c = (v) => Math.round((parseFloat(v) || 0) * factor);
+  document.getElementById('ep-kcal').textContent   = c(editingEntry.calories);
+  document.getElementById('ep-fat').textContent    = c(editingEntry.fat);
+  document.getElementById('ep-satfat').textContent = c(editingEntry.saturated_fat);
+  document.getElementById('ep-carb').textContent   = c(editingEntry.carbs);
+  document.getElementById('ep-sugar').textContent  = c(editingEntry.sugar);
+  document.getElementById('ep-fiber').textContent  = c(editingEntry.fiber);
+  document.getElementById('ep-prot').textContent   = c(editingEntry.protein);
 }
 
 async function saveEditEntry() {

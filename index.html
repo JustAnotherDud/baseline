@@ -524,8 +524,9 @@
           </div>
           <div class="divider" style="margin-bottom:12px"></div>
         </div>
-        <div class="form-body" style="padding-top:0;padding-bottom:8px">
+        <div class="form-body" style="padding-top:0;padding-bottom:8px;gap:8px">
           <input type="search" id="log-q" placeholder="Pesquisar na base de dados..." oninput="searchDB()" autocomplete="off">
+          <button class="btn btn-secondary" style="padding:10px;font-size:13px" onclick="openAddFoodFromLog('')">+ Criar novo alimento</button>
         </div>
         <div class="search-results" id="log-results">
           <div class="loading">Começa a escrever para pesquisar</div>
@@ -781,10 +782,13 @@ function renderToday(entries) {
           <div class="entry-kcal">${r(e.calories)}</div>
         </div>`).join('');
     div.innerHTML = `
-      <div class="meal-header">
+      <div class="meal-header" onclick="openLogForMeal('${k}')" style="cursor:pointer">
         <div class="meal-header-top">
           <div class="meal-name">${label}</div>
-          <div class="meal-kcal">${r(mkcal)} kcal</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="meal-kcal">${r(mkcal)} kcal</div>
+            <div style="color:var(--text3);font-size:18px;line-height:1">+</div>
+          </div>
         </div>
         ${macroStr}
       </div>${rows}`;
@@ -901,7 +905,14 @@ async function searchDB() {
   const res = document.getElementById('log-results');
   if (q.length<1) { res.innerHTML='<div class="loading">Começa a escrever para pesquisar</div>'; return; }
   const {data} = await db.from('foods').select('*').ilike('name',`%${q}%`).limit(25);
-  if (!data||!data.length) { res.innerHTML='<div class="loading">Sem resultados</div>'; return; }
+  if (!data||!data.length) {
+    const q2 = document.getElementById('log-q').value.trim();
+    res.innerHTML = `<div style="padding:12px 20px">
+      <div style="font-size:13px;color:var(--text3);margin-bottom:10px">Sem resultados para "${q2}"</div>
+      <button class="btn btn-secondary" style="font-size:13px;padding:10px" onclick="openAddFoodFromLog('${q2.replace(/'/g,"\\'")}')">+ Criar "${q2}"</button>
+    </div>`;
+    return;
+  }
   res.innerHTML = data.map(f=>`
     <div class="sr-item" onclick="pickFood(${f.id})">
       <div><div class="sr-name">${f.name}</div><div class="sr-detail">${f.brand?f.brand+' · ':''}${f.calories_per_100g} kcal · P${f.protein_per_100g} C${f.carbs_per_100g} G${f.fat_per_100g}</div></div>
@@ -1023,6 +1034,25 @@ function renderFoods(foods) {
     </div>`).join('');
 }
 
+let fromLogContext = false;
+
+function openAddFoodFromLog(prefillName) {
+  fromLogContext = true;
+  openAddFood();
+  if (prefillName) {
+    setTimeout(() => { document.getElementById('f-name').value = prefillName; }, 100);
+  }
+}
+
+function openLogForMeal(mealKey) {
+  // Select the meal tab
+  document.querySelectorAll('#log-meal-tabs .meal-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.meal === mealKey);
+  });
+  selectedMeal = mealKey;
+  openLog('db');
+}
+
 function openAddFood() {
   editingFoodId=null;
   document.getElementById('food-sheet-title').textContent='Novo alimento';
@@ -1053,7 +1083,8 @@ function editFood(id) {
 
 function closeAddFood() {
   document.getElementById('sheet-food').classList.remove('open');
-  editingFoodId=null;
+  editingFoodId = null;
+  fromLogContext = false;
 }
 
 async function saveFood() {
@@ -1071,12 +1102,24 @@ async function saveFood() {
     sugar_per_100g:parseFloat(document.getElementById('f-sugar').value)||0,
     fiber_per_100g:parseFloat(document.getElementById('f-fiber').value)||0
   };
-  const {error} = editingFoodId
-    ? await db.from('foods').update(food).eq('id',editingFoodId)
-    : await db.from('foods').insert(food);
+  let error, data2;
+  if (editingFoodId) {
+    ({ error } = await db.from('foods').update(food).eq('id',editingFoodId));
+  } else {
+    ({ error, data: data2 } = await db.from('foods').insert(food).select().single());
+  }
   if (error) { toast('Erro ao guardar'); return; }
   toast(editingFoodId?'Actualizado':'Alimento adicionado');
-  closeAddFood(); loadFoods();
+  closeAddFood();
+  loadFoods();
+  // If triggered from log, auto-select the new food
+  if (!editingFoodId && fromLogContext && data2) {
+    fromLogContext = false;
+    document.getElementById('sheet-log').classList.add('open');
+    await pickFood(data2.id);
+  } else {
+    fromLogContext = false;
+  }
 }
 
 async function deleteFood() {

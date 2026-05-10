@@ -466,7 +466,7 @@
   <nav>
     <button class="nav-btn active" id="nav-today" onclick="go('today')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
-      <span class="nav-label">Hoje</span>
+      <span class="nav-label">Diário</span>
     </button>
     <button class="nav-btn log-btn" onclick="go('log')">
       <div class="nav-log-wrap">
@@ -520,8 +520,10 @@
             <div class="mp-chip"><div class="mp-val f" id="prev-fiber">0</div><div class="mp-lbl">fibra</div></div>
             <div class="mp-chip"><div class="mp-val prot" id="prev-prot">0</div><div class="mp-lbl">prot</div></div>
           </div>
-          <button class="btn btn-secondary" onclick="backToSearch()">← Voltar</button>
-          <button class="btn btn-primary" onclick="saveDiary()">Guardar</button>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-secondary" style="flex:1" onclick="backToSearch()">← Voltar</button>
+            <button class="btn btn-primary" style="flex:2" onclick="saveDiary()">Guardar</button>
+          </div>
         </div>
       </div>
     </div>
@@ -705,7 +707,7 @@ function renderToday(entries) {
         <div class="diary-entry">
           <div class="entry-info">
             <div class="entry-name">${e.food_name}</div>
-            <div class="entry-detail">${e.grams?e.grams+'g · ':''}P${r(e.protein)}g C${r(e.carbs)}g G${r(e.fat)}g</div>
+            <div class="entry-detail">${e.grams?e.grams+'g · ':''}P ${r(e.protein)}g · C ${r(e.carbs)}g · G ${r(e.fat)}g</div>
           </div>
           <div class="entry-kcal">${r(e.calories)}</div>
           <div class="entry-del" onclick="delEntry(${e.id})">×</div>

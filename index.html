@@ -98,9 +98,11 @@
 
     /* ── MEAL SECTIONS ── */
     .meal-section { border-bottom: 1px solid var(--border); }
-    .meal-header { padding: 12px 20px 8px; display: flex; justify-content: space-between; align-items: center; }
-    .meal-name { font-size: 13px; font-family: var(--mono); color: var(--text2); text-transform: uppercase; letter-spacing: .12em; }
-    .meal-kcal { font-family: var(--mono); font-size: 13px; color: var(--text2); }
+    .meal-header { padding: 10px 20px 8px; background: var(--surface2); border-top: 1px solid var(--surface3); }
+    .meal-header-top { display: flex; justify-content: space-between; align-items: center; }
+    .meal-name { font-size: 11px; font-family: var(--mono); color: var(--text2); text-transform: uppercase; letter-spacing: .12em; }
+    .meal-kcal { font-family: var(--mono); font-size: 13px; color: var(--text); font-weight: 600; }
+    .meal-macros { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-top: 3px; }
     .diary-entry {
       padding: 10px 20px; display: flex; align-items: center;
       justify-content: space-between; border-top: 1px solid var(--border); gap: 12px;
@@ -208,10 +210,11 @@
 
     /* ── MEAL TABS ── */
     .meal-tabs {
-      display: flex; gap: 8px; padding: 0 20px 4px;
-      overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 0 20px 4px;
     }
-    .meal-tabs::-webkit-scrollbar { display: none; }
     .meal-tab {
       padding: 7px 14px; border-radius: 20px; font-size: 13px;
       font-weight: 500; white-space: nowrap; cursor: pointer;
@@ -356,7 +359,7 @@
   <div id="view-today" class="view active">
     <div class="view-header">
       <div>
-        <div class="view-title" id="today-title">Hoje</div>
+        <div class="view-title" id="today-title">Diário</div>
         <div class="view-sub" id="today-date-label"></div>
       </div>
       <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:13px" onclick="pickDate()">📅</button>
@@ -688,7 +691,7 @@ function go(view) {
 function setDateLabel() {
   const today = new Date().toISOString().split('T')[0];
   const d = new Date(currentDate+'T12:00:00');
-  document.getElementById('today-title').textContent = currentDate === today ? 'Hoje' : 'Diário';
+  document.getElementById('today-title').textContent = currentDate === today ? 'Diário' : 'Diário';
   document.getElementById('today-date-label').textContent = d.toLocaleDateString('pt-PT',{weekday:'long',day:'numeric',month:'long'});
 }
 
@@ -745,7 +748,7 @@ function renderToday(entries) {
     const div = document.createElement('div');
     div.className = 'meal-section';
     const macroStr = mes.length > 0
-      ? `<span style="color:var(--text3);margin-left:8px;font-size:10px">P ${r(mprot)}g · C ${r(mcarb)}g · G ${r(mfat)}g</span>`
+      ? `<div class="meal-macros">G ${r(mfat)}g · C ${r(mcarb)}g · P ${r(mprot)}g</div>`
       : '';
     const rows = mes.length===0
       ? `<div class="no-entries">Sem registos</div>`
@@ -753,14 +756,17 @@ function renderToday(entries) {
         <div class="diary-entry" onclick="openEditEntry(${e.id})" style="cursor:pointer">
           <div class="entry-info">
             <div class="entry-name">${e.food_name}</div>
-            <div class="entry-detail">${e.grams?e.grams+'g · ':''}P ${r(e.protein)}g · C ${r(e.carbs)}g · G ${r(e.fat)}g</div>
+            <div class="entry-detail">${e.grams?e.grams+'g · ':''}G ${r(e.fat)}g · C ${r(e.carbs)}g · P ${r(e.protein)}g</div>
           </div>
           <div class="entry-kcal">${r(e.calories)}</div>
         </div>`).join('');
     div.innerHTML = `
       <div class="meal-header">
-        <div class="meal-name">${label}${macroStr}</div>
-        <div class="meal-kcal">${r(mkcal)} kcal</div>
+        <div class="meal-header-top">
+          <div class="meal-name">${label}</div>
+          <div class="meal-kcal">${r(mkcal)} kcal</div>
+        </div>
+        ${macroStr}
       </div>${rows}`;
     container.appendChild(div);
   });

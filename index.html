@@ -250,6 +250,15 @@
     }
     .fab:active { transform: scale(.92); }
 
+    /* ── RECENT CHIPS ── */
+    .recent-chip {
+      padding: 6px 12px; border-radius: 20px; font-size: 13px;
+      font-weight: 500; cursor: pointer; border: 1px solid var(--border);
+      background: var(--surface2); color: var(--text); font-family: var(--sans);
+      transition: all .15s; white-space: nowrap;
+    }
+    .recent-chip:active { background: var(--accent); border-color: var(--accent); color: #0a0a0a; }
+
     /* ── LOG STAGES ── */
     #log-stage-search, #log-stage-grams { display: none; }
     #log-stage-search.active, #log-stage-grams.active { display: block; }
@@ -362,7 +371,11 @@
         <div class="view-title" id="today-title">Diário</div>
         <div class="view-sub" id="today-date-label"></div>
       </div>
-      <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:13px" onclick="pickDate()">📅</button>
+      <div style="display:flex;align-items:center;gap:4px">
+        <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:16px;line-height:1" onclick="changeDay(-1)">←</button>
+        <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:13px" onclick="pickDate()">📅</button>
+        <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:16px;line-height:1" onclick="changeDay(1)">→</button>
+      </div>
     </div>
     <div class="macro-summary">
       <div class="kcal-row">
@@ -504,7 +517,14 @@
     <!-- DB MODE -->
     <div id="log-db">
       <div id="log-stage-search" class="active">
-        <div class="form-body" style="padding-bottom:8px">
+        <div style="padding:12px 20px 0">
+          <div class="section-label" style="margin-bottom:8px">Recentes</div>
+          <div id="recent-foods" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+            <div style="font-size:12px;color:var(--text3);font-family:var(--mono)">A carregar...</div>
+          </div>
+          <div class="divider" style="margin-bottom:12px"></div>
+        </div>
+        <div class="form-body" style="padding-top:0;padding-bottom:8px">
           <input type="search" id="log-q" placeholder="Pesquisar na base de dados..." oninput="searchDB()" autocomplete="off">
         </div>
         <div class="search-results" id="log-results">
@@ -808,6 +828,45 @@ function pickDate() {
 }
 
 // ── LOG SHEET ──
+function changeDay(delta) {
+  const d = new Date(currentDate + 'T12:00:00');
+  d.setDate(d.getDate() + delta);
+  currentDate = d.toISOString().split('T')[0];
+  setDateLabel();
+  loadToday();
+}
+
+async function loadRecentFoods() {
+  const el = document.getElementById('recent-foods');
+  if (!db || !el) return;
+  // Get last 50 diary entries with food_id, deduplicate, take 8
+  const { data } = await db.from('diary')
+    .select('food_id, food_name')
+    .not('food_id', 'is', null)
+    .order('logged_at', { ascending: false })
+    .limit(50);
+
+  if (!data || !data.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text3);font-family:var(--mono)">Sem histórico ainda</div>';
+    return;
+  }
+
+  // Deduplicate by food_id
+  const seen = new Set();
+  const recents = [];
+  for (const e of data) {
+    if (!seen.has(e.food_id)) {
+      seen.add(e.food_id);
+      recents.push(e);
+      if (recents.length >= 8) break;
+    }
+  }
+
+  el.innerHTML = recents.map(e =>
+    `<button class="recent-chip" onclick="pickFood(${e.food_id})">${e.food_name}</button>`
+  ).join('');
+}
+
 function selectMeal(btn) {
   document.querySelectorAll('#log-meal-tabs .meal-tab').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
@@ -823,6 +882,7 @@ function openLog(mode) {
     document.getElementById('log-stage-grams').classList.remove('active');
     document.getElementById('log-q').value='';
     document.getElementById('log-results').innerHTML='<div class="loading">Começa a escrever para pesquisar</div>';
+    loadRecentFoods();
     setTimeout(()=>document.getElementById('log-q').focus(),300);
   } else {
     clearQuick();

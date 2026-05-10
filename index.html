@@ -394,11 +394,13 @@
       </div>
       <div class="log-meal-label">Refeição</div>
       <div class="meal-tabs" id="log-meal-tabs">
-        <button class="meal-tab active" data-meal="morning"    onclick="selectMeal(this)">Manhã</button>
+        <button class="meal-tab active" data-meal="breakfast"  onclick="selectMeal(this)">Pequeno-almoço</button>
+        <button class="meal-tab" data-meal="morning"           onclick="selectMeal(this)">Lanche manhã</button>
         <button class="meal-tab" data-meal="lunch"             onclick="selectMeal(this)">Almoço</button>
-        <button class="meal-tab" data-meal="afternoon"         onclick="selectMeal(this)">Tarde</button>
+        <button class="meal-tab" data-meal="afternoon1"        onclick="selectMeal(this)">Lanche tarde 1</button>
+        <button class="meal-tab" data-meal="afternoon2"        onclick="selectMeal(this)">Lanche tarde 2</button>
         <button class="meal-tab" data-meal="dinner"            onclick="selectMeal(this)">Jantar</button>
-        <button class="meal-tab" data-meal="extra"             onclick="selectMeal(this)">Extra</button>
+        <button class="meal-tab" data-meal="supper"            onclick="selectMeal(this)">Ceia</button>
       </div>
     </div>
     <div class="log-actions">
@@ -593,12 +595,20 @@
 const { createClient } = supabase;
 let db = null;
 let currentDate = new Date().toISOString().split('T')[0];
-let selectedMeal = 'morning';
+let selectedMeal = 'breakfast';
 let selectedFood = null;
 let editingFoodId = null;
 let allFoods = [];
 
-const MEALS = { morning:'Manhã', lunch:'Almoço', afternoon:'Tarde', dinner:'Jantar', extra:'Extra' };
+const MEALS = {
+  breakfast:   'Pequeno-almoço',
+  morning:     'Lanche manhã',
+  lunch:       'Almoço',
+  afternoon1:  'Lanche tarde 1',
+  afternoon2:  'Lanche tarde 2',
+  dinner:      'Jantar',
+  supper:      'Ceia',
+};
 
 // ── CONFIG ──
 
@@ -701,8 +711,14 @@ function renderToday(entries) {
   Object.entries(MEALS).forEach(([k,label]) => {
     const mes = entries.filter(e=>e.meal===k);
     const mkcal = mes.reduce((s,e)=>s+ +e.calories,0);
+    const mprot = mes.reduce((s,e)=>s+ +e.protein,0);
+    const mcarb = mes.reduce((s,e)=>s+ +e.carbs,0);
+    const mfat  = mes.reduce((s,e)=>s+ +e.fat,0);
     const div = document.createElement('div');
     div.className = 'meal-section';
+    const macroStr = mes.length > 0
+      ? `<span style="color:var(--text3);margin-left:8px;font-size:10px">P ${r(mprot)}g · C ${r(mcarb)}g · G ${r(mfat)}g</span>`
+      : '';
     const rows = mes.length===0
       ? `<div class="no-entries">Sem registos</div>`
       : mes.map(e=>`
@@ -714,7 +730,11 @@ function renderToday(entries) {
           <div class="entry-kcal">${r(e.calories)}</div>
           <div class="entry-del" onclick="delEntry(${e.id})">×</div>
         </div>`).join('');
-    div.innerHTML = `<div class="meal-header"><div class="meal-name">${label}</div><div class="meal-kcal">${r(mkcal)} kcal</div></div>${rows}`;
+    div.innerHTML = `
+      <div class="meal-header">
+        <div class="meal-name">${label}${macroStr}</div>
+        <div class="meal-kcal">${r(mkcal)} kcal</div>
+      </div>${rows}`;
     container.appendChild(div);
   });
 }

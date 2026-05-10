@@ -437,23 +437,25 @@
         <option value="training_only">Treino</option>
         <option value="training_plus_work">Treino + Trabalho</option>
         <option value="race_or_intense">Corrida / Intenso</option>
+        <option value="custom">Personalizado</option>
       </select>
       <div id="targets-loading" class="loading" style="display:none">A carregar targets...</div>
       <div id="targets-display" style="display:flex;flex-direction:column;gap:12px">
-        <label><span class="lt">Calorias (kcal)</span><input type="number" id="t-kcal" inputmode="decimal" readonly style="opacity:.6"></label>
+        <label><span class="lt">Calorias (kcal)</span><input type="number" id="t-kcal" inputmode="decimal"></label>
         <div class="r2">
-          <label><span class="lt">Gordura (g)</span><input type="number" id="t-fat" inputmode="decimal" readonly style="opacity:.6"></label>
-          <label><span class="lt">Gord. Saturada (g)</span><input type="number" id="t-satfat" inputmode="decimal" readonly style="opacity:.6"></label>
+          <label><span class="lt">Gordura (g)</span><input type="number" id="t-fat" inputmode="decimal"></label>
+          <label><span class="lt">Gord. Saturada (g)</span><input type="number" id="t-satfat" inputmode="decimal"></label>
         </div>
         <div class="r2">
-          <label><span class="lt">Hidratos (g)</span><input type="number" id="t-carb" inputmode="decimal" readonly style="opacity:.6"></label>
-          <label><span class="lt">Açúcar (g)</span><input type="number" id="t-sugar" inputmode="decimal" readonly style="opacity:.6"></label>
+          <label><span class="lt">Hidratos (g)</span><input type="number" id="t-carb" inputmode="decimal"></label>
+          <label><span class="lt">Açúcar (g)</span><input type="number" id="t-sugar" inputmode="decimal"></label>
         </div>
         <div class="r2">
-          <label><span class="lt">Fibra (g)</span><input type="number" id="t-fiber" inputmode="decimal" readonly style="opacity:.6"></label>
-          <label><span class="lt">Proteína (g)</span><input type="number" id="t-prot" inputmode="decimal" readonly style="opacity:.6"></label>
+          <label><span class="lt">Fibra (g)</span><input type="number" id="t-fiber" inputmode="decimal"></label>
+          <label><span class="lt">Proteína (g)</span><input type="number" id="t-prot" inputmode="decimal"></label>
         </div>
-        <p style="font-size:12px;color:var(--text3);font-family:var(--mono)">Targets definidos pelo DCB. Selecciona o tipo de dia para carregar os valores correctos.</p>
+        <button class="btn btn-primary" id="save-custom-btn" style="display:none" onclick="saveCustomTargets()">Guardar targets</button>
+        <p id="targets-hint" style="font-size:12px;color:var(--text3);font-family:var(--mono)">Targets definidos pelo DCB. Selecciona o tipo de dia para carregar os valores correctos.</p>
       </div>
     </div>
     <div style="padding:16px 20px;margin-top:8px">
@@ -1011,9 +1013,42 @@ async function loadTargetsForDayType(dayType) {
   loadToday();
 }
 
+function setFieldsEditable(editable) {
+  ['t-kcal','t-fat','t-satfat','t-carb','t-sugar','t-fiber','t-prot'].forEach(id => {
+    const el = document.getElementById(id);
+    el.readOnly = !editable;
+    el.style.opacity = editable ? '1' : '0.6';
+  });
+  document.getElementById('save-custom-btn').style.display = editable ? 'block' : 'none';
+  document.getElementById('targets-hint').style.display = editable ? 'none' : 'block';
+}
+
 async function onDayTypeChange() {
   const dayType = document.getElementById('day-type-select').value;
+  if (dayType === 'custom') {
+    setFieldsEditable(true);
+    localStorage.setItem('nt_day_type', 'custom');
+    return;
+  }
+  setFieldsEditable(false);
   await loadTargetsForDayType(dayType);
+}
+
+function saveCustomTargets() {
+  const t = {
+    calories:      parseFloat(document.getElementById('t-kcal').value)||2300,
+    fat:           parseFloat(document.getElementById('t-fat').value)||70,
+    saturated_fat: parseFloat(document.getElementById('t-satfat').value)||20,
+    carbs:         parseFloat(document.getElementById('t-carb').value)||230,
+    sugar:         parseFloat(document.getElementById('t-sugar').value)||150,
+    fiber:         parseFloat(document.getElementById('t-fiber').value)||30,
+    protein:       parseFloat(document.getElementById('t-prot').value)||160,
+  };
+  cachedTargets = t;
+  localStorage.setItem('nt_targets', JSON.stringify(t));
+  localStorage.setItem('nt_day_type', 'custom');
+  toast('Targets personalizados guardados');
+  loadToday();
 }
 
 function loadTargetsForm() {
@@ -1030,8 +1065,12 @@ function loadTargetsForm() {
     document.getElementById('t-fiber').value  = saved.fiber;
     document.getElementById('t-prot').value   = saved.protein;
   }
-  // Always refresh from Supabase in background
-  loadTargetsForDayType(dayType);
+  if (dayType === 'custom') {
+    setFieldsEditable(true);
+  } else {
+    setFieldsEditable(false);
+    loadTargetsForDayType(dayType);
+  }
 }
 
 // ── OVERLAY CLOSE ──

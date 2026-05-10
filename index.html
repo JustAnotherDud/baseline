@@ -589,6 +589,34 @@
   </div>
 </div>
 
+<!-- ════════════════════════════════════ SHEET: EDIT ENTRY -->
+<div class="sheet-overlay" id="sheet-edit" onclick="overlayClose(event,'sheet-edit')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title">Editar registo</div>
+      <div class="sheet-close" onclick="closeEditEntry()">×</div>
+    </div>
+    <div class="form-body">
+      <div class="food-card" id="edit-food-card"></div>
+      <label>
+        <span class="lt">Quantidade (gramas)</span>
+        <input type="number" id="edit-grams" inputmode="decimal" placeholder="0" oninput="updateEditPreview()">
+      </label>
+      <div class="macro-preview" style="flex-wrap:wrap;gap:6px" id="edit-preview">
+        <div class="mp-chip"><div class="mp-val kcal" id="ep-kcal">0</div><div class="mp-lbl">kcal</div></div>
+        <div class="mp-chip"><div class="mp-val g"    id="ep-fat">0</div><div class="mp-lbl">gord</div></div>
+        <div class="mp-chip"><div class="mp-val carb" id="ep-carb">0</div><div class="mp-lbl">hidr</div></div>
+        <div class="mp-chip"><div class="mp-val prot" id="ep-prot">0</div><div class="mp-lbl">prot</div></div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-danger" style="flex:1" onclick="delEntryFromEdit()">Eliminar</button>
+        <button class="btn btn-primary" style="flex:2" onclick="saveEditEntry()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -722,13 +750,12 @@ function renderToday(entries) {
     const rows = mes.length===0
       ? `<div class="no-entries">Sem registos</div>`
       : mes.map(e=>`
-        <div class="diary-entry">
+        <div class="diary-entry" onclick="openEditEntry(${e.id})" style="cursor:pointer">
           <div class="entry-info">
             <div class="entry-name">${e.food_name}</div>
             <div class="entry-detail">${e.grams?e.grams+'g · ':''}P ${r(e.protein)}g · C ${r(e.carbs)}g · G ${r(e.fat)}g</div>
           </div>
           <div class="entry-kcal">${r(e.calories)}</div>
-          <div class="entry-del" onclick="delEntry(${e.id})">×</div>
         </div>`).join('');
     div.innerHTML = `
       <div class="meal-header">
@@ -1093,7 +1120,77 @@ function loadTargetsForm() {
   }
 }
 
-// ── OVERLAY CLOSE ──
+// ── EDIT ENTRY ──
+let editingEntry = null;
+
+async function openEditEntry(id) {
+  const { data, error } = await db.from('diary').select('*').eq('id', id).single();
+  if (error || !data) return;
+  editingEntry = data;
+
+  document.getElementById('edit-food-card').innerHTML = `
+    <div class="food-card-name">${data.food_name}</div>
+    <div class="food-card-sub">${data.grams ? 'Peso original: ' + data.grams + 'g' : 'Entrada rápida'}</div>`;
+
+  document.getElementById('edit-grams').value = data.grams || '';
+  updateEditPreview();
+  document.getElementById('sheet-edit').classList.add('open');
+  setTimeout(() => document.getElementById('edit-grams').focus(), 300);
+}
+
+function closeEditEntry() {
+  document.getElementById('sheet-edit').classList.remove('open');
+  editingEntry = null;
+}
+
+function updateEditPreview() {
+  if (!editingEntry) return;
+  const g = parseFloat(document.getElementById('edit-grams').value) || 0;
+  if (!editingEntry.food_id || !g) return;
+  // Calculate from original per-100g values if we have grams
+  const orig = editingEntry.grams || 1;
+  const factor = g / orig;
+  document.getElementById('ep-kcal').textContent = Math.round(editingEntry.calories * factor);
+  document.getElementById('ep-prot').textContent = Math.round(editingEntry.protein * factor);
+  document.getElementById('ep-carb').textContent = Math.round(editingEntry.carbs * factor);
+  document.getElementById('ep-fat').textContent  = Math.round(editingEntry.fat * factor);
+}
+
+async function saveEditEntry() {
+  if (!editingEntry) return;
+  const g = parseFloat(document.getElementById('edit-grams').value);
+  if (!g || g <= 0) { toast('Indica a quantidade'); return; }
+
+  const orig = editingEntry.grams || g;
+  const factor = g / orig;
+  const r = v => Math.round((parseFloat(v) || 0) * factor * 10) / 10;
+
+  const { error } = await db.from('diary').update({
+    grams:         g,
+    calories:      r(editingEntry.calories),
+    protein:       r(editingEntry.protein),
+    carbs:         r(editingEntry.carbs),
+    fat:           r(editingEntry.fat),
+    saturated_fat: r(editingEntry.saturated_fat),
+    sugar:         r(editingEntry.sugar),
+    fiber:         r(editingEntry.fiber),
+  }).eq('id', editingEntry.id);
+
+  if (error) { toast('Erro ao guardar'); return; }
+  toast('Actualizado');
+  closeEditEntry();
+  loadToday();
+}
+
+async function delEntryFromEdit() {
+  if (!editingEntry) return;
+  if (!confirm('Eliminar este registo?')) return;
+  const { error } = await db.from('diary').delete().eq('id', editingEntry.id);
+  if (error) { toast('Erro ao eliminar'); return; }
+  toast('Eliminado');
+  closeEditEntry();
+  loadToday();
+}
 function overlayClose(e, id) { if(e.target.id===id) document.getElementById(id).classList.remove('open'); }
 
 // ── TOAST ──

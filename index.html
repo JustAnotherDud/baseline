@@ -726,6 +726,34 @@ async function loadToday() {
   renderToday(data || []);
 }
 
+function getNutrientColor(nutrient, pct) {
+  switch(nutrient) {
+    case 'calories':
+    case 'carbs':
+      if (pct >= 90 && pct <= 110) return 'var(--accent)';
+      if ((pct >= 80 && pct < 90) || (pct > 110 && pct <= 120)) return 'var(--yellow)';
+      return 'var(--red)';
+    case 'protein':
+      if (pct >= 90 && pct <= 130) return 'var(--accent)';
+      if ((pct >= 80 && pct < 90) || (pct > 130 && pct <= 150)) return 'var(--yellow)';
+      return 'var(--red)';
+    case 'fat':
+      if (pct >= 85 && pct <= 115) return 'var(--accent)';
+      if ((pct >= 70 && pct < 85) || (pct > 115 && pct <= 130)) return 'var(--yellow)';
+      return 'var(--red)';
+    case 'satfat':
+      if (pct <= 85) return 'var(--accent)';
+      if (pct <= 100) return 'var(--yellow)';
+      return 'var(--red)';
+    case 'fiber':
+      if (pct >= 90) return 'var(--accent)';
+      if (pct >= 70) return 'var(--yellow)';
+      return 'var(--red)';
+    default:
+      return 'var(--accent)';
+  }
+}
+
 function renderToday(entries) {
   const t = getTargets();
   const tot = {kcal:0, fat:0, satfat:0, carb:0, sugar:0, fiber:0, prot:0};
@@ -747,19 +775,34 @@ function renderToday(entries) {
   remEl.textContent = rem>=0 ? `${rem} restantes` : `${Math.abs(rem)} excesso`;
   remEl.style.color = rem>=0 ? 'var(--text2)' : 'var(--red)';
 
-  const pct=(v,m)=>Math.min(100,m>0?v/m*100:0)+'%';
-  document.getElementById('bar-g').style.width  = pct(tot.fat,    t.fat);
-  document.getElementById('bar-gs').style.width = pct(tot.satfat, t.saturated_fat);
-  document.getElementById('bar-c').style.width  = pct(tot.carb,   t.carbs);
-  document.getElementById('bar-a').style.width  = pct(tot.sugar,  t.sugar);
-  document.getElementById('bar-f').style.width  = pct(tot.fiber,  t.fiber);
-  document.getElementById('bar-p').style.width  = pct(tot.prot,   t.protein);
-  document.getElementById('val-g').textContent  = `${r(tot.fat)}/${t.fat}g`;
-  document.getElementById('val-gs').textContent = `${r(tot.satfat)}/${t.saturated_fat}g`;
-  document.getElementById('val-c').textContent  = `${r(tot.carb)}/${t.carbs}g`;
-  document.getElementById('val-a').textContent  = `${r(tot.sugar)}g`;
-  document.getElementById('val-f').textContent  = `${r(tot.fiber)}/${t.fiber}g`;
-  document.getElementById('val-p').textContent  = `${r(tot.prot)}/${t.protein}g`;
+  const rawPct = (v, m) => m > 0 ? v / m * 100 : 0;
+  const pct    = (v, m) => Math.min(100, rawPct(v, m)) + '%';
+
+  const bars = [
+    { bar: 'bar-g',  val: 'val-g',  nutrient: 'fat',      actual: tot.fat,    target: t.fat,           label: `${r(tot.fat)}/${t.fat}g` },
+    { bar: 'bar-gs', val: 'val-gs', nutrient: 'satfat',   actual: tot.satfat, target: t.saturated_fat, label: `${r(tot.satfat)}/${t.saturated_fat}g` },
+    { bar: 'bar-c',  val: 'val-c',  nutrient: 'carbs',    actual: tot.carb,   target: t.carbs,         label: `${r(tot.carb)}/${t.carbs}g` },
+    { bar: 'bar-f',  val: 'val-f',  nutrient: 'fiber',    actual: tot.fiber,  target: t.fiber,         label: `${r(tot.fiber)}/${t.fiber}g` },
+    { bar: 'bar-p',  val: 'val-p',  nutrient: 'protein',  actual: tot.prot,   target: t.protein,       label: `${r(tot.prot)}/${t.protein}g` },
+  ];
+
+  bars.forEach(({ bar, val, nutrient, actual, target, label }) => {
+    const p = rawPct(actual, target);
+    const color = entries.length > 0 ? getNutrientColor(nutrient, p) : 'var(--surface3)';
+    document.getElementById(bar).style.width      = Math.min(100, p) + '%';
+    document.getElementById(bar).style.background = color;
+    document.getElementById(val).textContent      = label;
+    document.getElementById(val).style.color      = entries.length > 0 ? color : 'var(--text2)';
+  });
+
+  // Sugar bar — no color indicator
+  document.getElementById('bar-a').style.width = pct(tot.sugar, t.sugar);
+  document.getElementById('val-a').textContent = `${r(tot.sugar)}g`;
+
+  // Calories color on kcal number
+  const kcalPct = rawPct(tot.kcal, t.calories);
+  const kcalColor = entries.length > 0 ? getNutrientColor('calories', kcalPct) : 'var(--accent)';
+  document.getElementById('tot-kcal').style.color = kcalColor;
 
   const container = document.getElementById('diary-container');
   container.innerHTML = '';

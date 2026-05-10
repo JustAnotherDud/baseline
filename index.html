@@ -680,13 +680,13 @@ function renderToday(entries) {
 
   const pct=(v,m)=>Math.min(100,m>0?v/m*100:0)+'%';
   document.getElementById('bar-g').style.width  = pct(tot.fat,    t.fat);
-  document.getElementById('bar-gs').style.width = pct(tot.satfat, t.satfat);
+  document.getElementById('bar-gs').style.width = pct(tot.satfat, t.saturated_fat);
   document.getElementById('bar-c').style.width  = pct(tot.carb,   t.carbs);
   document.getElementById('bar-a').style.width  = pct(tot.sugar,  t.sugar);
   document.getElementById('bar-f').style.width  = pct(tot.fiber,  t.fiber);
   document.getElementById('bar-p').style.width  = pct(tot.prot,   t.protein);
   document.getElementById('val-g').textContent  = `${r(tot.fat)}/${t.fat}g`;
-  document.getElementById('val-gs').textContent = `${r(tot.satfat)}/${t.satfat}g`;
+  document.getElementById('val-gs').textContent = `${r(tot.satfat)}/${t.saturated_fat}g`;
   document.getElementById('val-c').textContent  = `${r(tot.carb)}/${t.carbs}g`;
   document.getElementById('val-a').textContent  = `${r(tot.sugar)}g`;
   document.getElementById('val-f').textContent  = `${r(tot.fiber)}/${t.fiber}g`;
@@ -1016,7 +1016,7 @@ async function onDayTypeChange() {
 
 function loadTargetsForm() {
   const saved = JSON.parse(localStorage.getItem('nt_targets') || 'null');
-  const dayType = localStorage.getItem('nt_day_type') || 'training_only';
+  const dayType = localStorage.getItem('nt_day_type') || 'training_plus_work';
   if (saved) cachedTargets = saved;
   document.getElementById('day-type-select').value = dayType;
   if (saved) {

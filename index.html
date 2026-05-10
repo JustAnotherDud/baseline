@@ -742,8 +742,9 @@ function getNutrientColor(nutrient, pct) {
       if ((pct >= 70 && pct < 85) || (pct > 115 && pct <= 130)) return 'var(--yellow)';
       return 'var(--red)';
     case 'satfat':
-      if (pct <= 85) return 'var(--accent)';
-      if (pct <= 100) return 'var(--yellow)';
+    case 'sugar':
+      if (pct <= 70) return 'var(--accent)';
+      if (pct <= 90) return 'var(--yellow)';
       return 'var(--red)';
     case 'fiber':
       if (pct >= 90) return 'var(--accent)';
@@ -782,6 +783,7 @@ function renderToday(entries) {
     { bar: 'bar-g',  val: 'val-g',  nutrient: 'fat',      actual: tot.fat,    target: t.fat,           label: `${r(tot.fat)}/${t.fat}g` },
     { bar: 'bar-gs', val: 'val-gs', nutrient: 'satfat',   actual: tot.satfat, target: t.saturated_fat, label: `${r(tot.satfat)}/${t.saturated_fat}g` },
     { bar: 'bar-c',  val: 'val-c',  nutrient: 'carbs',    actual: tot.carb,   target: t.carbs,         label: `${r(tot.carb)}/${t.carbs}g` },
+    { bar: 'bar-a',  val: 'val-a',  nutrient: 'sugar',    actual: tot.sugar,  target: t.sugar,         label: `${r(tot.sugar)}/${t.sugar}g` },
     { bar: 'bar-f',  val: 'val-f',  nutrient: 'fiber',    actual: tot.fiber,  target: t.fiber,         label: `${r(tot.fiber)}/${t.fiber}g` },
     { bar: 'bar-p',  val: 'val-p',  nutrient: 'protein',  actual: tot.prot,   target: t.protein,       label: `${r(tot.prot)}/${t.protein}g` },
   ];
@@ -794,10 +796,6 @@ function renderToday(entries) {
     document.getElementById(val).textContent      = label;
     document.getElementById(val).style.color      = entries.length > 0 ? color : 'var(--text2)';
   });
-
-  // Sugar bar — no color indicator
-  document.getElementById('bar-a').style.width = pct(tot.sugar, t.sugar);
-  document.getElementById('val-a').textContent = `${r(tot.sugar)}g`;
 
   // Calories color on kcal number
   const kcalPct = rawPct(tot.kcal, t.calories);

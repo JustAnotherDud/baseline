@@ -97,6 +97,21 @@ function openAddFoodFromLog(prefillName) {
   }
 }
 
+function updateSheetMealTabs() {
+  document.querySelectorAll('#sheet-meal-tabs .meal-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.meal === selectedMeal);
+  });
+}
+
+function selectSheetMeal(mealKey) {
+  selectedMeal = mealKey;
+  mealManuallySelected = true;
+  document.querySelectorAll('#log-meal-tabs .meal-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.meal === mealKey);
+  });
+  updateSheetMealTabs();
+}
+
 function getMealByHour() {
   const h = new Date().getHours();
   if (h >= 6  && h < 10) return 'breakfast';

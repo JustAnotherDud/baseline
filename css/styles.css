@@ -208,6 +208,13 @@ input[type="number"] { font-family: var(--mono); }
   color: var(--text2); font-family: var(--sans); transition: all .15s;
 }
 .meal-tab.active { background: var(--accent); border-color: var(--accent); color: #0a0a0a; }
+.sheet-meal-tabs {
+  display: flex; gap: 6px; padding: 10px 16px;
+  overflow-x: auto; scrollbar-width: none;
+  border-bottom: 1px solid var(--border);
+  -webkit-overflow-scrolling: touch;
+}
+.sheet-meal-tabs::-webkit-scrollbar { display: none; }
 
 /* ── SELECTED FOOD CARD ── */
 .food-card { background: var(--surface2); border-radius: 12px; padding: 14px; }

@@ -1,0 +1,733 @@
+const { createClient } = supabase;
+let db = null;
+let currentDate = new Date().toISOString().split('T')[0];
+let selectedMeal = 'breakfast';
+let selectedFood = null;
+let editingFoodId = null;
+let allFoods = [];
+
+const MEALS = {
+  breakfast:   'Pequeno-almoço',
+  morning:     'Lanche manhã',
+  lunch:       'Almoço',
+  afternoon1:  'Lanche tarde 1',
+  afternoon2:  'Lanche tarde 2',
+  dinner:      'Jantar',
+  supper:      'Ceia',
+};
+
+// ── CONFIG ──
+
+function init() {
+  const url = localStorage.getItem('nt_url');
+  const key = localStorage.getItem('nt_key');
+  if (url && key) {
+    db = createClient(url, key);
+    document.getElementById('setup-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    setDateLabel();
+    updateLogDateLabel();
+    loadTargetsForm();
+    loadToday();
+    loadFoods();
+  } else {
+    document.getElementById('setup-screen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+  }
+}
+
+function saveSetup() {
+  const url = document.getElementById('setup-url').value.trim().replace(/\/$/,'');
+  const key = document.getElementById('setup-key').value.trim();
+  if (!url || !key) { toast('Preenche os dois campos'); return; }
+  localStorage.setItem('nt_url', url);
+  localStorage.setItem('nt_key', key);
+  init();
+}
+
+function resetSetup() {
+  if (!confirm('Redefinir ligação Supabase?')) return;
+  localStorage.removeItem('nt_url'); localStorage.removeItem('nt_key'); init();
+}
+
+// ── NAV ──
+function go(view) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-'+view).classList.add('active');
+  const nb = document.getElementById('nav-'+view);
+  if (nb) nb.classList.add('active');
+  if (view==='today') loadToday();
+  if (view==='foods') loadFoods();
+  if (view==='log') updateLogDateLabel();
+}
+
+// ── TODAY ──
+function setDateLabel() {
+  const today = new Date().toISOString().split('T')[0];
+  const d = new Date(currentDate+'T12:00:00');
+  document.getElementById('today-title').textContent = currentDate === today ? 'Diário' : 'Diário';
+  document.getElementById('today-date-label').textContent = d.toLocaleDateString('pt-PT',{weekday:'long',day:'numeric',month:'long'});
+}
+
+async function loadToday() {
+  if (!db) return;
+  const { data, error } = await db.from('diary').select('*').eq('date', currentDate).order('logged_at');
+  if (error) { toast('Erro ao carregar diário'); return; }
+  renderToday(data || []);
+}
+
+function getNutrientColor(nutrient, pct) {
+  switch(nutrient) {
+    case 'calories':
+    case 'carbs':
+      if (pct >= 90 && pct <= 110) return 'var(--accent)';
+      if ((pct >= 80 && pct < 90) || (pct > 110 && pct <= 120)) return 'var(--yellow)';
+      return 'var(--red)';
+    case 'protein':
+      if (pct >= 90 && pct <= 130) return 'var(--accent)';
+      if ((pct >= 80 && pct < 90) || (pct > 130 && pct <= 150)) return 'var(--yellow)';
+      return 'var(--red)';
+    case 'fat':
+      if (pct >= 85 && pct <= 115) return 'var(--accent)';
+      if ((pct >= 70 && pct < 85) || (pct > 115 && pct <= 130)) return 'var(--yellow)';
+      return 'var(--red)';
+    case 'satfat':
+    case 'sugar':
+      if (pct <= 70) return 'var(--accent)';
+      if (pct <= 90) return 'var(--yellow)';
+      return 'var(--red)';
+    case 'fiber':
+      if (pct >= 90) return 'var(--accent)';
+      if (pct >= 70) return 'var(--yellow)';
+      return 'var(--red)';
+    default:
+      return 'var(--accent)';
+  }
+}
+
+function renderToday(entries) {
+  const t = getTargets();
+  const tot = {kcal:0, fat:0, satfat:0, carb:0, sugar:0, fiber:0, prot:0};
+  entries.forEach(e => {
+    tot.kcal  += +e.calories;
+    tot.fat   += +e.fat;
+    tot.satfat+= +(e.saturated_fat||0);
+    tot.carb  += +e.carbs;
+    tot.sugar += +(e.sugar||0);
+    tot.fiber += +(e.fiber||0);
+    tot.prot  += +e.protein;
+  });
+
+  const r = n => Math.round(n);
+  document.getElementById('tot-kcal').textContent = r(tot.kcal);
+  document.getElementById('tot-kcal-label').textContent = `/ ${t.calories} kcal`;
+  const rem = t.calories - r(tot.kcal);
+  const remEl = document.getElementById('kcal-rem');
+  remEl.textContent = rem>=0 ? `${rem} restantes` : `${Math.abs(rem)} excesso`;
+  remEl.style.color = rem>=0 ? 'var(--text2)' : 'var(--red)';
+
+  const rawPct = (v, m) => m > 0 ? v / m * 100 : 0;
+  const pct    = (v, m) => Math.min(100, rawPct(v, m)) + '%';
+
+  const bars = [
+    { bar: 'bar-g',  val: 'val-g',  nutrient: 'fat',      actual: tot.fat,    target: t.fat,           label: `${r(tot.fat)}/${t.fat}g` },
+    { bar: 'bar-gs', val: 'val-gs', nutrient: 'satfat',   actual: tot.satfat, target: t.saturated_fat, label: `${r(tot.satfat)}/${t.saturated_fat}g` },
+    { bar: 'bar-c',  val: 'val-c',  nutrient: 'carbs',    actual: tot.carb,   target: t.carbs,         label: `${r(tot.carb)}/${t.carbs}g` },
+    { bar: 'bar-a',  val: 'val-a',  nutrient: 'sugar',    actual: tot.sugar,  target: t.sugar,         label: `${r(tot.sugar)}/${t.sugar}g` },
+    { bar: 'bar-f',  val: 'val-f',  nutrient: 'fiber',    actual: tot.fiber,  target: t.fiber,         label: `${r(tot.fiber)}/${t.fiber}g` },
+    { bar: 'bar-p',  val: 'val-p',  nutrient: 'protein',  actual: tot.prot,   target: t.protein,       label: `${r(tot.prot)}/${t.protein}g` },
+  ];
+
+  bars.forEach(({ bar, val, nutrient, actual, target, label }) => {
+    const p = rawPct(actual, target);
+    const color = entries.length > 0 ? getNutrientColor(nutrient, p) : 'var(--surface3)';
+    document.getElementById(bar).style.width      = Math.min(100, p) + '%';
+    document.getElementById(bar).style.background = color;
+    document.getElementById(val).textContent      = label;
+    document.getElementById(val).style.color      = entries.length > 0 ? color : 'var(--text2)';
+  });
+
+  // Calories color on kcal number
+  const kcalPct = rawPct(tot.kcal, t.calories);
+  const kcalColor = entries.length > 0 ? getNutrientColor('calories', kcalPct) : 'var(--accent)';
+  document.getElementById('tot-kcal').style.color = kcalColor;
+
+  const container = document.getElementById('diary-container');
+  container.innerHTML = '';
+  Object.entries(MEALS).forEach(([k,label]) => {
+    const mes = entries.filter(e=>e.meal===k);
+    const mkcal = mes.reduce((s,e)=>s+ +e.calories,0);
+    const mprot = mes.reduce((s,e)=>s+ +e.protein,0);
+    const mcarb = mes.reduce((s,e)=>s+ +e.carbs,0);
+    const mfat  = mes.reduce((s,e)=>s+ +e.fat,0);
+    const div = document.createElement('div');
+    div.className = 'meal-section';
+    const macroStr = mes.length > 0
+      ? `<div class="meal-macros">G ${r(mfat)}g · C ${r(mcarb)}g · P ${r(mprot)}g</div>`
+      : '';
+    const rows = mes.length===0
+      ? `<div class="no-entries">Sem registos</div>`
+      : mes.map(e=>`
+        <div class="diary-entry" onclick="openEditEntry(${e.id})" style="cursor:pointer">
+          <div class="entry-info">
+            <div class="entry-name">${e.food_name}</div>
+            <div class="entry-detail">${e.grams?e.grams+'g · ':''}G ${r(e.fat)}g · C ${r(e.carbs)}g · P ${r(e.protein)}g</div>
+          </div>
+          <div class="entry-kcal">${r(e.calories)}</div>
+        </div>`).join('');
+    div.innerHTML = `
+      <div class="meal-header" onclick="openLogForMeal('${k}')" style="cursor:pointer">
+        <div class="meal-header-top">
+          <div class="meal-name">${label}</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="meal-kcal">${r(mkcal)} kcal</div>
+            <div style="color:var(--text3);font-size:18px;line-height:1">+</div>
+          </div>
+        </div>
+        ${macroStr}
+      </div>${rows}`;
+    container.appendChild(div);
+  });
+}
+
+async function delEntry(id) {
+  if (!confirm('Eliminar este registo?')) return;
+  const {error} = await db.from('diary').delete().eq('id',id);
+  if (error) { toast('Erro ao eliminar'); return; }
+  toast('Eliminado'); loadToday();
+}
+
+function pickLogDate() {
+  const inp = document.createElement('input');
+  inp.type='date'; inp.value=currentDate;
+  inp.style.cssText='position:fixed;opacity:0;top:0;pointer-events:none';
+  document.body.appendChild(inp);
+  inp.addEventListener('change',()=>{ currentDate=inp.value; setDateLabel(); updateLogDateLabel(); document.body.removeChild(inp); });
+  inp.addEventListener('blur',()=>{ if(document.body.contains(inp)) document.body.removeChild(inp); });
+  inp.click(); inp.showPicker?.();
+}
+
+function updateLogDateLabel() {
+  const today = new Date().toISOString().split('T')[0];
+  const d = new Date(currentDate+'T12:00:00');
+  const dateStr = d.toLocaleDateString('pt-PT',{weekday:'long',day:'numeric',month:'long'});
+  const el = document.getElementById('log-date-label');
+  if (el) el.textContent = currentDate === today ? `Hoje — ${dateStr}` : dateStr;
+}
+
+function pickDate() {
+  const inp = document.createElement('input');
+  inp.type='date'; inp.value=currentDate;
+  inp.style.cssText='position:fixed;opacity:0;top:0;pointer-events:none';
+  document.body.appendChild(inp);
+  inp.addEventListener('change',()=>{ currentDate=inp.value; setDateLabel(); loadToday(); document.body.removeChild(inp); });
+  inp.addEventListener('blur',()=>{ if(document.body.contains(inp)) document.body.removeChild(inp); });
+  inp.click(); inp.showPicker?.();
+}
+
+// ── LOG SHEET ──
+function changeDay(delta) {
+  const d = new Date(currentDate + 'T12:00:00');
+  d.setDate(d.getDate() + delta);
+  currentDate = d.toISOString().split('T')[0];
+  setDateLabel();
+  loadToday();
+}
+
+async function loadLogTotalsStrip() {
+  const strip = document.getElementById('log-totals-strip');
+  if (!strip || !db) return;
+  const { data } = await db.from('diary').select('calories,protein,carbs,fat').eq('date', currentDate);
+  if (!data) return;
+  const t = getTargets();
+  const r = n => Math.round(n);
+  const tot = { kcal:0, prot:0, carb:0, fat:0 };
+  data.forEach(e => { tot.kcal+=+e.calories; tot.prot+=+e.protein; tot.carb+=+e.carbs; tot.fat+=+e.fat; });
+  const rem = t.calories - r(tot.kcal);
+  const remColor = rem >= 0 ? 'var(--text2)' : 'var(--red)';
+  strip.innerHTML = `
+    <div style="font-family:var(--mono);font-size:12px">
+      <span style="color:var(--accent);font-weight:600">${r(tot.kcal)}</span>
+      <span style="color:var(--text3)">/${t.calories}</span>
+    </div>
+    <div style="font-family:var(--mono);font-size:11px;color:${remColor}">${rem>=0?rem+'↓':Math.abs(rem)+'↑'} kcal</div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--blue)">P ${r(tot.prot)}g</div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--yellow)">H ${r(tot.carb)}g</div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--orange)">G ${r(tot.fat)}g</div>`;
+}
+
+async function loadRecentFoods() {
+  const el = document.getElementById('recent-foods');
+  if (!db || !el) return;
+  // Get last 50 diary entries with food_id, deduplicate, take 8
+  const { data } = await db.from('diary')
+    .select('food_id, food_name')
+    .not('food_id', 'is', null)
+    .order('logged_at', { ascending: false })
+    .limit(50);
+
+  if (!data || !data.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text3);font-family:var(--mono)">Sem histórico ainda</div>';
+    return;
+  }
+
+  // Deduplicate by food_id
+  const seen = new Set();
+  const recents = [];
+  for (const e of data) {
+    if (!seen.has(e.food_id)) {
+      seen.add(e.food_id);
+      recents.push(e);
+      if (recents.length >= 8) break;
+    }
+  }
+
+  el.innerHTML = recents.map(e =>
+    `<button class="recent-chip" onclick="pickFood(${e.food_id})">${e.food_name}</button>`
+  ).join('');
+}
+
+function selectMeal(btn) {
+  document.querySelectorAll('#log-meal-tabs .meal-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  selectedMeal = btn.dataset.meal;
+}
+
+function openLog(mode) {
+  document.getElementById('log-sheet-title').textContent = mode==='db' ? 'Pesquisar alimento' : 'Entrada rápida';
+  document.getElementById('log-db').style.display    = mode==='db'    ? 'block' : 'none';
+  document.getElementById('log-quick').style.display = mode==='quick' ? 'block' : 'none';
+  if (mode==='db') {
+    document.getElementById('log-stage-search').classList.add('active');
+    document.getElementById('log-stage-grams').classList.remove('active');
+    document.getElementById('log-q').value='';
+    document.getElementById('log-results').innerHTML='<div class="loading">Começa a escrever para pesquisar</div>';
+    loadRecentFoods();
+    setTimeout(()=>document.getElementById('log-q').focus(),300);
+  } else {
+    clearQuick();
+    setTimeout(()=>document.getElementById('q-name').focus(),300);
+  }
+  document.getElementById('sheet-log').classList.add('open');
+  loadLogTotalsStrip();
+}
+
+function closeLog() {
+  document.getElementById('sheet-log').classList.remove('open');
+  selectedFood=null;
+}
+
+async function searchDB() {
+  const q = document.getElementById('log-q').value.trim().toLowerCase();
+  const res = document.getElementById('log-results');
+  if (q.length<1) { res.innerHTML='<div class="loading">Começa a escrever para pesquisar</div>'; return; }
+  const {data} = await db.from('foods').select('*').ilike('name',`%${q}%`).limit(25);
+  if (!data||!data.length) {
+    const q2 = document.getElementById('log-q').value.trim();
+    res.innerHTML = `<div style="padding:12px 20px">
+      <div style="font-size:13px;color:var(--text3);margin-bottom:10px">Sem resultados para "${q2}"</div>
+      <button class="btn btn-secondary" style="font-size:13px;padding:10px" onclick="openAddFoodFromLog('${q2.replace(/'/g,"\\'")}')">+ Criar "${q2}"</button>
+    </div>`;
+    return;
+  }
+  res.innerHTML = data.map(f=>`
+    <div class="sr-item" onclick="pickFood(${f.id})">
+      <div><div class="sr-name">${f.name}</div><div class="sr-detail">${f.brand?f.brand+' · ':''}${f.calories_per_100g} kcal · P${f.protein_per_100g} C${f.carbs_per_100g} G${f.fat_per_100g}</div></div>
+      <div class="sr-kcal">${f.calories_per_100g}<br><span style="font-size:9px;color:var(--text3)">kcal/100g</span></div>
+    </div>`).join('');
+}
+
+async function pickFood(id) {
+  const {data} = await db.from('foods').select('*').eq('id',id).single();
+  if (!data) return;
+  selectedFood=data;
+  document.getElementById('log-stage-search').classList.remove('active');
+  document.getElementById('log-stage-grams').classList.add('active');
+
+  const servingBtn = data.serving_size_g
+    ? `<button class="btn btn-secondary" style="margin-top:8px;padding:8px 14px;font-size:13px;width:auto" onclick="document.getElementById('log-grams').value=${data.serving_size_g};updatePreview()">1 porção (${data.serving_size_g}g)</button>`
+    : '';
+
+  document.getElementById('log-food-card').innerHTML=`
+    <div class="food-card-name">${data.name}</div>
+    <div class="food-card-sub">${data.brand?data.brand+' · ':''}${data.calories_per_100g} kcal/100g · P${data.protein_per_100g}g C${data.carbs_per_100g}g G${data.fat_per_100g}g</div>
+    ${servingBtn}`;
+
+  const gi = document.getElementById('log-grams');
+  gi.value = '';
+  updatePreview();
+  setTimeout(()=>gi.focus(),100);
+}
+
+function updatePreview() {
+  if (!selectedFood) return;
+  const g = parseFloat(document.getElementById('log-grams').value)||0;
+  const c = v=>Math.round((parseFloat(v)||0)/100*g);
+  document.getElementById('prev-kcal').textContent   = c(selectedFood.calories_per_100g);
+  document.getElementById('prev-fat').textContent    = c(selectedFood.fat_per_100g);
+  document.getElementById('prev-satfat').textContent = c(selectedFood.saturated_fat_per_100g);
+  document.getElementById('prev-carb').textContent   = c(selectedFood.carbs_per_100g);
+  document.getElementById('prev-sugar').textContent  = c(selectedFood.sugar_per_100g);
+  document.getElementById('prev-fiber').textContent  = c(selectedFood.fiber_per_100g);
+  document.getElementById('prev-prot').textContent   = c(selectedFood.protein_per_100g);
+}
+
+function backToSearch() {
+  document.getElementById('log-stage-search').classList.add('active');
+  document.getElementById('log-stage-grams').classList.remove('active');
+  selectedFood=null;
+}
+
+async function saveDiary() {
+  if (!selectedFood) return;
+  const g = parseFloat(document.getElementById('log-grams').value);
+  if (!g||g<=0) { toast('Indica a quantidade em gramas'); return; }
+  const c = v => Math.round((parseFloat(v)||0)/100*g*10)/10;
+  const {error} = await db.from('diary').insert({
+    date:currentDate, meal:selectedMeal,
+    food_id:selectedFood.id, food_name:selectedFood.name,
+    grams:g,
+    calories:c(selectedFood.calories_per_100g),
+    protein:c(selectedFood.protein_per_100g),
+    carbs:c(selectedFood.carbs_per_100g),
+    fat:c(selectedFood.fat_per_100g),
+    saturated_fat:c(selectedFood.saturated_fat_per_100g),
+    sugar:c(selectedFood.sugar_per_100g),
+    fiber:c(selectedFood.fiber_per_100g)
+  });
+  if (error) { toast('Erro ao guardar'); return; }
+  toast(`${selectedFood.name} registado`);
+  closeLog(); loadToday(); go('today');
+}
+
+async function saveQuick() {
+  const name = document.getElementById('q-name').value.trim();
+  if (!name) { toast('Indica o nome'); return; }
+  const {error} = await db.from('diary').insert({
+    date:currentDate, meal:selectedMeal, food_name:name, grams:null,
+    calories:      parseFloat(document.getElementById('q-kcal').value)||0,
+    fat:           parseFloat(document.getElementById('q-fat').value)||0,
+    saturated_fat: parseFloat(document.getElementById('q-satfat').value)||0,
+    carbs:         parseFloat(document.getElementById('q-carb').value)||0,
+    sugar:         parseFloat(document.getElementById('q-sugar').value)||0,
+    fiber:         parseFloat(document.getElementById('q-fiber').value)||0,
+    protein:       parseFloat(document.getElementById('q-prot').value)||0
+  });
+  if (error) { toast('Erro ao guardar'); return; }
+  toast('Registado'); closeLog(); clearQuick(); loadToday(); go('today');
+}
+
+function clearQuick() {
+  ['q-name','q-kcal','q-fat','q-satfat','q-carb','q-sugar','q-fiber','q-prot'].forEach(id=>document.getElementById(id).value='');
+}
+
+// ── FOODS ──
+async function loadFoods() {
+  if (!db) return;
+  const {data} = await db.from('foods').select('*').order('name');
+  allFoods = data||[];
+  document.getElementById('foods-count').textContent = `${allFoods.length} alimentos`;
+  renderFoods(allFoods);
+}
+
+function filterFoods() {
+  const q = document.getElementById('foods-search').value.toLowerCase();
+  renderFoods(q ? allFoods.filter(f=>f.name.toLowerCase().includes(q)||(f.brand||'').toLowerCase().includes(q)) : allFoods);
+}
+
+function renderFoods(foods) {
+  const el = document.getElementById('foods-list');
+  if (!foods.length) {
+    el.innerHTML=`<div class="empty"><div class="empty-icon">🥗</div><div class="empty-text">Sem alimentos ainda.<br>Clica em + para adicionar o primeiro.</div></div>`;
+    return;
+  }
+  el.innerHTML = foods.map(f=>`
+    <div class="food-item" onclick="editFood(${f.id})">
+      <div class="fi-info">
+        <div class="fi-name">${f.name}</div>
+        <div class="fi-detail">${f.brand?f.brand+' · ':''}P${f.protein_per_100g} C${f.carbs_per_100g} G${f.fat_per_100g}${f.serving_size_g?' · porção '+f.serving_size_g+'g':''}</div>
+      </div>
+      <div class="fi-kcal">${f.calories_per_100g}<br><span style="font-size:9px;color:var(--text3)">kcal/100g</span></div>
+    </div>`).join('');
+}
+
+let fromLogContext = false;
+
+function openAddFoodFromLog(prefillName) {
+  fromLogContext = true;
+  openAddFood();
+  if (prefillName) {
+    setTimeout(() => { document.getElementById('f-name').value = prefillName; }, 100);
+  }
+}
+
+function openLogForMeal(mealKey) {
+  // Select the meal tab
+  document.querySelectorAll('#log-meal-tabs .meal-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.meal === mealKey);
+  });
+  selectedMeal = mealKey;
+  openLog('db');
+}
+
+function openAddFood() {
+  editingFoodId=null;
+  document.getElementById('food-sheet-title').textContent='Novo alimento';
+  document.getElementById('del-food-btn').style.display='none';
+  ['f-name','f-brand','f-serving','f-kcal','f-prot','f-carb','f-fat','f-satfat','f-sugar','f-fiber'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('sheet-food').classList.add('open');
+  setTimeout(()=>document.getElementById('f-name').focus(),300);
+}
+
+function editFood(id) {
+  const f = allFoods.find(x=>x.id===id);
+  if (!f) return;
+  editingFoodId=id;
+  document.getElementById('food-sheet-title').textContent='Editar alimento';
+  document.getElementById('del-food-btn').style.display='block';
+  document.getElementById('f-name').value=f.name;
+  document.getElementById('f-brand').value=f.brand||'';
+  document.getElementById('f-serving').value=f.serving_size_g||'';
+  document.getElementById('f-kcal').value=f.calories_per_100g;
+  document.getElementById('f-prot').value=f.protein_per_100g;
+  document.getElementById('f-carb').value=f.carbs_per_100g;
+  document.getElementById('f-fat').value=f.fat_per_100g;
+  document.getElementById('f-satfat').value=f.saturated_fat_per_100g||'';
+  document.getElementById('f-sugar').value=f.sugar_per_100g||'';
+  document.getElementById('f-fiber').value=f.fiber_per_100g||'';
+  document.getElementById('sheet-food').classList.add('open');
+}
+
+function closeAddFood() {
+  document.getElementById('sheet-food').classList.remove('open');
+  editingFoodId = null;
+  fromLogContext = false;
+}
+
+async function saveFood() {
+  const name=document.getElementById('f-name').value.trim();
+  const kcal=parseFloat(document.getElementById('f-kcal').value);
+  const prot=parseFloat(document.getElementById('f-prot').value);
+  const carb=parseFloat(document.getElementById('f-carb').value);
+  const fat=parseFloat(document.getElementById('f-fat').value);
+  if (!name||isNaN(kcal)||isNaN(prot)||isNaN(carb)||isNaN(fat)) { toast('Preenche os campos obrigatórios (*)'); return; }
+  const food={
+    name, brand:document.getElementById('f-brand').value.trim()||null,
+    serving_size_g:parseFloat(document.getElementById('f-serving').value)||null,
+    calories_per_100g:kcal, protein_per_100g:prot, carbs_per_100g:carb, fat_per_100g:fat,
+    saturated_fat_per_100g:parseFloat(document.getElementById('f-satfat').value)||0,
+    sugar_per_100g:parseFloat(document.getElementById('f-sugar').value)||0,
+    fiber_per_100g:parseFloat(document.getElementById('f-fiber').value)||0
+  };
+  let error, data2;
+  if (editingFoodId) {
+    ({ error } = await db.from('foods').update(food).eq('id',editingFoodId));
+  } else {
+    ({ error, data: data2 } = await db.from('foods').insert(food).select().single());
+  }
+  if (error) { toast('Erro ao guardar'); return; }
+  toast(editingFoodId?'Actualizado':'Alimento adicionado');
+  closeAddFood();
+  loadFoods();
+  // If triggered from log, auto-select the new food
+  if (!editingFoodId && fromLogContext && data2) {
+    fromLogContext = false;
+    document.getElementById('sheet-log').classList.add('open');
+    await pickFood(data2.id);
+  } else {
+    fromLogContext = false;
+  }
+}
+
+async function deleteFood() {
+  if (!confirm('Eliminar este alimento?')) return;
+  const {error}=await db.from('foods').delete().eq('id',editingFoodId);
+  if (error) { toast('Erro ao eliminar'); return; }
+  toast('Eliminado'); closeAddFood(); loadFoods();
+}
+
+// ── TARGETS ──
+let cachedTargets = { calories:2300, fat:70, saturated_fat:20, carbs:230, sugar:150, fiber:30, protein:160 };
+
+function getTargets() { return cachedTargets; }
+
+async function fetchTargetsFromSupabase(dayType) {
+  if (!db) return null;
+  const { data, error } = await db.from('targets').select('*').eq('day_type', dayType).single();
+  if (error || !data) return null;
+  return {
+    calories:      data.calories,
+    fat:           data.fat,
+    saturated_fat: data.saturated_fat,
+    carbs:         data.carbs,
+    sugar:         data.sugar,
+    fiber:         data.fiber,
+    protein:       data.protein,
+  };
+}
+
+async function loadTargetsForDayType(dayType) {
+  document.getElementById('targets-loading').style.display = 'block';
+  document.getElementById('targets-display').style.opacity = '0.4';
+  const t = await fetchTargetsFromSupabase(dayType);
+  document.getElementById('targets-loading').style.display = 'none';
+  document.getElementById('targets-display').style.opacity = '1';
+  if (!t) { toast('Erro ao carregar targets'); return; }
+  cachedTargets = t;
+  localStorage.setItem('nt_targets', JSON.stringify(t));
+  localStorage.setItem('nt_day_type', dayType);
+  document.getElementById('t-kcal').value  = t.calories;
+  document.getElementById('t-fat').value   = t.fat;
+  document.getElementById('t-satfat').value= t.saturated_fat;
+  document.getElementById('t-carb').value  = t.carbs;
+  document.getElementById('t-sugar').value = t.sugar;
+  document.getElementById('t-fiber').value = t.fiber;
+  document.getElementById('t-prot').value  = t.protein;
+  loadToday();
+}
+
+function setFieldsEditable(editable) {
+  ['t-kcal','t-fat','t-satfat','t-carb','t-sugar','t-fiber','t-prot'].forEach(id => {
+    const el = document.getElementById(id);
+    el.readOnly = !editable;
+    el.style.opacity = editable ? '1' : '0.6';
+  });
+  document.getElementById('save-custom-btn').style.display = editable ? 'block' : 'none';
+  document.getElementById('targets-hint').style.display = editable ? 'none' : 'block';
+}
+
+async function onDayTypeChange() {
+  const dayType = document.getElementById('day-type-select').value;
+  if (dayType === 'custom') {
+    setFieldsEditable(true);
+    localStorage.setItem('nt_day_type', 'custom');
+    return;
+  }
+  setFieldsEditable(false);
+  await loadTargetsForDayType(dayType);
+}
+
+function saveCustomTargets() {
+  const t = {
+    calories:      parseFloat(document.getElementById('t-kcal').value)||2300,
+    fat:           parseFloat(document.getElementById('t-fat').value)||70,
+    saturated_fat: parseFloat(document.getElementById('t-satfat').value)||20,
+    carbs:         parseFloat(document.getElementById('t-carb').value)||230,
+    sugar:         parseFloat(document.getElementById('t-sugar').value)||150,
+    fiber:         parseFloat(document.getElementById('t-fiber').value)||30,
+    protein:       parseFloat(document.getElementById('t-prot').value)||160,
+  };
+  cachedTargets = t;
+  localStorage.setItem('nt_targets', JSON.stringify(t));
+  localStorage.setItem('nt_day_type', 'custom');
+  toast('Targets personalizados guardados');
+  loadToday();
+}
+
+function loadTargetsForm() {
+  const saved = JSON.parse(localStorage.getItem('nt_targets') || 'null');
+  const dayType = localStorage.getItem('nt_day_type') || 'training_plus_work';
+  if (saved) cachedTargets = saved;
+  document.getElementById('day-type-select').value = dayType;
+  if (saved) {
+    document.getElementById('t-kcal').value   = saved.calories;
+    document.getElementById('t-fat').value    = saved.fat;
+    document.getElementById('t-satfat').value = saved.saturated_fat;
+    document.getElementById('t-carb').value   = saved.carbs;
+    document.getElementById('t-sugar').value  = saved.sugar;
+    document.getElementById('t-fiber').value  = saved.fiber;
+    document.getElementById('t-prot').value   = saved.protein;
+  }
+  if (dayType === 'custom') {
+    setFieldsEditable(true);
+  } else {
+    setFieldsEditable(false);
+    loadTargetsForDayType(dayType);
+  }
+}
+
+// ── EDIT ENTRY ──
+let editingEntry = null;
+
+async function openEditEntry(id) {
+  const { data, error } = await db.from('diary').select('*').eq('id', id).single();
+  if (error || !data) return;
+  editingEntry = data;
+
+  document.getElementById('edit-food-card').innerHTML = `
+    <div class="food-card-name">${data.food_name}</div>
+    <div class="food-card-sub">${data.grams ? 'Peso original: ' + data.grams + 'g' : 'Entrada rápida'}</div>`;
+
+  document.getElementById('edit-grams').value = data.grams || '';
+  updateEditPreview();
+  document.getElementById('sheet-edit').classList.add('open');
+  setTimeout(() => document.getElementById('edit-grams').focus(), 300);
+}
+
+function closeEditEntry() {
+  document.getElementById('sheet-edit').classList.remove('open');
+  editingEntry = null;
+}
+
+function updateEditPreview() {
+  if (!editingEntry) return;
+  const g = parseFloat(document.getElementById('edit-grams').value) || 0;
+  const orig = editingEntry.grams || 1;
+  const factor = g / orig;
+  const c = (v) => Math.round((parseFloat(v) || 0) * factor);
+  document.getElementById('ep-kcal').textContent   = c(editingEntry.calories);
+  document.getElementById('ep-fat').textContent    = c(editingEntry.fat);
+  document.getElementById('ep-satfat').textContent = c(editingEntry.saturated_fat);
+  document.getElementById('ep-carb').textContent   = c(editingEntry.carbs);
+  document.getElementById('ep-sugar').textContent  = c(editingEntry.sugar);
+  document.getElementById('ep-fiber').textContent  = c(editingEntry.fiber);
+  document.getElementById('ep-prot').textContent   = c(editingEntry.protein);
+}
+
+async function saveEditEntry() {
+  if (!editingEntry) return;
+  const g = parseFloat(document.getElementById('edit-grams').value);
+  if (!g || g <= 0) { toast('Indica a quantidade'); return; }
+
+  const orig = editingEntry.grams || g;
+  const factor = g / orig;
+  const r = v => Math.round((parseFloat(v) || 0) * factor * 10) / 10;
+
+  const { error } = await db.from('diary').update({
+    grams:         g,
+    calories:      r(editingEntry.calories),
+    protein:       r(editingEntry.protein),
+    carbs:         r(editingEntry.carbs),
+    fat:           r(editingEntry.fat),
+    saturated_fat: r(editingEntry.saturated_fat),
+    sugar:         r(editingEntry.sugar),
+    fiber:         r(editingEntry.fiber),
+  }).eq('id', editingEntry.id);
+
+  if (error) { toast('Erro ao guardar'); return; }
+  toast('Actualizado');
+  closeEditEntry();
+  loadToday();
+}
+
+async function delEntryFromEdit() {
+  if (!editingEntry) return;
+  if (!confirm('Eliminar este registo?')) return;
+  const { error } = await db.from('diary').delete().eq('id', editingEntry.id);
+  if (error) { toast('Erro ao eliminar'); return; }
+  toast('Eliminado');
+  closeEditEntry();
+  loadToday();
+}
+function overlayClose(e, id) { if(e.target.id===id) document.getElementById(id).classList.remove('open'); }
+
+// ── TOAST ──
+let toastT;
+function toast(msg) {
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),2400);
+}
+
+init();

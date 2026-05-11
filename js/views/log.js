@@ -85,6 +85,7 @@ function openLogForMeal(mealKey) {
     t.classList.toggle('active', t.dataset.meal === mealKey);
   });
   selectedMeal = mealKey;
+  mealManuallySelected = true;
   openLog('db');
 }
 
@@ -96,8 +97,20 @@ function openAddFoodFromLog(prefillName) {
   }
 }
 
+function getMealByHour() {
+  const h = new Date().getHours();
+  if (h >= 6  && h < 10) return 'breakfast';
+  if (h >= 10 && h < 12) return 'morning';
+  if (h >= 12 && h < 15) return 'lunch';
+  if (h >= 15 && h < 18) return 'afternoon1';
+  if (h >= 18 && h < 20) return 'afternoon2';
+  if (h >= 20 && h < 23) return 'dinner';
+  return 'supper';
+}
+
 function selectMeal(btn) {
   document.querySelectorAll('#log-meal-tabs .meal-tab').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
   selectedMeal = btn.dataset.meal;
+  mealManuallySelected = true;
 }

@@ -7,6 +7,7 @@ let editingFoodId = null;
 let editingEntry = null;
 let allFoods = [];
 let fromLogContext = false;
+let mealManuallySelected = false;
 
 function init() {
   const url = localStorage.getItem('nt_url');

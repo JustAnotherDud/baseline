@@ -8,6 +8,12 @@ function toast(msg) {
 function overlayClose(e, id) { if(e.target.id===id) document.getElementById(id).classList.remove('open'); }
 
 function openLog(mode) {
+  if (!mealManuallySelected) {
+    selectedMeal = getMealByHour();
+    document.querySelectorAll('#log-meal-tabs .meal-tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.meal === selectedMeal);
+    });
+  }
   document.getElementById('log-sheet-title').textContent = mode==='db' ? 'Pesquisar alimento' : 'Entrada rápida';
   document.getElementById('log-db').style.display    = mode==='db'    ? 'block' : 'none';
   document.getElementById('log-quick').style.display = mode==='quick' ? 'block' : 'none';

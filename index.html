@@ -513,6 +513,10 @@
       <div class="sheet-title" id="log-sheet-title">Registar</div>
       <div class="sheet-close" onclick="closeLog()">×</div>
     </div>
+    <!-- Daily totals strip -->
+    <div id="log-totals-strip" style="padding:10px 20px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text3)">A carregar...</div>
+    </div>
 
     <!-- DB MODE -->
     <div id="log-db">
@@ -884,6 +888,28 @@ function changeDay(delta) {
   loadToday();
 }
 
+async function loadLogTotalsStrip() {
+  const strip = document.getElementById('log-totals-strip');
+  if (!strip || !db) return;
+  const { data } = await db.from('diary').select('calories,protein,carbs,fat').eq('date', currentDate);
+  if (!data) return;
+  const t = getTargets();
+  const r = n => Math.round(n);
+  const tot = { kcal:0, prot:0, carb:0, fat:0 };
+  data.forEach(e => { tot.kcal+=+e.calories; tot.prot+=+e.protein; tot.carb+=+e.carbs; tot.fat+=+e.fat; });
+  const rem = t.calories - r(tot.kcal);
+  const remColor = rem >= 0 ? 'var(--text2)' : 'var(--red)';
+  strip.innerHTML = `
+    <div style="font-family:var(--mono);font-size:12px">
+      <span style="color:var(--accent);font-weight:600">${r(tot.kcal)}</span>
+      <span style="color:var(--text3)">/${t.calories}</span>
+    </div>
+    <div style="font-family:var(--mono);font-size:11px;color:${remColor}">${rem>=0?rem+'↓':Math.abs(rem)+'↑'} kcal</div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--blue)">P ${r(tot.prot)}g</div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--yellow)">H ${r(tot.carb)}g</div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--orange)">G ${r(tot.fat)}g</div>`;
+}
+
 async function loadRecentFoods() {
   const el = document.getElementById('recent-foods');
   if (!db || !el) return;
@@ -937,6 +963,7 @@ function openLog(mode) {
     setTimeout(()=>document.getElementById('q-name').focus(),300);
   }
   document.getElementById('sheet-log').classList.add('open');
+  loadLogTotalsStrip();
 }
 
 function closeLog() {

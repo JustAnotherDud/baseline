@@ -192,6 +192,17 @@
       <div style="font-family:var(--mono);font-size:11px;color:var(--text3)">A carregar...</div>
     </div>
 
+    <!-- Meal selector inside sheet -->
+    <div id="sheet-meal-tabs" class="sheet-meal-tabs">
+      <button class="meal-tab" data-meal="breakfast"  onclick="selectSheetMeal('breakfast')">Pequeno-almoço</button>
+      <button class="meal-tab" data-meal="morning"    onclick="selectSheetMeal('morning')">Lanche manhã</button>
+      <button class="meal-tab" data-meal="lunch"      onclick="selectSheetMeal('lunch')">Almoço</button>
+      <button class="meal-tab" data-meal="afternoon1" onclick="selectSheetMeal('afternoon1')">Lanche tarde 1</button>
+      <button class="meal-tab" data-meal="afternoon2" onclick="selectSheetMeal('afternoon2')">Lanche tarde 2</button>
+      <button class="meal-tab" data-meal="dinner"     onclick="selectSheetMeal('dinner')">Jantar</button>
+      <button class="meal-tab" data-meal="supper"     onclick="selectSheetMeal('supper')">Ceia</button>
+    </div>
+
     <!-- DB MODE -->
     <div id="log-db">
       <div id="log-stage-search" class="active">

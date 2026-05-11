@@ -14,6 +14,7 @@ function openLog(mode) {
       t.classList.toggle('active', t.dataset.meal === selectedMeal);
     });
   }
+  updateSheetMealTabs();
   document.getElementById('log-sheet-title').textContent = mode==='db' ? 'Pesquisar alimento' : 'Entrada rápida';
   document.getElementById('log-db').style.display    = mode==='db'    ? 'block' : 'none';
   document.getElementById('log-quick').style.display = mode==='quick' ? 'block' : 'none';

@@ -243,6 +243,27 @@ input[type="number"] { font-family: var(--mono); }
   flex-shrink: 0;
 }
 
+/* ── NUTRIENT ANALYSIS SHEET ── */
+.nutri-pick-item {
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+  cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+}
+.nutri-pick-item:active { background: var(--surface2); }
+.nutri-rank-item { padding: 12px 20px; border-bottom: 1px solid var(--border); }
+.nutri-rank-top {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 6px; gap: 8px;
+}
+.nutri-rank-name {
+  font-size: 14px; font-weight: 500; flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.nutri-rank-val { font-family: var(--mono); font-size: 13px; font-weight: 600; white-space: nowrap; }
+.nutri-rank-bar-row { display: flex; align-items: center; gap: 8px; }
+.nutri-rank-track { flex: 1; height: 4px; background: var(--surface3); border-radius: 2px; overflow: hidden; }
+.nutri-rank-fill { height: 100%; border-radius: 2px; }
+.nutri-rank-pct { font-family: var(--mono); font-size: 11px; color: var(--text3); width: 30px; text-align: right; }
+
 /* ── SELECTED FOOD CARD ── */
 .food-card { background: var(--surface2); border-radius: 12px; padding: 14px; }
 .food-card-name { font-size: 16px; font-weight: 600; margin-bottom: 4px; }

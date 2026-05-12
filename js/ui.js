@@ -158,6 +158,101 @@ async function openDatePicker(selectedVal, onSelect) {
   overlay.classList.add('open');
 }
 
+function openNutrientSheet(entries) {
+  const NUTRIENTS = [
+    { key: 'calories',      label: 'Calorias',      unit: 'kcal', color: 'var(--accent)' },
+    { key: 'protein',       label: 'Proteína',       unit: 'g',    color: 'var(--blue)'   },
+    { key: 'fat',           label: 'Gordura',         unit: 'g',    color: 'var(--orange)' },
+    { key: 'carbs',         label: 'Hidratos',        unit: 'g',    color: 'var(--yellow)' },
+    { key: 'fiber',         label: 'Fibra',           unit: 'g',    color: 'var(--accent)' },
+    { key: 'saturated_fat', label: 'Gord. Saturada',  unit: 'g',    color: '#f97316'       },
+    { key: 'sugar',         label: 'Açúcar',          unit: 'g',    color: '#e879f9'       },
+  ];
+
+  let overlay = document.getElementById('nutri-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'nutri-overlay';
+    overlay.className = 'sheet-overlay';
+    overlay.innerHTML = `
+      <div class="sheet" style="max-height:80dvh">
+        <div class="sheet-handle"></div>
+        <div id="nutri-stage-pick">
+          <div class="sheet-header">
+            <div class="sheet-title">Analisar nutriente</div>
+            <div class="sheet-close" id="nutri-close">×</div>
+          </div>
+          <div id="nutri-pick-list"></div>
+        </div>
+        <div id="nutri-stage-rank" style="display:none">
+          <div class="sheet-header">
+            <button id="nutri-back" style="background:none;border:none;color:var(--text2);font-size:15px;cursor:pointer;padding:2px 0;font-family:var(--sans)">← Voltar</button>
+            <div id="nutri-rank-title" class="sheet-title" style="flex:1;text-align:center;padding:0 8px"></div>
+            <div class="sheet-close" id="nutri-close2">×</div>
+          </div>
+          <div id="nutri-rank-list"></div>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('open'); };
+    document.getElementById('nutri-close').onclick  = () => overlay.classList.remove('open');
+    document.getElementById('nutri-close2').onclick = () => overlay.classList.remove('open');
+    document.getElementById('nutri-back').onclick   = () => {
+      document.getElementById('nutri-stage-pick').style.display = 'block';
+      document.getElementById('nutri-stage-rank').style.display = 'none';
+    };
+  }
+
+  function showRanking(n) {
+    const sorted = [...entries].sort((a, b) => +(b[n.key] || 0) - +(a[n.key] || 0));
+    const total  = sorted.reduce((s, e) => s + +(e[n.key] || 0), 0);
+    const maxVal = sorted.length > 0 ? +(sorted[0][n.key] || 0) : 1;
+    const r      = v => Math.round(+(v || 0) * 10) / 10;
+    const fmt    = v => n.key === 'calories' ? Math.round(v) : r(v);
+
+    document.getElementById('nutri-rank-title').textContent =
+      `${n.label} — ${fmt(total)}${n.unit} total`;
+
+    document.getElementById('nutri-rank-list').innerHTML = entries.length === 0
+      ? `<div class="loading">Sem entradas hoje</div>`
+      : sorted.map(e => {
+          const val    = +(e[n.key] || 0);
+          const pct    = total > 0 ? Math.round(val / total * 100) : 0;
+          const barPct = maxVal > 0 ? Math.round(val / maxVal * 100) : 0;
+          return `
+            <div class="nutri-rank-item">
+              <div class="nutri-rank-top">
+                <div class="nutri-rank-name">${e.food_name}</div>
+                <div class="nutri-rank-val" style="color:${n.color}">${fmt(val)}${n.unit}</div>
+              </div>
+              <div class="nutri-rank-bar-row">
+                <div class="nutri-rank-track">
+                  <div class="nutri-rank-fill" style="width:${barPct}%;background:${n.color}"></div>
+                </div>
+                <div class="nutri-rank-pct">${pct}%</div>
+              </div>
+            </div>`;
+        }).join('');
+
+    document.getElementById('nutri-stage-pick').style.display = 'none';
+    document.getElementById('nutri-stage-rank').style.display = 'block';
+  }
+
+  const pickList = document.getElementById('nutri-pick-list');
+  pickList.innerHTML = '';
+  NUTRIENTS.forEach(n => {
+    const item = document.createElement('div');
+    item.className = 'nutri-pick-item';
+    item.innerHTML = `<span style="font-size:15px">${n.label}</span><span style="font-family:var(--mono);font-size:12px;color:var(--text3)">${n.unit}</span>`;
+    item.onclick = () => showRanking(n);
+    pickList.appendChild(item);
+  });
+
+  document.getElementById('nutri-stage-pick').style.display = 'block';
+  document.getElementById('nutri-stage-rank').style.display = 'none';
+  overlay.classList.add('open');
+}
+
 function updateEditPreview() {
   if (!editingEntry) return;
   const g = parseFloat(document.getElementById('edit-grams').value) || 0;

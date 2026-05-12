@@ -73,6 +73,87 @@ function closeEditEntry() {
   editingEntry = null;
 }
 
+function openDatePicker(selectedVal, onSelect) {
+  const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                  'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const DAYS   = ['D','S','T','Q','Q','S','S'];
+  const today  = new Date().toISOString().split('T')[0];
+
+  let overlay = document.getElementById('dp-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'dp-overlay';
+    overlay.className = 'sheet-overlay';
+    overlay.style.zIndex = '300';
+    overlay.innerHTML = `
+      <div class="sheet" style="max-height:420px">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <div style="display:flex;align-items:center;gap:8px">
+            <button id="dp-prev" style="background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px 10px;line-height:1">←</button>
+            <div id="dp-label" class="sheet-title" style="min-width:150px;text-align:center"></div>
+            <button id="dp-next" style="background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px 10px;line-height:1">→</button>
+          </div>
+          <div class="sheet-close" id="dp-close">×</div>
+        </div>
+        <div style="padding:10px 14px 20px">
+          <div id="dp-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center"></div>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+  }
+
+  const parts = selectedVal.split('-');
+  let viewYear  = parseInt(parts[0]);
+  let viewMonth = parseInt(parts[1]) - 1;
+
+  function render() {
+    document.getElementById('dp-label').textContent = `${MONTHS[viewMonth]} ${viewYear}`;
+    const grid = document.getElementById('dp-grid');
+    grid.innerHTML = '';
+
+    DAYS.forEach(d => {
+      const el = document.createElement('div');
+      el.textContent = d;
+      el.style.cssText = 'font-family:var(--mono);font-size:10px;color:var(--text3);padding:5px 0;font-weight:500';
+      grid.appendChild(el);
+    });
+
+    const firstWeekday = new Date(viewYear, viewMonth, 1).getDay();
+    for (let i = 0; i < firstWeekday; i++) grid.appendChild(document.createElement('div'));
+
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    for (let d = 1; d <= daysInMonth; d++) {
+      const ds = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const btn = document.createElement('button');
+      btn.textContent = d;
+      const isSel   = ds === selectedVal;
+      const isToday = ds === today;
+      btn.style.cssText = [
+        'width:100%;aspect-ratio:1;border-radius:50%;cursor:pointer;font-size:14px',
+        'font-family:var(--sans);transition:background .1s',
+        isSel   ? 'background:var(--accent);color:#0a0a0a;font-weight:700;border:none'
+                : isToday ? 'background:transparent;color:var(--accent);font-weight:600;border:1px solid var(--accent)'
+                          : 'background:transparent;color:var(--text);border:none',
+      ].join(';');
+      btn.onclick = () => { overlay.classList.remove('open'); onSelect(ds); };
+      grid.appendChild(btn);
+    }
+  }
+
+  document.getElementById('dp-prev').onclick = () => {
+    if (--viewMonth < 0) { viewMonth = 11; viewYear--; } render();
+  };
+  document.getElementById('dp-next').onclick = () => {
+    if (++viewMonth > 11) { viewMonth = 0; viewYear++; } render();
+  };
+  document.getElementById('dp-close').onclick = () => overlay.classList.remove('open');
+  overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('open'); };
+
+  render();
+  overlay.classList.add('open');
+}
+
 function updateEditPreview() {
   if (!editingEntry) return;
   const g = parseFloat(document.getElementById('edit-grams').value) || 0;

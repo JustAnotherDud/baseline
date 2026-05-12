@@ -204,35 +204,94 @@ function openNutrientSheet(entries) {
   }
 
   function showRanking(n) {
-    const sorted = [...entries].sort((a, b) => +(b[n.key] || 0) - +(a[n.key] || 0));
-    const total  = sorted.reduce((s, e) => s + +(e[n.key] || 0), 0);
-    const maxVal = sorted.length > 0 ? +(sorted[0][n.key] || 0) : 1;
-    const r      = v => Math.round(+(v || 0) * 10) / 10;
-    const fmt    = v => n.key === 'calories' ? Math.round(v) : r(v);
+    const r   = v => Math.round(+(v || 0) * 10) / 10;
+    const fmt = v => n.key === 'calories' ? Math.round(v) : r(v);
+
+    // Group by food_name, sum the nutrient
+    const groupMap = new Map();
+    entries.forEach(e => {
+      const name = e.food_name;
+      if (!groupMap.has(name)) groupMap.set(name, { entries: [], sum: 0 });
+      const g = groupMap.get(name);
+      g.entries.push(e);
+      g.sum += +(e[n.key] || 0);
+    });
+    const grouped = [...groupMap.values()].sort((a, b) => b.sum - a.sum);
+
+    const total  = grouped.reduce((s, g) => s + g.sum, 0);
+    const maxVal = grouped.length > 0 ? grouped[0].sum : 1;
 
     document.getElementById('nutri-rank-title').textContent =
       `${n.label} — ${fmt(total)}${n.unit} total`;
 
-    document.getElementById('nutri-rank-list').innerHTML = entries.length === 0
-      ? `<div class="loading">Sem entradas hoje</div>`
-      : sorted.map(e => {
-          const val    = +(e[n.key] || 0);
-          const pct    = total > 0 ? Math.round(val / total * 100) : 0;
-          const barPct = maxVal > 0 ? Math.round(val / maxVal * 100) : 0;
-          return `
-            <div class="nutri-rank-item">
-              <div class="nutri-rank-top">
-                <div class="nutri-rank-name">${e.food_name}</div>
-                <div class="nutri-rank-val" style="color:${n.color}">${fmt(val)}${n.unit}</div>
-              </div>
-              <div class="nutri-rank-bar-row">
-                <div class="nutri-rank-track">
-                  <div class="nutri-rank-fill" style="width:${barPct}%;background:${n.color}"></div>
-                </div>
-                <div class="nutri-rank-pct">${pct}%</div>
-              </div>
-            </div>`;
-        }).join('');
+    const list = document.getElementById('nutri-rank-list');
+    list.innerHTML = '';
+
+    if (entries.length === 0) {
+      list.innerHTML = '<div class="loading">Sem entradas hoje</div>';
+      document.getElementById('nutri-stage-pick').style.display = 'none';
+      document.getElementById('nutri-stage-rank').style.display = 'block';
+      return;
+    }
+
+    let expandedItem = null;
+
+    grouped.forEach(group => {
+      const name   = group.entries[0].food_name;
+      const count  = group.entries.length;
+      const val    = group.sum;
+      const pct    = total > 0 ? Math.round(val / total * 100) : 0;
+      const barPct = maxVal > 0 ? Math.round(val / maxVal * 100) : 0;
+      const multi  = count > 1;
+
+      const item = document.createElement('div');
+      item.className = 'nutri-rank-item';
+
+      const subsHTML = multi ? group.entries.map(e => {
+        const mealLabel = (typeof MEALS !== 'undefined' && MEALS[e.meal]) || e.meal || '—';
+        return `<div class="nutri-rank-sub">
+          <span class="nutri-rank-sub-meal">${mealLabel}</span>
+          <span class="nutri-rank-sub-val">${fmt(+(e[n.key] || 0))}${n.unit}</span>
+        </div>`;
+      }).join('') : '';
+
+      item.innerHTML = `
+        <div class="nutri-rank-top" style="${multi ? 'cursor:pointer' : ''}">
+          <div style="display:flex;align-items:center;gap:5px;flex:1;min-width:0">
+            <div class="nutri-rank-name">${name}</div>
+            ${multi ? `<span style="font-family:var(--mono);font-size:10px;color:var(--text3);background:var(--surface3);padding:1px 5px;border-radius:10px;flex-shrink:0">×${count}</span>` : ''}
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="nutri-rank-val" style="color:${n.color}">${fmt(val)}${n.unit}</div>
+            ${multi ? `<span class="nutri-rank-chevron">▸</span>` : ''}
+          </div>
+        </div>
+        <div class="nutri-rank-bar-row">
+          <div class="nutri-rank-track">
+            <div class="nutri-rank-fill" style="width:${barPct}%;background:${n.color}"></div>
+          </div>
+          <div class="nutri-rank-pct">${pct}%</div>
+        </div>
+        ${multi ? `<div class="nutri-rank-subs" style="display:none">${subsHTML}</div>` : ''}`;
+
+      if (multi) {
+        const topRow = item.querySelector('.nutri-rank-top');
+        const subs   = item.querySelector('.nutri-rank-subs');
+        const chev   = item.querySelector('.nutri-rank-chevron');
+        topRow.onclick = () => {
+          const isOpen = subs.style.display !== 'none';
+          if (expandedItem && expandedItem !== item) {
+            expandedItem.querySelector('.nutri-rank-subs').style.display = 'none';
+            expandedItem.querySelector('.nutri-rank-chevron').textContent = '▸';
+          }
+          subs.style.display = isOpen ? 'none' : 'block';
+          chev.textContent   = isOpen ? '▸' : '▾';
+          expandedItem = isOpen ? null : item;
+        };
+      }
+
+      list.appendChild(item);
+    });
 
     document.getElementById('nutri-stage-pick').style.display = 'none';
     document.getElementById('nutri-stage-rank').style.display = 'block';

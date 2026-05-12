@@ -263,6 +263,14 @@ input[type="number"] { font-family: var(--mono); }
 .nutri-rank-track { flex: 1; height: 4px; background: var(--surface3); border-radius: 2px; overflow: hidden; }
 .nutri-rank-fill { height: 100%; border-radius: 2px; }
 .nutri-rank-pct { font-family: var(--mono); font-size: 11px; color: var(--text3); width: 30px; text-align: right; }
+.nutri-rank-chevron { font-size: 11px; color: var(--text3); flex-shrink: 0; }
+.nutri-rank-subs { padding: 2px 0; }
+.nutri-rank-sub {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 5px 0 5px 12px; border-top: 1px solid var(--border);
+}
+.nutri-rank-sub-meal { font-family: var(--mono); font-size: 11px; color: var(--text3); }
+.nutri-rank-sub-val  { font-family: var(--mono); font-size: 11px; color: var(--text2); }
 
 /* ── SELECTED FOOD CARD ── */
 .food-card { background: var(--surface2); border-radius: 12px; padding: 14px; }

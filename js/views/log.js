@@ -62,7 +62,7 @@ function backToSearch() {
 async function saveQuick() {
   const name = document.getElementById('q-name').value.trim();
   if (!name) { toast('Indica o nome'); return; }
-  const payload = {
+  const {error} = await db.from('diary').insert({
     date:currentDate, meal:selectedMeal, food_name:name, grams:null,
     calories:      parseFloat(document.getElementById('q-kcal').value)||0,
     fat:           parseFloat(document.getElementById('q-fat').value)||0,
@@ -71,10 +71,8 @@ async function saveQuick() {
     sugar:         parseFloat(document.getElementById('q-sugar').value)||0,
     fiber:         parseFloat(document.getElementById('q-fiber').value)||0,
     protein:       parseFloat(document.getElementById('q-prot').value)||0
-  };
-  console.log('QUICK ADD PAYLOAD:', payload);
-  const {error} = await db.from('diary').insert(payload);
-  if (error) { console.error('QUICK ADD ERROR:', error); toast('Erro ao guardar'); return; }
+  });
+  if (error) { toast('Erro ao guardar'); return; }
   toast('Registado'); closeLog(); clearQuick(); loadToday(); go('today');
 }
 

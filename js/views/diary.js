@@ -1,4 +1,7 @@
+let diaryEntries = [];
+
 function renderToday(entries, t) {
+  diaryEntries = entries;
   const tot = {kcal:0, fat:0, satfat:0, carb:0, sugar:0, fiber:0, prot:0};
   entries.forEach(e => {
     tot.kcal  += +e.calories;
@@ -42,6 +45,12 @@ function renderToday(entries, t) {
   const kcalPct = rawPct(tot.kcal, t.calories);
   const kcalColor = entries.length > 0 ? getNutrientColor('calories', kcalPct) : 'var(--accent)';
   document.getElementById('tot-kcal').style.color = kcalColor;
+
+  const macroEl = document.querySelector('.macro-bars');
+  if (macroEl) {
+    macroEl.style.cursor = entries.length > 0 ? 'pointer' : '';
+    macroEl.onclick = entries.length > 0 ? () => openNutrientSheet(diaryEntries) : null;
+  }
 
   const container = document.getElementById('diary-container');
   container.innerHTML = '';

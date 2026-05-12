@@ -234,8 +234,6 @@ function openNutrientSheet(entries) {
       return;
     }
 
-    let expandedItem = null;
-
     grouped.forEach(group => {
       const name   = group.entries[0].food_name;
       const count  = group.entries.length;
@@ -280,13 +278,8 @@ function openNutrientSheet(entries) {
         const chev   = item.querySelector('.nutri-rank-chevron');
         topRow.onclick = () => {
           const isOpen = subs.style.display !== 'none';
-          if (expandedItem && expandedItem !== item) {
-            expandedItem.querySelector('.nutri-rank-subs').style.display = 'none';
-            expandedItem.querySelector('.nutri-rank-chevron').textContent = '▸';
-          }
           subs.style.display = isOpen ? 'none' : 'block';
           chev.textContent   = isOpen ? '▸' : '▾';
-          expandedItem = isOpen ? null : item;
         };
       }
 

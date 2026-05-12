@@ -1,4 +1,11 @@
-let currentSort = 'name';
+const SORT_CONFIG = {
+  name:     { asc: 'Nome A→Z',   desc: 'Nome Z→A',   default: 'asc'  },
+  protein:  { asc: 'Proteína ↓', desc: 'Proteína ↑',  default: 'desc' },
+  calories: { asc: 'Kcal ↓',    desc: 'Kcal ↑',      default: 'desc' },
+  recent:   { asc: 'Recente',    desc: 'Recente',      default: 'desc' },
+};
+
+let currentSortState = { sort: 'name', dir: 'asc' };
 
 async function loadFoods() {
   if (!db) return;
@@ -9,18 +16,29 @@ async function loadFoods() {
 }
 
 function sortFoods(foods) {
+  const { sort, dir } = currentSortState;
   const arr = [...foods];
-  switch (currentSort) {
-    case 'protein':  return arr.sort((a,b) => b.protein_per_100g  - a.protein_per_100g);
-    case 'calories': return arr.sort((a,b) => b.calories_per_100g - a.calories_per_100g);
-    case 'recent':   return arr.sort((a,b) => b.id - a.id);
-    default:         return arr.sort((a,b) => a.name.localeCompare(b.name, 'pt'));
+  const mul = dir === 'asc' ? 1 : -1;
+  switch (sort) {
+    case 'protein':  return arr.sort((a,b) => mul * (a.protein_per_100g  - b.protein_per_100g));
+    case 'calories': return arr.sort((a,b) => mul * (a.calories_per_100g - b.calories_per_100g));
+    case 'recent':   return arr.sort((a,b) => mul * (a.id - b.id));
+    default:         return arr.sort((a,b) => mul * a.name.localeCompare(b.name, 'pt'));
   }
 }
 
 function setSortFoods(sort) {
-  currentSort = sort;
-  document.querySelectorAll('.sort-chip').forEach(c => c.classList.toggle('active', c.dataset.sort === sort));
+  if (currentSortState.sort === sort) {
+    currentSortState.dir = currentSortState.dir === 'asc' ? 'desc' : 'asc';
+  } else {
+    currentSortState = { sort, dir: SORT_CONFIG[sort].default };
+  }
+  document.querySelectorAll('.sort-chip').forEach(c => {
+    const s = c.dataset.sort;
+    const isActive = s === currentSortState.sort;
+    c.classList.toggle('active', isActive);
+    c.textContent = SORT_CONFIG[s][isActive ? currentSortState.dir : SORT_CONFIG[s].default];
+  });
   filterFoods();
 }
 
@@ -36,14 +54,23 @@ function renderFoods(foods) {
     el.innerHTML=`<div class="empty"><div class="empty-icon">🥗</div><div class="empty-text">Sem alimentos ainda.<br>Clica em + para adicionar o primeiro.</div></div>`;
     return;
   }
-  el.innerHTML = foods.map(f=>`
+  const activeSort = currentSortState.sort;
+  el.innerHTML = foods.map(f => {
+    const pStr = activeSort === 'protein'
+      ? `<span style="color:var(--accent);font-weight:600">P${f.protein_per_100g}</span>`
+      : `P${f.protein_per_100g}`;
+    const kcalStyle = activeSort === 'calories'
+      ? 'color:var(--accent);font-weight:600'
+      : '';
+    return `
     <div class="food-item" onclick="editFood(${f.id})">
       <div class="fi-info">
         <div class="fi-name">${f.name}</div>
-        <div class="fi-detail">${f.brand?f.brand+' · ':''}P${f.protein_per_100g} C${f.carbs_per_100g} G${f.fat_per_100g}${f.serving_size_g?' · porção '+f.serving_size_g+'g':''}</div>
+        <div class="fi-detail">${f.brand?f.brand+' · ':''}${pStr} C${f.carbs_per_100g} G${f.fat_per_100g}${f.serving_size_g?' · porção '+f.serving_size_g+'g':''}</div>
       </div>
-      <div class="fi-kcal">${f.calories_per_100g}<br><span style="font-size:9px;color:var(--text3)">kcal/100g</span></div>
-    </div>`).join('');
+      <div class="fi-kcal" style="${kcalStyle}">${f.calories_per_100g}<br><span style="font-size:9px;color:var(--text3)">kcal/100g</span></div>
+    </div>`;
+  }).join('');
 }
 
 function editFood(id) {

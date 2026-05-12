@@ -218,9 +218,11 @@ input[type="number"] { font-family: var(--mono); }
 
 /* ── SORT CHIPS ── */
 .sort-chips {
-  display: flex; gap: 6px; padding: 0 20px 10px;
+  display: flex; gap: 6px; padding: 8px 20px 10px;
   overflow-x: auto; scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+  position: sticky; top: 118px; background: var(--bg); z-index: 4;
+  flex-shrink: 0;
 }
 .sort-chips::-webkit-scrollbar { display: none; }
 .sort-chip {
@@ -228,6 +230,7 @@ input[type="number"] { font-family: var(--mono); }
   font-weight: 500; white-space: nowrap; cursor: pointer;
   border: 1px solid var(--border); background: transparent;
   color: var(--text3); font-family: var(--sans); transition: all .15s;
+  flex-shrink: 0;
 }
 .sort-chip.active { background: var(--accent); border-color: var(--accent); color: #0a0a0a; }
 

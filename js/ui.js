@@ -73,7 +73,7 @@ function closeEditEntry() {
   editingEntry = null;
 }
 
-function openDatePicker(selectedVal, onSelect) {
+async function openDatePicker(selectedVal, onSelect) {
   const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
                   'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const DAYS   = ['D','S','T','Q','Q','S','S'];
@@ -106,8 +106,10 @@ function openDatePicker(selectedVal, onSelect) {
   const parts = selectedVal.split('-');
   let viewYear  = parseInt(parts[0]);
   let viewMonth = parseInt(parts[1]) - 1;
+  let daysWithEntries = new Set();
 
-  function render() {
+  async function render() {
+    try { daysWithEntries = await getDaysWithEntries(viewYear, viewMonth); } catch {}
     document.getElementById('dp-label').textContent = `${MONTHS[viewMonth]} ${viewYear}`;
     const grid = document.getElementById('dp-grid');
     grid.innerHTML = '';
@@ -126,16 +128,18 @@ function openDatePicker(selectedVal, onSelect) {
     for (let d = 1; d <= daysInMonth; d++) {
       const ds = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
       const btn = document.createElement('button');
-      btn.textContent = d;
       const isSel   = ds === selectedVal;
       const isToday = ds === today;
-      btn.style.cssText = [
-        'width:100%;aspect-ratio:1;border-radius:50%;cursor:pointer;font-size:14px',
-        'font-family:var(--sans);transition:background .1s',
+      const hasDot  = daysWithEntries.has(ds);
+      const numStyle = [
+        'width:32px;height:32px;display:flex;align-items:center;justify-content:center',
+        'border-radius:50%;font-size:14px;font-family:var(--sans);transition:background .1s',
         isSel   ? 'background:var(--accent);color:#0a0a0a;font-weight:700;border:none'
                 : isToday ? 'background:transparent;color:var(--accent);font-weight:600;border:1px solid var(--accent)'
                           : 'background:transparent;color:var(--text);border:none',
       ].join(';');
+      btn.style.cssText = 'width:100%;display:flex;flex-direction:column;align-items:center;cursor:pointer;background:none;border:none;padding:2px 0';
+      btn.innerHTML = `<span style="${numStyle}">${d}</span>${hasDot ? '<span class="cal-dot"></span>' : ''}`;
       btn.onclick = () => { overlay.classList.remove('open'); onSelect(ds); };
       grid.appendChild(btn);
     }

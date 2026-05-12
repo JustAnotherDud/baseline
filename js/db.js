@@ -1,8 +1,42 @@
+async function getTargetsForDate(dateStr) {
+  if (!db) return getTargets();
+
+  // 1. Tenta daily_targets para esta data específica
+  const { data: daily } = await db
+    .from('daily_targets')
+    .select('calories,fat,saturated_fat,carbs,sugar,fiber,protein')
+    .eq('date', dateStr)
+    .maybeSingle();
+
+  if (daily) {
+    return {
+      calories:      daily.calories,
+      fat:           daily.fat,
+      saturated_fat: daily.saturated_fat,
+      carbs:         daily.carbs,
+      sugar:         daily.sugar,
+      fiber:         daily.fiber,
+      protein:       daily.protein,
+    };
+  }
+
+  // 2. Fallback: day_type activo na tabela targets
+  const dayType = localStorage.getItem('nt_day_type') || 'training_plus_work';
+  if (dayType !== 'custom') {
+    const t = await fetchTargetsFromSupabase(dayType);
+    if (t) return t;
+  }
+
+  // 3. Fallback final: cachedTargets (localStorage / memória)
+  return getTargets();
+}
+
 async function loadToday() {
   if (!db) return;
   const { data, error } = await db.from('diary').select('*').eq('date', currentDate).order('logged_at');
   if (error) { toast('Erro ao carregar diário'); return; }
-  renderToday(data || []);
+  const targets = await getTargetsForDate(currentDate);
+  renderToday(data || [], targets);
 }
 
 async function saveDiary() {

@@ -1,5 +1,4 @@
-function renderToday(entries) {
-  const t = getTargets();
+function renderToday(entries, t) {
   const tot = {kcal:0, fat:0, satfat:0, carb:0, sugar:0, fiber:0, prot:0};
   entries.forEach(e => {
     tot.kcal  += +e.calories;

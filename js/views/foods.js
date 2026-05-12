@@ -1,14 +1,33 @@
+let currentSort = 'name';
+
 async function loadFoods() {
   if (!db) return;
   const {data} = await db.from('foods').select('*').order('name');
   allFoods = data||[];
   document.getElementById('foods-count').textContent = `${allFoods.length} alimentos`;
-  renderFoods(allFoods);
+  filterFoods();
+}
+
+function sortFoods(foods) {
+  const arr = [...foods];
+  switch (currentSort) {
+    case 'protein':  return arr.sort((a,b) => b.protein_per_100g  - a.protein_per_100g);
+    case 'calories': return arr.sort((a,b) => b.calories_per_100g - a.calories_per_100g);
+    case 'recent':   return arr.sort((a,b) => b.id - a.id);
+    default:         return arr.sort((a,b) => a.name.localeCompare(b.name, 'pt'));
+  }
+}
+
+function setSortFoods(sort) {
+  currentSort = sort;
+  document.querySelectorAll('.sort-chip').forEach(c => c.classList.toggle('active', c.dataset.sort === sort));
+  filterFoods();
 }
 
 function filterFoods() {
   const q = document.getElementById('foods-search').value.toLowerCase();
-  renderFoods(q ? allFoods.filter(f=>f.name.toLowerCase().includes(q)||(f.brand||'').toLowerCase().includes(q)) : allFoods);
+  const filtered = q ? allFoods.filter(f=>f.name.toLowerCase().includes(q)||(f.brand||'').toLowerCase().includes(q)) : allFoods;
+  renderFoods(sortFoods(filtered));
 }
 
 function renderFoods(foods) {

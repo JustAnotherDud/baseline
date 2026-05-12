@@ -116,6 +116,12 @@
     <div class="search-wrap">
       <input type="search" id="foods-search" placeholder="Pesquisar..." oninput="filterFoods()" autocomplete="off">
     </div>
+    <div class="sort-chips">
+      <button class="sort-chip active" data-sort="name"     onclick="setSortFoods('name')">Nome</button>
+      <button class="sort-chip"        data-sort="protein"  onclick="setSortFoods('protein')">Proteína ↑</button>
+      <button class="sort-chip"        data-sort="calories" onclick="setSortFoods('calories')">Kcal ↑</button>
+      <button class="sort-chip"        data-sort="recent"   onclick="setSortFoods('recent')">Recente</button>
+    </div>
     <div id="foods-list"></div>
     <button class="fab" onclick="openAddFood()">+</button>
   </div>

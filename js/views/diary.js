@@ -98,23 +98,19 @@ function changeDay(delta) {
 }
 
 function pickDate() {
-  const inp = document.createElement('input');
-  inp.type='date'; inp.value=currentDate;
-  inp.style.cssText='position:fixed;opacity:0;top:0;pointer-events:none';
-  document.body.appendChild(inp);
-  inp.addEventListener('change',()=>{ currentDate=inp.value; setDateLabel(); loadToday(); document.body.removeChild(inp); });
-  inp.addEventListener('blur',()=>{ if(document.body.contains(inp)) document.body.removeChild(inp); });
-  inp.click(); inp.showPicker?.();
+  openDatePicker(currentDate, date => {
+    currentDate = date;
+    setDateLabel();
+    loadToday();
+  });
 }
 
 function pickLogDate() {
-  const inp = document.createElement('input');
-  inp.type='date'; inp.value=currentDate;
-  inp.style.cssText='position:fixed;opacity:0;top:0;pointer-events:none';
-  document.body.appendChild(inp);
-  inp.addEventListener('change',()=>{ currentDate=inp.value; setDateLabel(); updateLogDateLabel(); document.body.removeChild(inp); });
-  inp.addEventListener('blur',()=>{ if(document.body.contains(inp)) document.body.removeChild(inp); });
-  inp.click(); inp.showPicker?.();
+  openDatePicker(currentDate, date => {
+    currentDate = date;
+    setDateLabel();
+    updateLogDateLabel();
+  });
 }
 
 function updateLogDateLabel() {

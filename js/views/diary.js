@@ -46,12 +46,6 @@ function renderToday(entries, t) {
   const kcalColor = entries.length > 0 ? getNutrientColor('calories', kcalPct) : 'var(--accent)';
   document.getElementById('tot-kcal').style.color = kcalColor;
 
-  const macroEl = document.querySelector('.macro-bars');
-  if (macroEl) {
-    macroEl.style.cursor = entries.length > 0 ? 'pointer' : '';
-    macroEl.onclick = entries.length > 0 ? () => openNutrientSheet(diaryEntries) : null;
-  }
-
   const container = document.getElementById('diary-container');
   container.innerHTML = '';
   Object.entries(MEALS).forEach(([k,label]) => {

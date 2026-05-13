@@ -117,8 +117,8 @@ nav {
 .nav-btn.active { color: var(--accent); }
 .nav-btn svg { width: 22px; height: 22px; }
 .nav-label { font-size: 12px; letter-spacing: .02em; }
-.nav-log-wrap { background: var(--accent); border-radius: 14px; padding: 6px; position: absolute; top: -8px; left: 50%; transform: translateX(-50%); }
-.nav-log-wrap svg { width: 20px; height: 20px; }
+.nav-log-wrap { background: var(--accent); border-radius: 11px; padding: 3px; position: absolute; top: -8px; left: 50%; transform: translateX(-50%); }
+.nav-log-wrap svg { width: 16px; height: 16px; }
 .nav-btn.log-btn { color: #0a0a0a; position: relative; padding-top: 30px; }
 .log-btn .nav-label { color: var(--text3); }
 

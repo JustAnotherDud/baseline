@@ -125,6 +125,52 @@ async function getDaysWithEntries(year, month) {
   }
 }
 
+async function getDayScores(year, month) {
+  if (!db) return new Map();
+  const from = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+  const nm   = month === 11 ? 0 : month + 1;
+  const ny   = month === 11 ? year + 1 : year;
+  const to   = `${ny}-${String(nm + 1).padStart(2, '0')}-01`;
+  try {
+    const [diaryRes, targetsRes] = await Promise.all([
+      db.from('diary').select('date,calories,protein,carbs,fat').gte('date', from).lt('date', to),
+      db.from('daily_targets').select('date,calories,protein,carbs,fat').gte('date', from).lt('date', to),
+    ]);
+
+    // Aggregate diary client-side by date
+    const diaryMap = new Map();
+    (diaryRes.data || []).forEach(e => {
+      if (!diaryMap.has(e.date)) diaryMap.set(e.date, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+      const t = diaryMap.get(e.date);
+      t.calories += +(e.calories || 0);
+      t.protein  += +(e.protein  || 0);
+      t.carbs    += +(e.carbs    || 0);
+      t.fat      += +(e.fat      || 0);
+    });
+
+    // Targets by date
+    const targetsMap = new Map();
+    (targetsRes.data || []).forEach(t => targetsMap.set(t.date, t));
+
+    // Score each day that has diary entries
+    const result = new Map();
+    diaryMap.forEach((totals, date) => {
+      const target = targetsMap.get(date);
+      if (!target) { result.set(date, 'neutral'); return; }
+      let greens = 0;
+      ['calories', 'protein', 'carbs', 'fat'].forEach(n => {
+        const pct = target[n] > 0 ? totals[n] / target[n] * 100 : 0;
+        if (getNutrientColor(n, pct) === 'var(--accent)') greens++;
+      });
+      result.set(date, greens >= 3 ? 'green' : greens === 2 ? 'yellow' : 'red');
+    });
+
+    return result;
+  } catch {
+    return new Map();
+  }
+}
+
 async function getActivePhase(dateStr) {
   if (!db) return null;
   const { data, error } = await db

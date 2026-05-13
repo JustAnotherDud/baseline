@@ -106,10 +106,17 @@ async function openDatePicker(selectedVal, onSelect) {
   const parts = selectedVal.split('-');
   let viewYear  = parseInt(parts[0]);
   let viewMonth = parseInt(parts[1]) - 1;
-  let daysWithEntries = new Set();
+  let dayScores = new Map();
+
+  const SCORE_COLOR = {
+    green:   'var(--accent)',
+    yellow:  'var(--yellow)',
+    red:     'var(--red)',
+    neutral: 'var(--text3)',
+  };
 
   async function render() {
-    try { daysWithEntries = await getDaysWithEntries(viewYear, viewMonth); } catch {}
+    try { dayScores = await getDayScores(viewYear, viewMonth); } catch {}
     document.getElementById('dp-label').textContent = `${MONTHS[viewMonth]} ${viewYear}`;
     const grid = document.getElementById('dp-grid');
     grid.innerHTML = '';
@@ -130,7 +137,7 @@ async function openDatePicker(selectedVal, onSelect) {
       const btn = document.createElement('button');
       const isSel   = ds === selectedVal;
       const isToday = ds === today;
-      const hasDot  = daysWithEntries.has(ds);
+      const score   = dayScores.get(ds); // 'green'|'yellow'|'red'|'neutral'|undefined
       const numStyle = [
         'width:32px;height:32px;display:flex;align-items:center;justify-content:center',
         'border-radius:50%;font-size:14px;font-family:var(--sans);transition:background .1s',
@@ -141,7 +148,10 @@ async function openDatePicker(selectedVal, onSelect) {
       const dow = new Date(viewYear, viewMonth, d).getDay(); // 0=Sun,6=Sat
       btn.style.cssText = 'width:100%;display:flex;flex-direction:column;align-items:center;cursor:pointer;background:none;border:none;padding:2px 0;border-radius:6px';
       if (dow === 0 || dow === 6) btn.classList.add('cal-weekend');
-      btn.innerHTML = `<span style="${numStyle}">${d}</span>${hasDot ? '<span class="cal-dot"></span>' : ''}`;
+      const dotHTML = score !== undefined
+        ? `<span class="cal-dot" style="background:${SCORE_COLOR[score]}"></span>`
+        : '';
+      btn.innerHTML = `<span style="${numStyle}">${d}</span>${dotHTML}`;
       btn.onclick = () => { overlay.classList.remove('open'); onSelect(ds); };
       grid.appendChild(btn);
     }

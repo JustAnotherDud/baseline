@@ -69,18 +69,28 @@ function renderToday(entries, t) {
           </div>
           <div class="entry-kcal">${r(e.calories)}</div>
         </div>`).join('');
-    const leftClick = mes.length > 0 ? `openMealBreakdown('${k}', diaryEntries)` : `openLogForMeal('${k}')`;
     div.innerHTML = `
       <div class="meal-header">
-        <div class="meal-header-left" onclick="${leftClick}" style="cursor:pointer;flex:1;min-width:0">
+        <div class="meal-header-left" style="cursor:pointer;flex:1;min-width:0">
           <div class="meal-name">${label}</div>
           ${macroStr}
         </div>
-        <div class="meal-header-right" onclick="openLogForMeal('${k}')" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:12px 0 12px 12px;flex-shrink:0">
+        <div class="meal-header-right" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:12px 0 12px 12px;flex-shrink:0">
           <div class="meal-kcal">${r(mkcal)} kcal</div>
           <div style="color:var(--text3);font-size:18px;line-height:1">+</div>
         </div>
       </div>${rows}`;
+    const leftEl  = div.querySelector('.meal-header-left');
+    const rightEl = div.querySelector('.meal-header-right');
+    leftEl.addEventListener('click', e => {
+      e.stopPropagation();
+      if (mes.length > 0) openMealBreakdown(k, diaryEntries);
+      else openLogForMeal(k);
+    });
+    rightEl.addEventListener('click', e => {
+      e.stopPropagation();
+      openLogForMeal(k);
+    });
     container.appendChild(div);
   });
 }
@@ -129,7 +139,7 @@ async function loadLogTotalsStrip() {
   if (!strip || !db) return;
   const { data } = await db.from('diary').select('calories,protein,carbs,fat').eq('date', currentDate);
   if (!data) return;
-  const t = getTargets();
+  const t = await getTargetsForDate(currentDate);
   const r = n => Math.round(n);
   const tot = { kcal:0, prot:0, carb:0, fat:0 };
   data.forEach(e => { tot.kcal+=+e.calories; tot.prot+=+e.protein; tot.carb+=+e.carbs; tot.fat+=+e.fat; });

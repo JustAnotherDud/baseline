@@ -334,9 +334,6 @@ function openMealBreakdown(mealKey, allEntries) {
           <div class="sheet-close" id="meal-bd-close">×</div>
         </div>
         <div id="meal-bd-body" style="padding:0 14px 24px"></div>
-        <div style="padding:0 14px 24px">
-          <button id="meal-bd-add-btn" class="btn-primary" style="width:100%">+ Adicionar alimento</button>
-        </div>
       </div>`;
     document.body.appendChild(overlay);
     overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('open'); };
@@ -344,10 +341,6 @@ function openMealBreakdown(mealKey, allEntries) {
   }
 
   document.getElementById('meal-bd-title').textContent = mealLabel.toUpperCase();
-  document.getElementById('meal-bd-add-btn').onclick = () => {
-    overlay.classList.remove('open');
-    openLogForMeal(mealKey);
-  };
 
   const body = document.getElementById('meal-bd-body');
   body.innerHTML = `

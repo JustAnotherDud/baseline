@@ -56,20 +56,16 @@ function go(view) {
 async function loadSettingsView() {
   const today = new Date().toISOString().split('T')[0];
   const phase = await getActivePhase(today);
-  const objetivoEl = document.getElementById('settings-objetivo');
-  const badgeEl    = document.getElementById('settings-phase-badge');
+  const phaseNumEl  = document.getElementById('settings-phase-num');
+  const objetivoEl  = document.getElementById('settings-objetivo');
   if (phase) {
-    if (objetivoEl) objetivoEl.textContent = phase.objetivo || '—';
-    if (badgeEl) {
-      badgeEl.textContent = `${phase.label.toUpperCase()}${phase.objetivo ? ' · ' + phase.objetivo : ''}`;
-      badgeEl.classList.remove('phase-badge-empty');
-    }
+    // Extract number from label e.g. "Fase 3" → "3", fallback to full label
+    const num = phase.label.replace(/[^0-9]/g, '') || phase.label;
+    if (phaseNumEl)  phaseNumEl.textContent  = num;
+    if (objetivoEl)  objetivoEl.textContent  = phase.objetivo || '—';
   } else {
-    if (objetivoEl) objetivoEl.textContent = '—';
-    if (badgeEl) {
-      badgeEl.textContent = 'Sem fase configurada';
-      badgeEl.classList.add('phase-badge-empty');
-    }
+    if (phaseNumEl)  phaseNumEl.textContent  = '—';
+    if (objetivoEl)  objetivoEl.textContent  = '—';
   }
 }
 

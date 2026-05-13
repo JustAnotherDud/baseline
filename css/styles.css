@@ -117,8 +117,8 @@ nav {
 .nav-btn.active { color: var(--accent); }
 .nav-btn svg { width: 22px; height: 22px; }
 .nav-label { font-size: 12px; letter-spacing: .02em; }
-.nav-log-wrap { background: var(--accent); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.nav-log-wrap svg { width: 16px; height: 16px; }
+.nav-log-wrap { background: var(--accent); border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.nav-log-wrap svg { width: 13px; height: 13px; }
 .nav-btn.log-btn { color: #0a0a0a; }
 .log-btn .nav-label { color: var(--text3); }
 
@@ -379,6 +379,7 @@ input[readonly] { opacity: 0.45; cursor: default; }
   .fi-detail { font-size: 14px; }
   .fi-kcal { font-size: 14px; }
   .nav-label { font-size: 13px; }
+  .nav-btn.log-btn { gap: 2px; }
   .lt { font-size: 13px; }
   input, select { font-size: 16px; padding: 14px 16px; }
   .btn { font-size: 16px; padding: 16px; }

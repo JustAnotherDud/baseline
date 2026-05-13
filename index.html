@@ -60,7 +60,13 @@
           <div class="kcal-label" id="tot-kcal-label">/ 0 kcal</div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
-          <button class="nutri-analyse-btn" onclick="openNutrientSheet(diaryEntries)">📊</button>
+          <button class="nutri-analyse-btn" onclick="openNutrientSheet(diaryEntries)">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--text3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="1" y="8" width="3" height="7" rx="0.5"/>
+              <rect x="6" y="4" width="3" height="11" rx="0.5"/>
+              <rect x="11" y="1" width="3" height="14" rx="0.5"/>
+            </svg>
+          </button>
           <div class="kcal-remaining" id="kcal-rem"></div>
         </div>
       </div>

@@ -57,8 +57,16 @@ async function saveDiary() {
     fiber:c(selectedFood.fiber_per_100g)
   });
   if (error) { toast('Erro ao guardar'); return; }
-  toast(`${selectedFood.name} registado`);
-  closeLog(); loadToday(); go('today');
+  toast(`${selectedFood.name} guardado ✓`);
+  loadToday();
+  // Voltar ao stage de pesquisa sem fechar o sheet
+  selectedFood = null;
+  document.getElementById('log-stage-grams').classList.remove('active');
+  document.getElementById('log-stage-search').classList.add('active');
+  document.getElementById('log-q').value = '';
+  document.getElementById('log-results').innerHTML = '<div class="loading">Começa a escrever para pesquisar</div>';
+  loadLogTotalsStrip();
+  setTimeout(() => document.getElementById('log-q').focus(), 100);
 }
 
 async function saveEditEntry() {

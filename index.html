@@ -130,6 +130,16 @@
   <!-- ─── VIEW: TARGETS ─── -->
   <div id="view-targets" class="view">
     <div class="view-header"><div class="view-title">Targets</div></div>
+
+    <!-- Data + badge de fase -->
+    <div class="target-section" style="padding-bottom:14px">
+      <div class="target-section-title">Data</div>
+      <button id="targets-date-btn" onclick="openDatePicker(currentTargetsDate, onTargetsDateChange)"
+              style="background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--sans);font-size:14px;padding:10px 14px;border-radius:10px;width:100%;text-align:left;cursor:pointer">—</button>
+      <div id="phase-badge" class="phase-badge" style="margin-top:10px"></div>
+    </div>
+
+    <!-- Tipo de dia + campos -->
     <div class="target-section">
       <div class="target-section-title">Tipo de dia</div>
       <select id="day-type-select" onchange="onDayTypeChange()" style="margin-bottom:16px">
@@ -155,10 +165,11 @@
           <label><span class="lt">Fibra (g)</span><input type="number" id="t-fiber" inputmode="decimal"></label>
           <label><span class="lt">Proteína (g)</span><input type="number" id="t-prot" inputmode="decimal"></label>
         </div>
-        <button class="btn btn-primary" id="save-custom-btn" style="display:none" onclick="saveCustomTargets()">Guardar targets</button>
-        <p id="targets-hint" style="font-size:12px;color:var(--text3);font-family:var(--mono)">Targets definidos pelo DCB. Selecciona o tipo de dia para carregar os valores correctos.</p>
+        <button class="btn btn-primary" id="save-targets-btn" style="display:none" onclick="savePhaseTargetsForm()">Guardar targets</button>
+        <p id="targets-hint" style="font-size:12px;color:var(--text3);font-family:var(--mono);display:none">Sem fase configurada para esta data.</p>
       </div>
     </div>
+
     <div style="padding:16px 20px;margin-top:8px">
       <div class="target-section-title" style="color:var(--red);margin-bottom:12px">Configuração</div>
       <button class="btn btn-danger" onclick="resetSetup()">Redefinir ligação Supabase</button>
@@ -346,12 +357,12 @@
 
 <script src="js/config.js?v=20260513"></script>
 <script src="js/nutrition.js?v=20260513"></script>
-<script src="js/db.js?v=20260513"></script>
+<script src="js/db.js?v=20260514"></script>
 <script src="js/ui.js?v=20260513"></script>
 <script src="js/views/diary.js?v=20260513"></script>
 <script src="js/views/log.js?v=20260513"></script>
 <script src="js/views/foods.js?v=20260513"></script>
-<script src="js/views/targets.js?v=20260513"></script>
+<script src="js/views/targets.js?v=20260514"></script>
 <script src="js/app.js?v=20260513"></script>
 </body>
 </html>

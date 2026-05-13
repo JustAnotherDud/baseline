@@ -1,79 +1,110 @@
-async function loadTargetsForDayType(dayType) {
-  document.getElementById('targets-loading').style.display = 'block';
-  document.getElementById('targets-display').style.opacity = '0.4';
-  const t = await fetchTargetsFromSupabase(dayType);
-  document.getElementById('targets-loading').style.display = 'none';
-  document.getElementById('targets-display').style.opacity = '1';
-  if (!t) { toast('Erro ao carregar targets'); return; }
-  cachedTargets = t;
-  localStorage.setItem('nt_targets', JSON.stringify(t));
-  localStorage.setItem('nt_day_type', dayType);
-  document.getElementById('t-kcal').value  = t.calories;
-  document.getElementById('t-fat').value   = t.fat;
-  document.getElementById('t-satfat').value= t.saturated_fat;
-  document.getElementById('t-carb').value  = t.carbs;
-  document.getElementById('t-sugar').value = t.sugar;
-  document.getElementById('t-fiber').value = t.fiber;
-  document.getElementById('t-prot').value  = t.protein;
-  loadToday();
+let currentTargetsDate = new Date().toISOString().split('T')[0];
+let currentPhase = null;
+
+async function loadTargetsForm() {
+  currentTargetsDate = new Date().toISOString().split('T')[0];
+  updateTargetsDateLabel();
+
+  const dayType = localStorage.getItem('nt_day_type') || 'training_plus_work';
+  document.getElementById('day-type-select').value = dayType;
+
+  await refreshPhaseAndTargets();
 }
 
-function setFieldsEditable(editable) {
-  ['t-kcal','t-fat','t-satfat','t-carb','t-sugar','t-fiber','t-prot'].forEach(id => {
-    const el = document.getElementById(id);
-    el.readOnly = !editable;
-    el.style.opacity = editable ? '1' : '0.6';
-  });
-  document.getElementById('save-custom-btn').style.display = editable ? 'block' : 'none';
-  document.getElementById('targets-hint').style.display = editable ? 'none' : 'block';
+function updateTargetsDateLabel() {
+  const el = document.getElementById('targets-date-btn');
+  if (!el) return;
+  const today = new Date().toISOString().split('T')[0];
+  const d = new Date(currentTargetsDate + 'T12:00:00');
+  const label = d.toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' });
+  el.textContent = currentTargetsDate === today ? `Hoje — ${label}` : label;
+}
+
+async function refreshPhaseAndTargets() {
+  document.getElementById('targets-loading').style.display = 'block';
+  document.getElementById('targets-display').style.opacity = '0.4';
+
+  currentPhase = await getActivePhase(currentTargetsDate);
+  updatePhaseBadge();
+
+  const dayType = document.getElementById('day-type-select').value;
+  const t = currentPhase ? await getPhaseTargets(currentPhase.id, dayType) : null;
+
+  document.getElementById('targets-loading').style.display = 'none';
+  document.getElementById('targets-display').style.opacity = '1';
+
+  fillTargetFields(t);
+  updateSaveButton();
+}
+
+function updatePhaseBadge() {
+  const el = document.getElementById('phase-badge');
+  if (!el) return;
+  if (currentPhase) {
+    el.textContent = `${currentPhase.label.toUpperCase()}${currentPhase.objetivo ? ' · ' + currentPhase.objetivo : ''}`;
+    el.classList.remove('phase-badge-empty');
+  } else {
+    el.textContent = 'Sem fase configurada';
+    el.classList.add('phase-badge-empty');
+  }
+}
+
+function fillTargetFields(t) {
+  document.getElementById('t-kcal').value   = t ? t.calories      : '';
+  document.getElementById('t-fat').value    = t ? t.fat           : '';
+  document.getElementById('t-satfat').value = t ? t.saturated_fat : '';
+  document.getElementById('t-carb').value   = t ? t.carbs         : '';
+  document.getElementById('t-sugar').value  = t ? t.sugar         : '';
+  document.getElementById('t-fiber').value  = t ? t.fiber         : '';
+  document.getElementById('t-prot').value   = t ? t.protein       : '';
+
+  const hint = document.getElementById('targets-hint');
+  if (hint) hint.style.display = !currentPhase ? 'block' : 'none';
+}
+
+function updateSaveButton() {
+  const btn = document.getElementById('save-targets-btn');
+  if (!btn) return;
+  if (currentPhase) {
+    btn.textContent = `Guardar targets · ${currentPhase.label}`;
+    btn.style.display = 'block';
+  } else {
+    btn.style.display = 'none';
+  }
 }
 
 async function onDayTypeChange() {
   const dayType = document.getElementById('day-type-select').value;
-  if (dayType === 'custom') {
-    setFieldsEditable(true);
-    localStorage.setItem('nt_day_type', 'custom');
-    return;
-  }
-  setFieldsEditable(false);
-  await loadTargetsForDayType(dayType);
+  localStorage.setItem('nt_day_type', dayType);
+  await refreshPhaseAndTargets();
 }
 
-function saveCustomTargets() {
-  const t = {
-    calories:      parseFloat(document.getElementById('t-kcal').value)||2300,
-    fat:           parseFloat(document.getElementById('t-fat').value)||70,
-    saturated_fat: parseFloat(document.getElementById('t-satfat').value)||20,
-    carbs:         parseFloat(document.getElementById('t-carb').value)||230,
-    sugar:         parseFloat(document.getElementById('t-sugar').value)||150,
-    fiber:         parseFloat(document.getElementById('t-fiber').value)||30,
-    protein:       parseFloat(document.getElementById('t-prot').value)||160,
+async function onTargetsDateChange(dateStr) {
+  currentTargetsDate = dateStr;
+  updateTargetsDateLabel();
+  await refreshPhaseAndTargets();
+}
+
+async function savePhaseTargetsForm() {
+  if (!currentPhase) { toast('Sem fase activa para esta data'); return; }
+  const dayType = document.getElementById('day-type-select').value;
+  const values = {
+    calories:      parseFloat(document.getElementById('t-kcal').value)   || 0,
+    fat:           parseFloat(document.getElementById('t-fat').value)    || 0,
+    saturated_fat: parseFloat(document.getElementById('t-satfat').value) || 0,
+    carbs:         parseFloat(document.getElementById('t-carb').value)   || 0,
+    sugar:         parseFloat(document.getElementById('t-sugar').value)  || 0,
+    fiber:         parseFloat(document.getElementById('t-fiber').value)  || 0,
+    protein:       parseFloat(document.getElementById('t-prot').value)   || 0,
   };
-  cachedTargets = t;
-  localStorage.setItem('nt_targets', JSON.stringify(t));
-  localStorage.setItem('nt_day_type', 'custom');
-  toast('Targets personalizados guardados');
-  loadToday();
-}
-
-function loadTargetsForm() {
-  const saved = JSON.parse(localStorage.getItem('nt_targets') || 'null');
-  const dayType = localStorage.getItem('nt_day_type') || 'training_plus_work';
-  if (saved) cachedTargets = saved;
-  document.getElementById('day-type-select').value = dayType;
-  if (saved) {
-    document.getElementById('t-kcal').value   = saved.calories;
-    document.getElementById('t-fat').value    = saved.fat;
-    document.getElementById('t-satfat').value = saved.saturated_fat;
-    document.getElementById('t-carb').value   = saved.carbs;
-    document.getElementById('t-sugar').value  = saved.sugar;
-    document.getElementById('t-fiber').value  = saved.fiber;
-    document.getElementById('t-prot').value   = saved.protein;
-  }
-  if (dayType === 'custom') {
-    setFieldsEditable(true);
-  } else {
-    setFieldsEditable(false);
-    loadTargetsForDayType(dayType);
+  const { error } = await savePhaseTargets(currentPhase.id, dayType, values);
+  if (error) { toast('Erro ao guardar'); return; }
+  toast(`Targets da ${currentPhase.label} actualizados`);
+  // Sync cachedTargets so today's diary bars reflect the change immediately
+  const today = new Date().toISOString().split('T')[0];
+  if (currentTargetsDate === today) {
+    cachedTargets = values;
+    localStorage.setItem('nt_targets', JSON.stringify(values));
+    loadToday();
   }
 }

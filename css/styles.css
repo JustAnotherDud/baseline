@@ -329,6 +329,7 @@ input[type="number"] { font-family: var(--mono); }
 .target-section-title { font-family: var(--mono); font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 14px; }
 .phase-badge { font-family: var(--mono); font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: .08em; padding: 6px 10px; background: rgba(74,222,128,.08); border-radius: 6px; display: inline-block; }
 .phase-badge-empty { color: var(--text3); background: transparent; }
+input[readonly] { opacity: 0.45; cursor: default; }
 
 /* ── LOG VIEW ── */
 .log-actions { padding: 14px 20px; display: flex; gap: 10px; }

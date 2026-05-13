@@ -8,12 +8,10 @@ async function loadTargetsForm() {
   currentTargetsDate = new Date().toISOString().split('T')[0];
   updateTargetsDateLabel();
 
-  // Enforce read-only on all target inputs
+  // Enforce read-only — visual handled by CSS input[readonly]
   TARGET_FIELD_IDS.forEach(id => {
     const el = document.getElementById(id);
-    if (!el) return;
-    el.readOnly = true;
-    el.style.cursor = 'default';
+    if (el) el.readOnly = true;
   });
 
   const dayType = localStorage.getItem('nt_day_type') || 'training_plus_work';
@@ -122,20 +120,4 @@ async function confirmDayTargets() {
   }, { onConflict: 'date' });
   if (error) { toast('Erro ao confirmar'); return; }
   toast(`Dia confirmado · ${currentPhase.label}`);
-  // Sync cachedTargets so diary bars update immediately for today
-  const today = new Date().toISOString().split('T')[0];
-  if (currentTargetsDate === today) {
-    cachedTargets = {
-      calories:      t.calories,
-      fat:           t.fat,
-      saturated_fat: t.saturated_fat,
-      carbs:         t.carbs,
-      sugar:         t.sugar,
-      fiber:         t.fiber,
-      protein:       t.protein,
-    };
-    localStorage.setItem('nt_targets', JSON.stringify(cachedTargets));
-    localStorage.setItem('nt_day_type', dayType);
-    loadToday();
-  }
 }

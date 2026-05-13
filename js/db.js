@@ -22,10 +22,8 @@ async function getTargetsForDate(dateStr) {
 
   // 2. Fallback: day_type activo na tabela targets
   const dayType = localStorage.getItem('nt_day_type') || 'training_plus_work';
-  if (dayType !== 'custom') {
-    const t = await fetchTargetsFromSupabase(dayType);
-    if (t) return t;
-  }
+  const t = await fetchTargetsFromSupabase(dayType);
+  if (t) return t;
 
   // 3. Fallback final: cachedTargets (localStorage / memória)
   return getTargets();

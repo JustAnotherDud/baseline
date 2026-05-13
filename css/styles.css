@@ -246,6 +246,9 @@ input[type="number"] { font-family: var(--mono); }
 .sort-more-item:active { background: var(--surface3); }
 .sort-more-item-active { color: var(--accent); font-weight: 600; }
 
+/* ── DATE PICKER WEEKEND ── */
+.cal-weekend { background: rgba(255,255,255,0.04) !important; }
+
 /* ── DATE PICKER DOTS ── */
 .cal-dot {
   width: 4px; height: 4px;

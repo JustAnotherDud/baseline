@@ -69,7 +69,7 @@ body {
 .kcal-value { font-family: var(--mono); font-size: 42px; font-weight: 600; color: var(--accent); line-height: 1; }
 .kcal-label { font-family: var(--mono); font-size: 13px; color: var(--text3); margin-top: 3px; }
 .kcal-remaining { font-family: var(--mono); font-size: 13px; color: var(--text2); text-align: right; }
-.nutri-analyse-btn { background: none; border: none; cursor: pointer; font-size: 14px; min-width: 32px; min-height: 32px; display: flex; align-items: center; justify-content: center; padding: 0; color: var(--text3); align-self: flex-end; }
+.nutri-analyse-btn { background: var(--surface2); border: none; border-radius: 6px; cursor: pointer; padding: 4px 8px; display: flex; align-items: center; justify-content: center; align-self: flex-end; margin-bottom: 2px; }
 .macro-bars { display: flex; flex-direction: column; gap: 7px; }
 .macro-bar-row { display: flex; align-items: center; gap: 10px; }
 .mbl { font-family: var(--mono); font-size: 12px; color: var(--text2); width: 18px; text-transform: uppercase; }

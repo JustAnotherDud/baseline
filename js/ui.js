@@ -308,32 +308,47 @@ function openNutrientSheet(entries) {
 }
 
 function openMealBreakdown(mealKey, allEntries) {
-  const r   = n => Math.round(n);
-  const r1  = n => Math.round(+(n || 0) * 10) / 10;
+  const PIE_COLORS = [
+    'var(--accent)', 'var(--blue)', 'var(--yellow)', 'var(--orange)',
+    '#f97316', '#e879f9', 'var(--red)', '#a78bfa', '#34d399', '#fb7185',
+  ];
+  const BD_NUTRIENTS = [
+    { key: 'calories',      label: 'Kcal', unit: 'kcal', color: 'var(--accent)' },
+    { key: 'protein',       label: 'P',    unit: 'g',    color: 'var(--blue)'   },
+    { key: 'carbs',         label: 'H',    unit: 'g',    color: 'var(--yellow)' },
+    { key: 'fat',           label: 'G',    unit: 'g',    color: 'var(--orange)' },
+    { key: 'saturated_fat', label: 'Gs',   unit: 'g',    color: '#f97316'       },
+    { key: 'fiber',         label: 'Fb',   unit: 'g',    color: 'var(--accent)' },
+    { key: 'sugar',         label: 'A',    unit: 'g',    color: '#e879f9'       },
+  ];
+
   const mealLabel = (typeof MEALS !== 'undefined' && MEALS[mealKey]) || mealKey;
   const mes = allEntries.filter(e => e.meal === mealKey);
+  // Stable color per entry (by original position in diary order)
+  const entryColors = mes.map((_, i) => PIE_COLORS[i % PIE_COLORS.length]);
 
-  const mkcal  = mes.reduce((s, e) => s + +e.calories, 0);
-  const mprot  = mes.reduce((s, e) => s + +e.protein,  0);
-  const mcarb  = mes.reduce((s, e) => s + +e.carbs,    0);
-  const mfat   = mes.reduce((s, e) => s + +e.fat,      0);
-  const msfat  = mes.reduce((s, e) => s + +(e.saturated_fat || 0), 0);
-  const msugar = mes.reduce((s, e) => s + +(e.sugar || 0), 0);
-  const mfiber = mes.reduce((s, e) => s + +(e.fiber || 0), 0);
+  let activeNutrient = BD_NUTRIENTS[0];
 
+  // ── Create overlay once ──────────────────────────────────────────────────
   let overlay = document.getElementById('meal-bd-overlay');
   if (!overlay) {
     overlay = document.createElement('div');
     overlay.id = 'meal-bd-overlay';
     overlay.className = 'sheet-overlay';
     overlay.innerHTML = `
-      <div class="sheet" style="max-height:80dvh">
+      <div class="sheet" style="max-height:80dvh;overflow-y:auto">
         <div class="sheet-handle"></div>
         <div class="sheet-header">
-          <div id="meal-bd-title" class="sheet-title"></div>
-          <div class="sheet-close" id="meal-bd-close">×</div>
+          <div style="flex:1;min-width:0">
+            <div id="meal-bd-title" class="sheet-title"></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;flex-shrink:0">
+            <div id="meal-bd-total" style="font-family:var(--mono);font-size:14px;font-weight:600"></div>
+            <div class="sheet-close" id="meal-bd-close">×</div>
+          </div>
         </div>
-        <div id="meal-bd-body" style="padding:0 14px 24px"></div>
+        <div id="meal-bd-chips" class="meal-bd-chips-row"></div>
+        <div id="meal-bd-content" class="meal-bd-content"></div>
       </div>`;
     document.body.appendChild(overlay);
     overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('open'); };
@@ -342,37 +357,121 @@ function openMealBreakdown(mealKey, allEntries) {
 
   document.getElementById('meal-bd-title').textContent = mealLabel.toUpperCase();
 
-  const body = document.getElementById('meal-bd-body');
-  body.innerHTML = `
-    <div style="display:flex;align-items:baseline;gap:6px;padding:4px 0 12px">
-      <span style="font-family:var(--mono);font-size:28px;font-weight:700;color:var(--accent)">${r(mkcal)}</span>
-      <span style="font-family:var(--mono);font-size:13px;color:var(--text3)">kcal</span>
-    </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;padding-bottom:16px">
-      <div class="meal-bd-chip" style="color:var(--blue)">P <strong>${r1(mprot)}g</strong></div>
-      <div class="meal-bd-chip" style="color:var(--yellow)">H <strong>${r1(mcarb)}g</strong></div>
-      <div class="meal-bd-chip" style="color:var(--orange)">G <strong>${r1(mfat)}g</strong></div>
-      ${msfat  > 0 ? `<div class="meal-bd-chip" style="color:#f97316">Gs <strong>${r1(msfat)}g</strong></div>` : ''}
-      ${msugar > 0 ? `<div class="meal-bd-chip" style="color:#e879f9">Açúcar <strong>${r1(msugar)}g</strong></div>` : ''}
-      ${mfiber > 0 ? `<div class="meal-bd-chip" style="color:var(--accent)">Fibra <strong>${r1(mfiber)}g</strong></div>` : ''}
-    </div>
-    <div style="border-top:1px solid var(--surface3);padding-top:12px">
-      ${mes.map(e => `
-        <div class="diary-entry" onclick="overlay.classList.remove('open');openEditEntry(${e.id})" style="cursor:pointer">
-          <div class="entry-info">
-            <div class="entry-name">${e.food_name}</div>
-            <div class="entry-detail">${e.grams ? e.grams + 'g · ' : ''}G ${r1(e.fat)}g · C ${r1(e.carbs)}g · P ${r1(e.protein)}g</div>
-          </div>
-          <div class="entry-kcal">${r(e.calories)}</div>
-        </div>`).join('')}
-    </div>`;
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  function fmtVal(v, n) {
+    return n.key === 'calories' ? Math.round(+(v || 0)) : (Math.round(+(v || 0) * 10) / 10);
+  }
 
-  // Fix closure: make overlay accessible in onclick above
-  body.querySelectorAll('.diary-entry').forEach((el, i) => {
-    const entry = mes[i];
-    el.onclick = () => { overlay.classList.remove('open'); openEditEntry(entry.id); };
+  function buildPieSVG(items, n) {
+    const total = items.reduce((s, x) => s + x.value, 0);
+    if (total === 0) return `<svg width="160" height="160" viewBox="0 0 160 160"><circle cx="80" cy="80" r="64" fill="var(--surface3)"/></svg>`;
+    const cx = 80, cy = 80, r = 64, hole = 38;
+    const centerVal = fmtVal(total, n);
+
+    if (items.length === 1) {
+      return `<svg width="160" height="160" viewBox="0 0 160 160">
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="${items[0].color}" opacity="0.85"/>
+        <circle cx="${cx}" cy="${cy}" r="${hole}" fill="var(--surface)"/>
+        <text x="${cx}" y="${cy - 5}" text-anchor="middle" dominant-baseline="auto"
+          font-size="17" font-weight="700" fill="var(--text)">${centerVal}</text>
+        <text x="${cx}" y="${cy + 13}" text-anchor="middle" dominant-baseline="auto"
+          font-size="10" fill="var(--text3)">${n.unit}</text>
+      </svg>`;
+    }
+
+    let angle = -Math.PI / 2;
+    let paths = '';
+    items.forEach(item => {
+      const slice = (item.value / total) * 2 * Math.PI;
+      if (slice < 0.001) { return; }
+      const endAngle = angle + slice;
+      const x1 = cx + r * Math.cos(angle);
+      const y1 = cy + r * Math.sin(angle);
+      const x2 = cx + r * Math.cos(endAngle);
+      const y2 = cy + r * Math.sin(endAngle);
+      const large = slice > Math.PI ? 1 : 0;
+      paths += `<path d="M ${cx} ${cy} L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z"
+        fill="${item.color}" opacity="0.85" class="meal-bd-slice"/>`;
+      angle = endAngle;
+    });
+
+    return `<svg width="160" height="160" viewBox="0 0 160 160">
+      ${paths}
+      <circle cx="${cx}" cy="${cy}" r="${hole}" fill="var(--surface)"/>
+      <text x="${cx}" y="${cy - 5}" text-anchor="middle" dominant-baseline="auto"
+        font-size="17" font-weight="700" fill="var(--text)">${centerVal}</text>
+      <text x="${cx}" y="${cy + 13}" text-anchor="middle" dominant-baseline="auto"
+        font-size="10" fill="var(--text3)">${n.unit}</text>
+    </svg>`;
+  }
+
+  // ── Render ───────────────────────────────────────────────────────────────
+  function renderBD() {
+    const n = activeNutrient;
+    const total = mes.reduce((s, e) => s + +(e[n.key] || 0), 0);
+
+    // Header total
+    const totalEl = document.getElementById('meal-bd-total');
+    totalEl.textContent = `${fmtVal(total, n)} ${n.unit}`;
+    totalEl.style.color = n.color;
+
+    // Chips active state
+    document.querySelectorAll('.meal-bd-chip-btn').forEach(btn => {
+      const active = btn.dataset.key === n.key;
+      btn.classList.toggle('meal-bd-chip-active', active);
+      btn.style.borderColor = active ? n.color : 'transparent';
+      btn.style.color       = active ? n.color : '';
+    });
+
+    // Build sorted list (keep original index for color)
+    const indexed = mes.map((e, i) => ({
+      entry: e, color: entryColors[i], value: +(e[n.key] || 0),
+    })).sort((a, b) => b.value - a.value);
+
+    const maxVal = indexed.length > 0 ? indexed[0].value : 1;
+
+    const listHTML = indexed.map(({ entry, color, value }) => {
+      const pct  = total > 0 ? Math.round(value / total * 100) : 0;
+      const barW = maxVal > 0 ? Math.round(value / maxVal * 100) : 0;
+      return `
+        <div class="meal-bd-food-row" data-id="${entry.id}">
+          <div class="meal-bd-dot" style="background:${color}"></div>
+          <div class="meal-bd-food-name">${entry.food_name}</div>
+          <div class="meal-bd-bar-track">
+            <div class="meal-bd-bar" style="width:${barW}%;background:${color}"></div>
+          </div>
+          <div class="meal-bd-food-val">${fmtVal(value, n)}</div>
+          <div class="meal-bd-food-pct">${pct}%</div>
+        </div>`;
+    }).join('');
+
+    const pieItems = indexed.map(({ entry, color, value }) => ({ name: entry.food_name, value, color }));
+
+    const content = document.getElementById('meal-bd-content');
+    content.innerHTML = `
+      <div class="meal-bd-list">${listHTML}</div>
+      <div class="meal-bd-pie">${buildPieSVG(pieItems, n)}</div>`;
+
+    content.querySelectorAll('.meal-bd-food-row').forEach(row => {
+      const id = +row.dataset.id;
+      row.addEventListener('click', () => { overlay.classList.remove('open'); openEditEntry(id); });
+    });
+  }
+
+  // ── Build chips (every open, in case overlay was reused) ─────────────────
+  const chipsEl = document.getElementById('meal-bd-chips');
+  chipsEl.innerHTML = BD_NUTRIENTS.map(n =>
+    `<button class="meal-bd-chip-btn" data-key="${n.key}">${n.label}</button>`
+  ).join('');
+  chipsEl.querySelectorAll('.meal-bd-chip-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeNutrient = BD_NUTRIENTS.find(n => n.key === btn.dataset.key);
+      renderBD();
+    });
   });
 
+  activeNutrient = BD_NUTRIENTS[0];
+  renderBD();
   overlay.classList.add('open');
 }
 

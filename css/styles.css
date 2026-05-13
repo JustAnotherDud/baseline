@@ -92,6 +92,31 @@ body {
 .meal-kcal { font-family: var(--mono); font-size: 13px; color: var(--text); font-weight: 600; }
 .meal-macros { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-top: 3px; }
 .meal-bd-chip { font-family: var(--mono); font-size: 12px; background: var(--surface3); border-radius: 20px; padding: 3px 10px; }
+
+/* ── MEAL BREAKDOWN SHEET ── */
+.meal-bd-chips-row { display: flex; gap: 6px; padding: 8px 14px 10px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--surface3); }
+.meal-bd-chips-row::-webkit-scrollbar { display: none; }
+.meal-bd-chip-btn { font-family: var(--mono); font-size: 12px; background: var(--surface2); color: var(--text3); border: 1.5px solid transparent; border-radius: 20px; padding: 3px 11px; cursor: pointer; white-space: nowrap; transition: color .15s, border-color .15s; flex-shrink: 0; }
+.meal-bd-chip-active { font-weight: 600; }
+.meal-bd-content { display: flex; flex-direction: column; padding: 12px 14px 24px; gap: 16px; }
+.meal-bd-list { display: flex; flex-direction: column; gap: 6px; }
+.meal-bd-food-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; border-radius: 6px; }
+.meal-bd-food-row:active { background: var(--surface2); }
+.meal-bd-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.meal-bd-food-name { font-size: 13px; color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.meal-bd-bar-track { width: 80px; flex-shrink: 0; height: 6px; background: var(--surface3); border-radius: 3px; overflow: hidden; }
+.meal-bd-bar { height: 100%; border-radius: 3px; transition: width .2s; }
+.meal-bd-food-val { font-family: var(--mono); font-size: 12px; color: var(--text2); width: 42px; text-align: right; flex-shrink: 0; }
+.meal-bd-food-pct { font-family: var(--mono); font-size: 11px; color: var(--text3); width: 34px; text-align: right; flex-shrink: 0; }
+.meal-bd-pie { display: flex; justify-content: center; align-items: center; padding: 4px 0 8px; }
+.meal-bd-slice { transition: opacity .15s; }
+.meal-bd-slice:hover { opacity: 1 !important; }
+@media (min-width: 768px) {
+  .meal-bd-content { flex-direction: row; align-items: flex-start; }
+  .meal-bd-list { flex: 1; }
+  .meal-bd-pie { padding: 0; align-items: flex-start; padding-top: 4px; }
+}
+
 .diary-entry {
   padding: 10px 20px; display: flex; align-items: center;
   justify-content: space-between; border-top: 1px solid var(--border); gap: 12px;

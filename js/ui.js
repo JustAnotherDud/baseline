@@ -138,7 +138,9 @@ async function openDatePicker(selectedVal, onSelect) {
                 : isToday ? 'background:transparent;color:var(--accent);font-weight:600;border:1px solid var(--accent)'
                           : 'background:transparent;color:var(--text);border:none',
       ].join(';');
-      btn.style.cssText = 'width:100%;display:flex;flex-direction:column;align-items:center;cursor:pointer;background:none;border:none;padding:2px 0';
+      const dow = new Date(viewYear, viewMonth, d).getDay(); // 0=Sun,6=Sat
+      btn.style.cssText = 'width:100%;display:flex;flex-direction:column;align-items:center;cursor:pointer;background:none;border:none;padding:2px 0;border-radius:6px';
+      if (dow === 0 || dow === 6) btn.classList.add('cal-weekend');
       btn.innerHTML = `<span style="${numStyle}">${d}</span>${hasDot ? '<span class="cal-dot"></span>' : ''}`;
       btn.onclick = () => { overlay.classList.remove('open'); onSelect(ds); };
       grid.appendChild(btn);

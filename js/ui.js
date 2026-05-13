@@ -307,6 +307,82 @@ function openNutrientSheet(entries) {
   overlay.classList.add('open');
 }
 
+function openMealBreakdown(mealKey, allEntries) {
+  const r   = n => Math.round(n);
+  const r1  = n => Math.round(+(n || 0) * 10) / 10;
+  const mealLabel = (typeof MEALS !== 'undefined' && MEALS[mealKey]) || mealKey;
+  const mes = allEntries.filter(e => e.meal === mealKey);
+
+  const mkcal  = mes.reduce((s, e) => s + +e.calories, 0);
+  const mprot  = mes.reduce((s, e) => s + +e.protein,  0);
+  const mcarb  = mes.reduce((s, e) => s + +e.carbs,    0);
+  const mfat   = mes.reduce((s, e) => s + +e.fat,      0);
+  const msfat  = mes.reduce((s, e) => s + +(e.saturated_fat || 0), 0);
+  const msugar = mes.reduce((s, e) => s + +(e.sugar || 0), 0);
+  const mfiber = mes.reduce((s, e) => s + +(e.fiber || 0), 0);
+
+  let overlay = document.getElementById('meal-bd-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'meal-bd-overlay';
+    overlay.className = 'sheet-overlay';
+    overlay.innerHTML = `
+      <div class="sheet" style="max-height:80dvh">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <div id="meal-bd-title" class="sheet-title"></div>
+          <div class="sheet-close" id="meal-bd-close">×</div>
+        </div>
+        <div id="meal-bd-body" style="padding:0 14px 24px"></div>
+        <div style="padding:0 14px 24px">
+          <button id="meal-bd-add-btn" class="btn-primary" style="width:100%">+ Adicionar alimento</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('open'); };
+    document.getElementById('meal-bd-close').onclick = () => overlay.classList.remove('open');
+  }
+
+  document.getElementById('meal-bd-title').textContent = mealLabel.toUpperCase();
+  document.getElementById('meal-bd-add-btn').onclick = () => {
+    overlay.classList.remove('open');
+    openLogForMeal(mealKey);
+  };
+
+  const body = document.getElementById('meal-bd-body');
+  body.innerHTML = `
+    <div style="display:flex;align-items:baseline;gap:6px;padding:4px 0 12px">
+      <span style="font-family:var(--mono);font-size:28px;font-weight:700;color:var(--accent)">${r(mkcal)}</span>
+      <span style="font-family:var(--mono);font-size:13px;color:var(--text3)">kcal</span>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;padding-bottom:16px">
+      <div class="meal-bd-chip" style="color:var(--blue)">P <strong>${r1(mprot)}g</strong></div>
+      <div class="meal-bd-chip" style="color:var(--yellow)">H <strong>${r1(mcarb)}g</strong></div>
+      <div class="meal-bd-chip" style="color:var(--orange)">G <strong>${r1(mfat)}g</strong></div>
+      ${msfat  > 0 ? `<div class="meal-bd-chip" style="color:#f97316">Gs <strong>${r1(msfat)}g</strong></div>` : ''}
+      ${msugar > 0 ? `<div class="meal-bd-chip" style="color:#e879f9">Açúcar <strong>${r1(msugar)}g</strong></div>` : ''}
+      ${mfiber > 0 ? `<div class="meal-bd-chip" style="color:var(--accent)">Fibra <strong>${r1(mfiber)}g</strong></div>` : ''}
+    </div>
+    <div style="border-top:1px solid var(--surface3);padding-top:12px">
+      ${mes.map(e => `
+        <div class="diary-entry" onclick="overlay.classList.remove('open');openEditEntry(${e.id})" style="cursor:pointer">
+          <div class="entry-info">
+            <div class="entry-name">${e.food_name}</div>
+            <div class="entry-detail">${e.grams ? e.grams + 'g · ' : ''}G ${r1(e.fat)}g · C ${r1(e.carbs)}g · P ${r1(e.protein)}g</div>
+          </div>
+          <div class="entry-kcal">${r(e.calories)}</div>
+        </div>`).join('')}
+    </div>`;
+
+  // Fix closure: make overlay accessible in onclick above
+  body.querySelectorAll('.diary-entry').forEach((el, i) => {
+    const entry = mes[i];
+    el.onclick = () => { overlay.classList.remove('open'); openEditEntry(entry.id); };
+  });
+
+  overlay.classList.add('open');
+}
+
 function updateEditPreview() {
   if (!editingEntry) return;
   const g = parseFloat(document.getElementById('edit-grams').value) || 0;

@@ -120,6 +120,7 @@ nav {
 .nav-log-wrap { background: var(--accent); border-radius: 14px; padding: 6px; margin-top: -8px; }
 .nav-log-wrap svg { width: 20px; height: 20px; }
 .nav-btn.log-btn { color: #0a0a0a; }
+.log-btn .nav-label { margin-top: -2px; color: var(--text3); }
 
 /* ── BOTTOM SHEET ── */
 .sheet-overlay {

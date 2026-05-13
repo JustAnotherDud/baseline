@@ -127,6 +127,49 @@ async function getDaysWithEntries(year, month) {
   }
 }
 
+async function getActivePhase(dateStr) {
+  if (!db) return null;
+  const { data, error } = await db
+    .from('phases')
+    .select('id, label, objetivo')
+    .lte('start_date', dateStr)
+    .or(`end_date.is.null,end_date.gte.${dateStr}`)
+    .maybeSingle();
+  if (error || !data) return null;
+  return data;
+}
+
+async function getPhaseTargets(phaseId, dayType) {
+  if (!db) return null;
+  const { data, error } = await db
+    .from('phase_targets')
+    .select('*')
+    .eq('phase_id', phaseId)
+    .eq('day_type', dayType)
+    .maybeSingle();
+  if (error || !data) return null;
+  return data;
+}
+
+async function savePhaseTargets(phaseId, dayType, values) {
+  if (!db) return { error: 'Sem ligação' };
+  const { error } = await db
+    .from('phase_targets')
+    .upsert({
+      phase_id:      phaseId,
+      day_type:      dayType,
+      calories:      values.calories,
+      protein:       values.protein,
+      carbs:         values.carbs,
+      fat:           values.fat,
+      saturated_fat: values.saturated_fat,
+      sugar:         values.sugar,
+      fiber:         values.fiber,
+      updated_at:    new Date().toISOString(),
+    }, { onConflict: 'phase_id,day_type' });
+  return { error };
+}
+
 async function fetchTargetsFromSupabase(dayType) {
   if (!db) return null;
   const { data, error } = await db.from('targets').select('*').eq('day_type', dayType).single();

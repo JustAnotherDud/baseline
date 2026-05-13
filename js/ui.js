@@ -76,7 +76,7 @@ function closeEditEntry() {
 async function openDatePicker(selectedVal, onSelect) {
   const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
                   'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  const DAYS   = ['D','S','T','Q','Q','S','S'];
+  const DAYS   = ['S','T','Q','Q','S','S','D'];
   const today  = new Date().toISOString().split('T')[0];
 
   let overlay = document.getElementById('dp-overlay');
@@ -121,7 +121,7 @@ async function openDatePicker(selectedVal, onSelect) {
       grid.appendChild(el);
     });
 
-    const firstWeekday = new Date(viewYear, viewMonth, 1).getDay();
+    const firstWeekday = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7;
     for (let i = 0; i < firstWeekday; i++) grid.appendChild(document.createElement('div'));
 
     const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();

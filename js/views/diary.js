@@ -69,16 +69,17 @@ function renderToday(entries, t) {
           </div>
           <div class="entry-kcal">${r(e.calories)}</div>
         </div>`).join('');
+    const leftClick = mes.length > 0 ? `openMealBreakdown('${k}', diaryEntries)` : `openLogForMeal('${k}')`;
     div.innerHTML = `
-      <div class="meal-header" onclick="openLogForMeal('${k}')" style="cursor:pointer">
-        <div class="meal-header-top">
+      <div class="meal-header">
+        <div class="meal-header-left" onclick="${leftClick}" style="cursor:pointer;flex:1;min-width:0">
           <div class="meal-name">${label}</div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <div class="meal-kcal">${r(mkcal)} kcal</div>
-            <div style="color:var(--text3);font-size:18px;line-height:1">+</div>
-          </div>
+          ${macroStr}
         </div>
-        ${macroStr}
+        <div class="meal-header-right" onclick="openLogForMeal('${k}')" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:12px 0 12px 12px;flex-shrink:0">
+          <div class="meal-kcal">${r(mkcal)} kcal</div>
+          <div style="color:var(--text3);font-size:18px;line-height:1">+</div>
+        </div>
       </div>${rows}`;
     container.appendChild(div);
   });

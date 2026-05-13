@@ -233,6 +233,17 @@ input[type="number"] { font-family: var(--mono); }
   flex-shrink: 0;
 }
 .sort-chip.active { background: var(--accent); border-color: var(--accent); color: #0a0a0a; }
+.sort-more-menu {
+  position: fixed; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 12px; z-index: 50; min-width: 180px; overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0,0,0,.5);
+}
+.sort-more-group {
+  font-family: var(--mono); font-size: 10px; color: var(--text3);
+  text-transform: uppercase; letter-spacing: .08em; padding: 10px 14px 4px;
+}
+.sort-more-item { padding: 12px 14px; font-size: 14px; cursor: pointer; color: var(--text); }
+.sort-more-item:active { background: var(--surface3); }
 
 /* ── DATE PICKER DOTS ── */
 .cal-dot {

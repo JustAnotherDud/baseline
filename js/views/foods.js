@@ -1,11 +1,27 @@
 const SORT_CONFIG = {
-  name:     { asc: 'Nome A→Z',   desc: 'Nome Z→A',   default: 'asc'  },
-  protein:  { asc: 'Proteína ↓', desc: 'Proteína ↑',  default: 'desc' },
-  calories: { asc: 'Kcal ↓',    desc: 'Kcal ↑',      default: 'desc' },
-  recent:   { asc: 'Recente',    desc: 'Recente',      default: 'desc' },
+  name:     { asc: 'Nome A→Z',   desc: 'Nome Z→A',  default: 'asc'  },
+  protein:  { asc: 'Proteína ↓', desc: 'Proteína ↑', default: 'desc' },
+  calories: { asc: 'Kcal ↓',    desc: 'Kcal ↑',     default: 'desc' },
 };
 
+const MORE_SORTS = [
+  { group: 'NUTRIENTES (por 100g)' },
+  { key: 'carbs',  label: 'Hidratos ↑',       fn: f => f.carbs_per_100g || 0 },
+  { key: 'fiber',  label: 'Fibra ↑',           fn: f => f.fiber_per_100g || 0 },
+  { key: 'fat',    label: 'Gordura ↑',         fn: f => f.fat_per_100g || 0 },
+  { key: 'satfat', label: 'Gord. Saturada ↑',  fn: f => f.saturated_fat_per_100g || 0 },
+  { key: 'sugar',  label: 'Açúcar ↑',           fn: f => f.sugar_per_100g || 0 },
+  { group: 'RÁCIOS' },
+  { key: 'p_kcal', label: 'P/Kcal ↑',          fn: f => f.calories_per_100g ? f.protein_per_100g / f.calories_per_100g : 0 },
+  { key: 'kcal_g', label: 'Kcal/g ↑',           fn: f => f.calories_per_100g || 0 },
+  { key: 'h_kcal', label: 'H/Kcal ↑',           fn: f => f.calories_per_100g ? f.carbs_per_100g / f.calories_per_100g : 0 },
+  { key: 'f_kcal', label: 'Fibra/Kcal ↑',       fn: f => f.calories_per_100g ? (f.fiber_per_100g || 0) / f.calories_per_100g : 0 },
+  { key: 'recent', label: 'Recente',             fn: f => f.id },
+];
+const MORE_SORT_MAP = new Map(MORE_SORTS.filter(s => s.key).map(s => [s.key, s]));
+
 let currentSortState = { sort: 'name', dir: 'asc' };
+let currentMoreSort  = null;
 
 async function loadFoods() {
   if (!db) return;
@@ -16,29 +32,77 @@ async function loadFoods() {
 }
 
 function sortFoods(foods) {
+  if (currentMoreSort) {
+    const s = MORE_SORT_MAP.get(currentMoreSort);
+    return [...foods].sort((a, b) => s.fn(b) - s.fn(a));
+  }
   const { sort, dir } = currentSortState;
   const arr = [...foods];
   const mul = dir === 'asc' ? 1 : -1;
   switch (sort) {
     case 'protein':  return arr.sort((a,b) => mul * (a.protein_per_100g  - b.protein_per_100g));
     case 'calories': return arr.sort((a,b) => mul * (a.calories_per_100g - b.calories_per_100g));
-    case 'recent':   return arr.sort((a,b) => mul * (a.id - b.id));
     default:         return arr.sort((a,b) => mul * a.name.localeCompare(b.name, 'pt'));
   }
 }
 
 function setSortFoods(sort) {
+  currentMoreSort = null;
+  const moreChip = document.getElementById('sort-chip-more');
+  if (moreChip) { moreChip.classList.remove('active'); moreChip.textContent = 'Mais ↓'; }
+  closeMoreMenu();
   if (currentSortState.sort === sort) {
     currentSortState.dir = currentSortState.dir === 'asc' ? 'desc' : 'asc';
   } else {
     currentSortState = { sort, dir: SORT_CONFIG[sort].default };
   }
-  document.querySelectorAll('.sort-chip').forEach(c => {
+  document.querySelectorAll('.sort-chip[data-sort]').forEach(c => {
     const s = c.dataset.sort;
     const isActive = s === currentSortState.sort;
     c.classList.toggle('active', isActive);
     c.textContent = SORT_CONFIG[s][isActive ? currentSortState.dir : SORT_CONFIG[s].default];
   });
+  filterFoods();
+}
+
+function _moreMenuOutside(e) {
+  const menu = document.getElementById('sort-more-menu');
+  const chip = document.getElementById('sort-chip-more');
+  if (menu && !menu.contains(e.target) && e.target !== chip) closeMoreMenu();
+}
+
+function closeMoreMenu() {
+  const menu = document.getElementById('sort-more-menu');
+  if (menu) menu.style.display = 'none';
+  document.removeEventListener('click', _moreMenuOutside);
+}
+
+function toggleMoreMenu() {
+  const menu = document.getElementById('sort-more-menu');
+  if (!menu) return;
+  if (menu.style.display !== 'none') { closeMoreMenu(); return; }
+  if (!menu.children.length) {
+    menu.innerHTML = MORE_SORTS.map(s =>
+      s.group
+        ? `<div class="sort-more-group">${s.group}</div>`
+        : `<div class="sort-more-item" onclick="selectMoreSort('${s.key}')">${s.label}</div>`
+    ).join('');
+  }
+  const chip = document.getElementById('sort-chip-more');
+  const rect = chip.getBoundingClientRect();
+  menu.style.top  = `${rect.bottom + 6}px`;
+  menu.style.left = `${rect.left}px`;
+  menu.style.display = 'block';
+  setTimeout(() => document.addEventListener('click', _moreMenuOutside), 0);
+}
+
+function selectMoreSort(key) {
+  currentMoreSort = key;
+  currentSortState = { sort: null, dir: null };
+  closeMoreMenu();
+  document.querySelectorAll('.sort-chip[data-sort]').forEach(c => c.classList.remove('active'));
+  const moreChip = document.getElementById('sort-chip-more');
+  if (moreChip) { moreChip.textContent = MORE_SORT_MAP.get(key).label; moreChip.classList.add('active'); }
   filterFoods();
 }
 

@@ -10,18 +10,19 @@ const MORE_SORTS = [
   { key: 'fiber',  label: 'Fibra ↑',           fn: f => f.fiber_per_100g || 0 },
   { key: 'fat',    label: 'Gordura ↑',         fn: f => f.fat_per_100g || 0 },
   { key: 'satfat', label: 'Gord. Saturada ↑',  fn: f => f.saturated_fat_per_100g || 0 },
-  { key: 'sugar',  label: 'Açúcar ↑',           fn: f => f.sugar_per_100g || 0 },
+  { key: 'sugar',  label: 'Açúcar ↑',          fn: f => f.sugar_per_100g || 0 },
   { group: 'RÁCIOS' },
-  { key: 'p_kcal', label: 'P/Kcal ↑',          fn: f => f.calories_per_100g ? f.protein_per_100g / f.calories_per_100g : 0 },
-  { key: 'kcal_g', label: 'Kcal/g ↑',           fn: f => f.calories_per_100g || 0 },
-  { key: 'h_kcal', label: 'H/Kcal ↑',           fn: f => f.calories_per_100g ? f.carbs_per_100g / f.calories_per_100g : 0 },
-  { key: 'f_kcal', label: 'Fibra/Kcal ↑',       fn: f => f.calories_per_100g ? (f.fiber_per_100g || 0) / f.calories_per_100g : 0 },
-  { key: 'recent', label: 'Recente',             fn: f => f.id },
+  { key: 'p_kcal', label: 'P/Kcal ↑',         fn: f => f.calories_per_100g ? f.protein_per_100g / f.calories_per_100g : 0 },
+  { key: 'h_kcal', label: 'H/Kcal ↑',         fn: f => f.calories_per_100g ? f.carbs_per_100g / f.calories_per_100g : 0 },
+  { key: 'f_kcal', label: 'Fibra/Kcal ↑',     fn: f => f.calories_per_100g ? (f.fiber_per_100g || 0) / f.calories_per_100g : 0 },
+  { key: 'recent', label: 'Recente',           fn: f => f.id },
 ];
-const MORE_SORT_MAP = new Map(MORE_SORTS.filter(s => s.key).map(s => [s.key, s]));
+const MORE_SORT_MAP    = new Map(MORE_SORTS.filter(s => s.key).map(s => [s.key, s]));
+const MORE_SORT_LABELS = Object.fromEntries(MORE_SORTS.filter(s => s.key).map(s => [s.key, s.label]));
 
 let currentSortState = { sort: 'name', dir: 'asc' };
 let currentMoreSort  = null;
+let currentMoreDir   = 'desc';
 
 async function loadFoods() {
   if (!db) return;
@@ -33,8 +34,9 @@ async function loadFoods() {
 
 function sortFoods(foods) {
   if (currentMoreSort) {
-    const s = MORE_SORT_MAP.get(currentMoreSort);
-    return [...foods].sort((a, b) => s.fn(b) - s.fn(a));
+    const s   = MORE_SORT_MAP.get(currentMoreSort);
+    const mul = currentMoreDir === 'asc' ? 1 : -1;
+    return [...foods].sort((a, b) => mul * (s.fn(a) - s.fn(b)));
   }
   const { sort, dir } = currentSortState;
   const arr = [...foods];
@@ -48,6 +50,7 @@ function sortFoods(foods) {
 
 function setSortFoods(sort) {
   currentMoreSort = null;
+  currentMoreDir  = 'desc';
   const moreChip = document.getElementById('sort-chip-more');
   if (moreChip) { moreChip.classList.remove('active'); moreChip.textContent = 'Mais ↓'; }
   closeMoreMenu();
@@ -81,28 +84,54 @@ function toggleMoreMenu() {
   const menu = document.getElementById('sort-more-menu');
   if (!menu) return;
   if (menu.style.display !== 'none') { closeMoreMenu(); return; }
-  if (!menu.children.length) {
-    menu.innerHTML = MORE_SORTS.map(s =>
-      s.group
-        ? `<div class="sort-more-group">${s.group}</div>`
-        : `<div class="sort-more-item" onclick="selectMoreSort('${s.key}')">${s.label}</div>`
-    ).join('');
+
+  // Rebuild each open to reflect current active sort + direction
+  menu.innerHTML = MORE_SORTS.map(s => {
+    if (s.group) return `<div class="sort-more-group">${s.group}</div>`;
+    const isActive = s.key === currentMoreSort;
+    const lbl = isActive && currentMoreDir === 'asc' ? s.label.replace('↑', '↓') : s.label;
+    return `<div class="sort-more-item${isActive ? ' sort-more-item-active' : ''}" onclick="selectMoreSort('${s.key}')">${lbl}</div>`;
+  }).join('');
+
+  // Position with viewport overflow detection
+  const chip  = document.getElementById('sort-chip-more');
+  const rect  = chip.getBoundingClientRect();
+  const menuW = 180;
+
+  let left = rect.left;
+  if (left + menuW > window.innerWidth - 8) left = window.innerWidth - menuW - 8;
+  if (left < 8) left = 8;
+  menu.style.left = `${left}px`;
+
+  if (window.innerHeight - rect.bottom >= 300) {
+    menu.style.top    = `${rect.bottom + 6}px`;
+    menu.style.bottom = 'auto';
+  } else {
+    menu.style.bottom = `${window.innerHeight - rect.top + 6}px`;
+    menu.style.top    = 'auto';
   }
-  const chip = document.getElementById('sort-chip-more');
-  const rect = chip.getBoundingClientRect();
-  menu.style.top  = `${rect.bottom + 6}px`;
-  menu.style.left = `${rect.left}px`;
+
   menu.style.display = 'block';
   setTimeout(() => document.addEventListener('click', _moreMenuOutside), 0);
 }
 
 function selectMoreSort(key) {
-  currentMoreSort = key;
+  if (currentMoreSort === key) {
+    currentMoreDir = currentMoreDir === 'desc' ? 'asc' : 'desc';
+  } else {
+    currentMoreSort = key;
+    currentMoreDir  = 'desc';
+  }
   currentSortState = { sort: null, dir: null };
   closeMoreMenu();
   document.querySelectorAll('.sort-chip[data-sort]').forEach(c => c.classList.remove('active'));
   const moreChip = document.getElementById('sort-chip-more');
-  if (moreChip) { moreChip.textContent = MORE_SORT_MAP.get(key).label; moreChip.classList.add('active'); }
+  if (moreChip) {
+    const base  = MORE_SORT_LABELS[key];
+    const label = currentMoreDir === 'asc' ? base.replace('↑', '↓') : base;
+    moreChip.textContent = label;
+    moreChip.classList.add('active');
+  }
   filterFoods();
 }
 
@@ -118,21 +147,52 @@ function renderFoods(foods) {
     el.innerHTML=`<div class="empty"><div class="empty-icon">🥗</div><div class="empty-text">Sem alimentos ainda.<br>Clica em + para adicionar o primeiro.</div></div>`;
     return;
   }
+
   const activeSort = currentSortState.sort;
+  const ms = currentMoreSort;
+  const RATIO_LABEL = { p_kcal: 'P/kcal', h_kcal: 'H/kcal', f_kcal: 'Fb/kcal' };
+  const HL = 'color:var(--accent);font-weight:600';
+
   el.innerHTML = foods.map(f => {
+    // Protein — highlight when main 'protein' chip active
     const pStr = activeSort === 'protein'
-      ? `<span style="color:var(--accent);font-weight:600">P${f.protein_per_100g}</span>`
+      ? `<span style="${HL}">P${f.protein_per_100g}</span>`
       : `P${f.protein_per_100g}`;
-    const kcalStyle = activeSort === 'calories'
-      ? 'color:var(--accent);font-weight:600'
-      : '';
+
+    // Carbs — highlight when MORE carbs active
+    const cStr = ms === 'carbs'
+      ? `<span style="${HL}">C${f.carbs_per_100g}</span>`
+      : `C${f.carbs_per_100g}`;
+
+    // Fat — highlight when MORE fat active
+    const gStr = ms === 'fat'
+      ? `<span style="${HL}">G${f.fat_per_100g}</span>`
+      : `G${f.fat_per_100g}`;
+
+    // Right column: kcal default, swapped for hidden fields + ratios
+    let rightCol;
+    if (RATIO_LABEL[ms]) {
+      const kcal  = f.calories_per_100g || 0;
+      const ratio = kcal ? MORE_SORT_MAP.get(ms).fn(f).toFixed(2) : '—';
+      rightCol = `<div class="fi-kcal" style="${HL}">${ratio}<br><span style="font-size:9px;color:var(--text3)">${RATIO_LABEL[ms]}</span></div>`;
+    } else if (ms === 'fiber') {
+      rightCol = `<div class="fi-kcal" style="${HL}">${f.fiber_per_100g || 0}g<br><span style="font-size:9px;color:var(--text3)">fb/100g</span></div>`;
+    } else if (ms === 'satfat') {
+      rightCol = `<div class="fi-kcal" style="${HL}">${f.saturated_fat_per_100g || 0}g<br><span style="font-size:9px;color:var(--text3)">gs/100g</span></div>`;
+    } else if (ms === 'sugar') {
+      rightCol = `<div class="fi-kcal" style="${HL}">${f.sugar_per_100g || 0}g<br><span style="font-size:9px;color:var(--text3)">a/100g</span></div>`;
+    } else {
+      const kcalStyle = activeSort === 'calories' ? HL : '';
+      rightCol = `<div class="fi-kcal" style="${kcalStyle}">${f.calories_per_100g}<br><span style="font-size:9px;color:var(--text3)">kcal/100g</span></div>`;
+    }
+
     return `
     <div class="food-item" onclick="editFood(${f.id})">
       <div class="fi-info">
         <div class="fi-name">${f.name}</div>
-        <div class="fi-detail">${f.brand?f.brand+' · ':''}${pStr} C${f.carbs_per_100g} G${f.fat_per_100g}${f.serving_size_g?' · porção '+f.serving_size_g+'g':''}</div>
+        <div class="fi-detail">${f.brand?f.brand+' · ':''}${pStr} ${cStr} ${gStr}${f.serving_size_g?' · porção '+f.serving_size_g+'g':''}</div>
       </div>
-      <div class="fi-kcal" style="${kcalStyle}">${f.calories_per_100g}<br><span style="font-size:9px;color:var(--text3)">kcal/100g</span></div>
+      ${rightCol}
     </div>`;
   }).join('');
 }

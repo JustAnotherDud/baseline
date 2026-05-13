@@ -359,6 +359,10 @@ input[type="number"] { font-family: var(--mono); }
 /* ── TARGETS ── */
 .target-section { padding: 16px 20px; border-bottom: 1px solid var(--border); }
 .target-section-title { font-family: var(--mono); font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 14px; }
+.settings-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--surface3); }
+.settings-row:last-child { border-bottom: none; }
+.settings-label { font-size: 14px; color: var(--text2); }
+.settings-value { font-family: var(--mono); font-size: 13px; color: var(--text); }
 .phase-badge { font-family: var(--mono); font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: .08em; padding: 6px 10px; background: rgba(74,222,128,.08); border-radius: 6px; display: inline-block; }
 .phase-badge-empty { color: var(--text3); background: transparent; }
 input[readonly] { opacity: 0.45; cursor: default; }

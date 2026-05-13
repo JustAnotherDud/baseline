@@ -47,9 +47,30 @@ function go(view) {
   document.getElementById('view-'+view).classList.add('active');
   const nb = document.getElementById('nav-'+view);
   if (nb) nb.classList.add('active');
-  if (view==='today') loadToday();
-  if (view==='foods') loadFoods();
-  if (view==='log') updateLogDateLabel();
+  if (view==='today')    loadToday();
+  if (view==='foods')    loadFoods();
+  if (view==='log')      updateLogDateLabel();
+  if (view==='settings') loadSettingsView();
+}
+
+async function loadSettingsView() {
+  const today = new Date().toISOString().split('T')[0];
+  const phase = await getActivePhase(today);
+  const objetivoEl = document.getElementById('settings-objetivo');
+  const badgeEl    = document.getElementById('settings-phase-badge');
+  if (phase) {
+    if (objetivoEl) objetivoEl.textContent = phase.objetivo || '—';
+    if (badgeEl) {
+      badgeEl.textContent = `${phase.label.toUpperCase()}${phase.objetivo ? ' · ' + phase.objetivo : ''}`;
+      badgeEl.classList.remove('phase-badge-empty');
+    }
+  } else {
+    if (objetivoEl) objetivoEl.textContent = '—';
+    if (badgeEl) {
+      badgeEl.textContent = 'Sem fase configurada';
+      badgeEl.classList.add('phase-badge-empty');
+    }
+  }
 }
 
 init();

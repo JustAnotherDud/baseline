@@ -168,17 +168,3 @@ async function getPhaseTargets(phaseId, dayType) {
 }
 
 
-async function fetchTargetsFromSupabase(dayType) {
-  if (!db) return null;
-  const { data, error } = await db.from('targets').select('*').eq('day_type', dayType).single();
-  if (error || !data) return null;
-  return {
-    calories:      data.calories,
-    fat:           data.fat,
-    saturated_fat: data.saturated_fat,
-    carbs:         data.carbs,
-    sugar:         data.sugar,
-    fiber:         data.fiber,
-    protein:       data.protein,
-  };
-}

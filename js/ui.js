@@ -376,28 +376,35 @@ function openMealBreakdown(mealKey, allEntries) {
   if (saveBtn) {
     saveBtn.onclick = () => {
       overlay.classList.remove('open');
-      const prefillItems = mes.map(e => ({
-        food_id:      e.food_id || null,
-        food_name:    e.food_name,
-        grams:        e.grams || 0,
-        calories:     e.calories,
-        protein:      e.protein,
-        carbs:        e.carbs,
-        fat:          e.fat,
+      // Filter out quick entries (grams=null/0) — back-calc per-100g is impossible
+      const validEntries  = mes.filter(e => e.grams && +e.grams > 0);
+      const skippedCount  = mes.length - validEntries.length;
+      const prefillItems  = validEntries.map(e => ({
+        food_id:       e.food_id || null,
+        food_name:     e.food_name,
+        grams:         e.grams,
+        calories:      e.calories,
+        protein:       e.protein,
+        carbs:         e.carbs,
+        fat:           e.fat,
         saturated_fat: e.saturated_fat || 0,
-        sugar:        e.sugar || 0,
-        fiber:        e.fiber || 0,
-        _food:        e.food_id ? {
-          id: e.food_id,
-          calories_per_100g:      e.grams ? e.calories      / e.grams * 100 : 0,
-          protein_per_100g:       e.grams ? e.protein       / e.grams * 100 : 0,
-          carbs_per_100g:         e.grams ? e.carbs         / e.grams * 100 : 0,
-          fat_per_100g:           e.grams ? e.fat           / e.grams * 100 : 0,
-          saturated_fat_per_100g: e.grams ? (e.saturated_fat||0)/ e.grams * 100 : 0,
-          sugar_per_100g:         e.grams ? (e.sugar||0)    / e.grams * 100 : 0,
-          fiber_per_100g:         e.grams ? (e.fiber||0)    / e.grams * 100 : 0,
+        sugar:         e.sugar || 0,
+        fiber:         e.fiber || 0,
+        _food:         e.food_id ? {
+          id:                     e.food_id,
+          calories_per_100g:      e.calories           / e.grams * 100,
+          protein_per_100g:       e.protein            / e.grams * 100,
+          carbs_per_100g:         e.carbs              / e.grams * 100,
+          fat_per_100g:           e.fat                / e.grams * 100,
+          saturated_fat_per_100g: (e.saturated_fat||0) / e.grams * 100,
+          sugar_per_100g:         (e.sugar||0)         / e.grams * 100,
+          fiber_per_100g:         (e.fiber||0)         / e.grams * 100,
+          serving_size_g:         e.grams,
         } : null,
       }));
+      if (skippedCount > 0) {
+        toast(`${skippedCount} entrada${skippedCount > 1 ? 's' : ''} rápida${skippedCount > 1 ? 's' : ''} não incluída${skippedCount > 1 ? 's' : ''}`);
+      }
       openCreateMeal(mealLabel, prefillItems);
     };
   }

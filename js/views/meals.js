@@ -101,9 +101,11 @@ function openCreateMeal(prefillName, prefillItems) {
 
   if (prefillItems && prefillItems.length) {
     mealItems = prefillItems.map((e, i) => ({ id: i, ...e }));
+    mcItemCounter = prefillItems.length; // next id starts after prefilled range
     renderMcItems();
   } else {
     mealItems = [];
+    mcItemCounter = 0;
     mcAddItem();
   }
 
@@ -155,7 +157,7 @@ function renderMcItems() {
               data-id="${item.id}" value="${item.grams}"
               placeholder="0" oninput="mcGramsChange(${item.id}, this.value)">
           </label>
-          <div style="font-family:var(--mono);font-size:11px;color:var(--text3);padding-top:18px;white-space:nowrap">
+          <div class="mc-item-kcal" style="font-family:var(--mono);font-size:11px;color:var(--text3);padding-top:18px;white-space:nowrap">
             ${item.calories ? Math.round(item.calories) + ' kcal' : ''}
           </div>
         </div>` : `
@@ -210,20 +212,19 @@ function mcGramsChange(itemId, val) {
   const g = parseFloat(val) || 0;
   const f = item._food;
   const factor = g / 100;
-  item.grams        = g;
-  item.calories     = (f.calories_per_100g     || 0) * factor;
-  item.protein      = (f.protein_per_100g      || 0) * factor;
-  item.carbs        = (f.carbs_per_100g        || 0) * factor;
-  item.fat          = (f.fat_per_100g          || 0) * factor;
-  item.saturated_fat= (f.saturated_fat_per_100g|| 0) * factor;
-  item.sugar        = (f.sugar_per_100g        || 0) * factor;
-  item.fiber        = (f.fiber_per_100g        || 0) * factor;
-  // Update kcal display inline without full re-render
+  item.grams         = g;
+  item.calories      = (f.calories_per_100g      || 0) * factor;
+  item.protein       = (f.protein_per_100g       || 0) * factor;
+  item.carbs         = (f.carbs_per_100g         || 0) * factor;
+  item.fat           = (f.fat_per_100g           || 0) * factor;
+  item.saturated_fat = (f.saturated_fat_per_100g || 0) * factor;
+  item.sugar         = (f.sugar_per_100g         || 0) * factor;
+  item.fiber         = (f.fiber_per_100g         || 0) * factor;
+  // Update only the kcal label — no full re-render to preserve input focus
   const itemEl = document.getElementById(`mc-item-${itemId}`);
   if (itemEl) {
-    const kcalEl = itemEl.querySelector('.mc-grams');
-    // re-render only this item's kcal label
-    renderMcItems();
+    const kcalEl = itemEl.querySelector('.mc-item-kcal');
+    if (kcalEl) kcalEl.textContent = g > 0 ? Math.round(item.calories) + ' kcal' : '';
   }
 }
 

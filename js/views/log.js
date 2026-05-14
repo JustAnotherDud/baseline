@@ -106,9 +106,6 @@ function updateSheetMealTabs() {
 function selectSheetMeal(mealKey) {
   selectedMeal = mealKey;
   mealManuallySelected = true;
-  document.querySelectorAll('#log-meal-tabs .meal-tab').forEach(t => {
-    t.classList.toggle('active', t.dataset.meal === mealKey);
-  });
   updateSheetMealTabs();
 }
 
@@ -123,28 +120,11 @@ function getMealByHour() {
   return 'supper';
 }
 
-function selectMeal(btn) {
-  document.querySelectorAll('#log-meal-tabs .meal-tab').forEach(t=>t.classList.remove('active'));
-  btn.classList.add('active');
-  selectedMeal = btn.dataset.meal;
-  mealManuallySelected = true;
-}
-
 // ── COLLAPSED MEAL SELECTOR ──────────────────────────────────────────────────
-
-const MEAL_LABELS = {
-  breakfast:  'Pequeno-almoço',
-  morning:    'Lanche manhã',
-  lunch:      'Almoço',
-  afternoon1: 'Lanche tarde 1',
-  afternoon2: 'Lanche tarde 2',
-  dinner:     'Jantar',
-  supper:     'Ceia',
-};
 
 function updateMealSelectorLabel(mealKey) {
   const el = document.getElementById('meal-selector-label');
-  if (el) el.textContent = MEAL_LABELS[mealKey] || mealKey;
+  if (el) el.textContent = (typeof MEALS !== 'undefined' && MEALS[mealKey]) || mealKey;
   document.querySelectorAll('.meal-selector-opt').forEach(b => {
     b.classList.toggle('active', b.dataset.meal === mealKey);
   });

@@ -392,7 +392,6 @@ input[type="number"] { font-family: var(--mono); }
 input[readonly] { opacity: 0.45; cursor: default; }
 
 /* ── LOG VIEW ── */
-.log-actions { padding: 14px 20px; display: flex; gap: 10px; }
 .log-meal-wrap { padding: 0 20px 4px; }
 .log-meal-label { font-family: var(--mono); font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px; }
 

@@ -124,7 +124,7 @@ function renderToday(entries, t) {
 function setDateLabel() {
   const today = new Date().toISOString().split('T')[0];
   const d = new Date(currentDate+'T12:00:00');
-  document.getElementById('today-title').textContent = currentDate === today ? 'Diário' : 'Diário';
+  document.getElementById('today-title').textContent = 'Diário';
   document.getElementById('today-date-label').textContent = d.toLocaleDateString('pt-PT',{weekday:'long',day:'numeric',month:'long'});
 }
 

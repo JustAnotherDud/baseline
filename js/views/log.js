@@ -5,9 +5,10 @@ async function searchDB() {
   const {data} = await db.from('foods').select('*').ilike('name',`%${q}%`).limit(25);
   if (!data||!data.length) {
     const q2 = document.getElementById('log-q').value.trim();
+    const q2h = q2.replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
     res.innerHTML = `<div style="padding:12px 20px">
-      <div style="font-size:13px;color:var(--text3);margin-bottom:10px">Sem resultados para "${q2}"</div>
-      <button class="btn btn-secondary" style="font-size:13px;padding:10px" onclick="openAddFoodFromLog('${q2.replace(/'/g,"\\'")}')">+ Criar "${q2}"</button>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:10px">Sem resultados para "${q2h}"</div>
+      <button class="btn btn-secondary" style="font-size:13px;padding:10px" onclick="openAddFoodFromLog('${q2h}')">+ Criar "${q2h}"</button>
     </div>`;
     return;
   }

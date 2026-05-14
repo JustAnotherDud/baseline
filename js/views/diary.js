@@ -25,26 +25,52 @@ function renderToday(entries, t) {
   const pct    = (v, m) => Math.min(100, rawPct(v, m)) + '%';
 
   const bars = [
-    { bar: 'bar-g',  val: 'val-g',  nutrient: 'fat',      actual: tot.fat,    target: t.fat,           label: `${r(tot.fat)}/${t.fat}g` },
-    { bar: 'bar-gs', val: 'val-gs', nutrient: 'satfat',   actual: tot.satfat, target: t.saturated_fat, label: `${r(tot.satfat)}/${t.saturated_fat}g` },
-    { bar: 'bar-c',  val: 'val-c',  nutrient: 'carbs',    actual: tot.carb,   target: t.carbs,         label: `${r(tot.carb)}/${t.carbs}g` },
-    { bar: 'bar-a',  val: 'val-a',  nutrient: 'sugar',    actual: tot.sugar,  target: t.sugar,         label: `${r(tot.sugar)}/${t.sugar}g` },
-    { bar: 'bar-f',  val: 'val-f',  nutrient: 'fiber',    actual: tot.fiber,  target: t.fiber,         label: `${r(tot.fiber)}/${t.fiber}g` },
-    { bar: 'bar-p',  val: 'val-p',  nutrient: 'protein',  actual: tot.prot,   target: t.protein,       label: `${r(tot.prot)}/${t.protein}g` },
+    // Primary — split num/tgt display + expand detail
+    { bar: 'bar-p',  numEl: 'val-p-num', tgtEl: 'val-p-tgt', pctEl: 'detail-pct-protein', remEl: 'detail-rem-protein', nutrient: 'protein', actual: tot.prot,   target: t.protein       },
+    { bar: 'bar-c',  numEl: 'val-c-num', tgtEl: 'val-c-tgt', pctEl: 'detail-pct-carbs',   remEl: 'detail-rem-carbs',   nutrient: 'carbs',   actual: tot.carb,   target: t.carbs         },
+    { bar: 'bar-g',  numEl: 'val-g-num', tgtEl: 'val-g-tgt', pctEl: 'detail-pct-fat',     remEl: 'detail-rem-fat',     nutrient: 'fat',     actual: tot.fat,    target: t.fat           },
+    // Secondary — single val element
+    { bar: 'bar-gs', val: 'val-gs', nutrient: 'satfat', actual: tot.satfat, target: t.saturated_fat },
+    { bar: 'bar-f',  val: 'val-f',  nutrient: 'fiber',  actual: tot.fiber,  target: t.fiber         },
+    { bar: 'bar-a',  val: 'val-a',  nutrient: 'sugar',  actual: tot.sugar,  target: t.sugar         },
   ];
 
-  bars.forEach(({ bar, val, nutrient, actual, target, label }) => {
-    const p = rawPct(actual, target);
+  bars.forEach(({ bar, val, numEl, tgtEl, pctEl, remEl, nutrient, actual, target }) => {
+    const p     = rawPct(actual, target);
     const color = entries.length > 0 ? getNutrientColor(nutrient, p) : 'var(--surface3)';
-    document.getElementById(bar).style.width      = Math.min(100, p) + '%';
-    document.getElementById(bar).style.background = color;
-    document.getElementById(val).textContent      = label;
-    document.getElementById(val).style.color      = entries.length > 0 ? color : 'var(--text2)';
+    const barEl = document.getElementById(bar);
+    if (barEl) { barEl.style.width = Math.min(100, p) + '%'; barEl.style.background = color; }
+    if (val) {
+      const el = document.getElementById(val);
+      if (el) { el.textContent = `${r(actual)}/${target}g`; el.style.color = entries.length > 0 ? color : 'var(--text2)'; }
+    }
+    if (numEl) {
+      const el = document.getElementById(numEl);
+      if (el) { el.textContent = r(actual); el.style.color = entries.length > 0 ? color : 'var(--text2)'; }
+    }
+    if (tgtEl) {
+      const el = document.getElementById(tgtEl);
+      if (el) el.textContent = `/${target}g`;
+    }
+    if (pctEl) {
+      const el = document.getElementById(pctEl);
+      if (el) { el.textContent = Math.round(Math.min(100, p)) + '%'; el.style.color = color; }
+    }
+    if (remEl) {
+      const el = document.getElementById(remEl);
+      if (el) {
+        const rem = target - r(actual);
+        el.textContent = rem > 0 ? `${rem}g por atingir` : 'Meta atingida!';
+        el.style.color = rem > 0 ? 'var(--text3)' : 'var(--accent)';
+      }
+    }
   });
 
   const kcalPct = rawPct(tot.kcal, t.calories);
   const kcalColor = entries.length > 0 ? getNutrientColor('calories', kcalPct) : 'var(--accent)';
   document.getElementById('tot-kcal').style.color = kcalColor;
+  const kcalBarEl = document.getElementById('bar-kcal');
+  if (kcalBarEl) { kcalBarEl.style.width = Math.min(100, kcalPct) + '%'; kcalBarEl.style.background = kcalColor; }
 
   const container = document.getElementById('diary-container');
   container.innerHTML = '';
@@ -154,6 +180,15 @@ async function loadLogTotalsStrip() {
     <div style="font-family:var(--mono);font-size:11px;color:var(--blue)">P ${r(tot.prot)}g</div>
     <div style="font-family:var(--mono);font-size:11px;color:var(--yellow)">H ${r(tot.carb)}g</div>
     <div style="font-family:var(--mono);font-size:11px;color:var(--orange)">G ${r(tot.fat)}g</div>`;
+}
+
+function toggleMacroDetail(key) {
+  const detail = document.getElementById('detail-' + key);
+  const row    = document.getElementById('mpr-' + key);
+  if (!detail || !row) return;
+  const isOpen = detail.classList.contains('open');
+  detail.classList.toggle('open', !isOpen);
+  row.classList.toggle('mpr-expanded', !isOpen);
 }
 
 async function loadRecentFoods() {

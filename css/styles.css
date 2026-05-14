@@ -64,24 +64,52 @@ body {
 .view-sub { font-family: var(--mono); font-size: 12px; color: var(--text2); margin-top: 3px; }
 
 /* ── MACRO SUMMARY ── */
-.macro-summary { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; border-bottom: 1px solid var(--border); }
+.macro-summary { padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 0; border-bottom: 1px solid var(--border); }
 .kcal-row { display: flex; justify-content: space-between; align-items: flex-end; }
 .kcal-value { font-family: var(--mono); font-size: 42px; font-weight: 600; color: var(--accent); line-height: 1; }
 .kcal-label { font-family: var(--mono); font-size: 13px; color: var(--text3); margin-top: 3px; }
 .kcal-remaining { font-family: var(--mono); font-size: 13px; color: var(--text2); text-align: right; }
 .nutri-analyse-btn { background: var(--surface2); border: none; border-radius: 6px; cursor: pointer; padding: 4px 8px; display: flex; align-items: center; justify-content: center; align-self: flex-end; margin-bottom: 2px; }
-.macro-bars { display: flex; flex-direction: column; gap: 7px; }
-.macro-bar-row { display: flex; align-items: center; gap: 10px; }
-.mbl { font-family: var(--mono); font-size: 12px; color: var(--text2); width: 18px; text-transform: uppercase; }
-.mbt { flex: 1; height: 5px; background: var(--surface3); border-radius: 2px; overflow: hidden; }
-.mbf { height: 100%; border-radius: 2px; transition: width .4s ease; }
+/* kcal bar */
+.kcal-bar-track { height: 6px; background: var(--surface3); border-radius: 999px; overflow: hidden; margin-top: 14px; }
+.kcal-bar-fill  { height: 100%; border-radius: 999px; width: 0%; transition: width .5s ease; }
+/* bar fills (shared) */
+.mbt { background: var(--surface3); border-radius: 999px; overflow: hidden; }
+.mbt-primary { height: 8px; margin-top: 0; }
+.mbt-sec { height: 2px; }
+.mbf { height: 100%; border-radius: 999px; transition: width .4s ease; }
 .mbf.p { background: var(--blue); }
 .mbf.c { background: var(--yellow); }
 .mbf.g { background: var(--orange); }
 .mbf.gs { background: #f97316; }
 .mbf.a { background: #e879f9; }
 .mbf.f { background: var(--accent); }
-.mbv { font-family: var(--mono); font-size: 12px; color: var(--text2); width: 90px; text-align: right; }
+/* primary macro rows */
+.macro-primary { margin-top: 6px; }
+.mpr { padding: 13px 0; border-bottom: 1px solid var(--border); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.mpr:last-child { border-bottom: none; }
+.mpr:active { opacity: 0.8; }
+.mpr-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 9px; }
+.mpr-name { font-family: var(--sans); font-size: 13px; font-weight: 500; color: var(--text2); transition: color .2s; }
+.mpr-expanded .mpr-name { color: var(--text); }
+.mpr-val-group { font-family: var(--mono); display: flex; align-items: baseline; gap: 2px; }
+.mpr-num { font-size: 22px; font-weight: 600; transition: color .2s; }
+.mpr-unit { font-size: 11px; color: var(--text3); }
+.mpr-tgt { font-size: 11px; color: var(--text3); margin-left: 3px; }
+/* expand panel */
+.mpr-detail { display: flex; align-items: baseline; gap: 7px; overflow: hidden; max-height: 0; opacity: 0; padding-top: 0; transition: max-height .28s cubic-bezier(.4,0,.2,1), opacity .2s ease, padding-top .2s; }
+.mpr-detail.open { max-height: 60px; opacity: 1; padding-top: 11px; }
+.mpr-detail-pct { font-family: var(--mono); font-size: 24px; font-weight: 700; letter-spacing: -.02em; }
+.mpr-detail-sub { font-family: var(--sans); font-size: 12px; color: var(--text3); }
+.mpr-detail-rem { font-family: var(--mono); font-size: 11px; margin-left: auto; }
+/* separator */
+.macro-sep { height: 1px; background: var(--border); margin: 18px 0 12px; }
+/* secondary chips */
+.macro-secondary { display: flex; gap: 8px; }
+.msc { flex: 1; padding: 10px 11px 11px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; }
+.msc-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.msc-name { font-family: var(--sans); font-size: 11px; font-weight: 500; color: var(--text2); }
+.msc-val { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--text2); }
 
 /* ── MEAL SECTIONS ── */
 .meal-section { border-bottom: 1px solid var(--border); }

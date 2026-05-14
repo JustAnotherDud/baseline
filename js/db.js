@@ -33,33 +33,25 @@ async function loadToday() {
 }
 
 async function saveDiary() {
-  if (!selectedFood) return;
+  if (!selectedFood) return false;
   const g = parseFloat(document.getElementById('log-grams').value);
-  if (!g||g<=0) { toast('Indica a quantidade em gramas'); return; }
+  if (!g || g <= 0) { toast('Indica a quantidade em gramas'); return false; }
   const c = v => Math.round((parseFloat(v)||0)/100*g*10)/10;
-  const {error} = await db.from('diary').insert({
+  const { error } = await db.from('diary').insert({
     date:currentDate, meal:selectedMeal,
     food_id:selectedFood.id, food_name:selectedFood.name,
     grams:g,
-    calories:c(selectedFood.calories_per_100g),
-    protein:c(selectedFood.protein_per_100g),
-    carbs:c(selectedFood.carbs_per_100g),
-    fat:c(selectedFood.fat_per_100g),
-    saturated_fat:c(selectedFood.saturated_fat_per_100g),
-    sugar:c(selectedFood.sugar_per_100g),
-    fiber:c(selectedFood.fiber_per_100g)
+    calories:      c(selectedFood.calories_per_100g),
+    protein:       c(selectedFood.protein_per_100g),
+    carbs:         c(selectedFood.carbs_per_100g),
+    fat:           c(selectedFood.fat_per_100g),
+    saturated_fat: c(selectedFood.saturated_fat_per_100g),
+    sugar:         c(selectedFood.sugar_per_100g),
+    fiber:         c(selectedFood.fiber_per_100g),
   });
-  if (error) { toast('Erro ao guardar'); return; }
+  if (error) { toast('Erro ao guardar'); return false; }
   toast(`${selectedFood.name} guardado ✓`);
-  loadToday();
-  // Voltar ao stage de pesquisa sem fechar o sheet
-  selectedFood = null;
-  document.getElementById('log-stage-grams').classList.remove('active');
-  document.getElementById('log-stage-search').classList.add('active');
-  document.getElementById('log-q').value = '';
-  document.getElementById('log-results').innerHTML = '<div class="loading">Começa a escrever para pesquisar</div>';
-  loadLogTotalsStrip();
-  setTimeout(() => document.getElementById('log-q').focus(), 100);
+  return true;
 }
 
 async function saveEditEntry() {

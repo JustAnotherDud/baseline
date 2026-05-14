@@ -303,3 +303,20 @@ async function loadRecentFoods() {
     `<button class="recent-chip" onclick="pickFood(${e.food_id})">${e.food_name}</button>`
   ).join('');
 }
+
+// ── SAVE DIARY HANDLER (DOM side of saveDiary) ───────────────────────────────
+
+async function handleSaveDiary() {
+  const ok = await saveDiary();
+  if (!ok) return;
+  // Reset UI — voltar ao stage de pesquisa sem fechar o sheet
+  selectedFood = null;
+  document.getElementById('log-stage-grams').classList.remove('active');
+  document.getElementById('log-stage-search').classList.add('active');
+  document.getElementById('log-q').value = '';
+  document.getElementById('log-results').innerHTML =
+    '<div class="loading">Começa a escrever para pesquisar</div>';
+  loadToday();
+  loadLogTotalsStrip();
+  setTimeout(() => document.getElementById('log-q').focus(), 100);
+}

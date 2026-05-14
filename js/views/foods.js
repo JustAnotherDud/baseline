@@ -1,3 +1,5 @@
+let allFoods = [];
+
 const SORT_CONFIG = {
   name:     { asc: 'Nome A→Z',   desc: 'Nome Z→A',  default: 'asc'  },
   protein:  { asc: 'Proteína ↓', desc: 'Proteína ↑', default: 'desc' },

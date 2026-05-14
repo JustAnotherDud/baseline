@@ -5,7 +5,6 @@ let selectedMeal = 'breakfast';
 let selectedFood = null;
 let editingFoodId = null;
 let editingEntry = null;
-let allFoods = [];
 let fromLogContext = false;
 let mealManuallySelected = false;
 

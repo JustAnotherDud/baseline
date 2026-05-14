@@ -172,17 +172,22 @@ async function mcSearchFood(itemId, q) {
     res.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:4px 0">Sem resultados</div>';
     return;
   }
-  res.innerHTML = data.map(f => {
-    const safeJson = JSON.stringify(f).replace(/'/g, '&#39;');
-    return `<div class="mc-food-option" onclick="mcPickFood(${itemId}, '${safeJson}')">
+  // Render markup without passing food data through HTML attributes
+  // (JSON contains double-quotes that would break onclick="..." attributes)
+  res.innerHTML = data.map((f, idx) =>
+    `<div class="mc-food-option" data-idx="${idx}">
       <div style="font-size:13px;color:var(--text)">${f.name}</div>
       <div style="font-family:var(--mono);font-size:11px;color:var(--text3)">${f.calories_per_100g} kcal · P${f.protein_per_100g} H${f.carbs_per_100g} G${f.fat_per_100g}</div>
-    </div>`;
-  }).join('');
+    </div>`
+  ).join('');
+  // Attach listeners with food objects captured in closure — no JSON serialisation needed
+  res.querySelectorAll('.mc-food-option').forEach(el => {
+    const f = data[+el.dataset.idx];
+    el.addEventListener('click', () => mcPickFood(itemId, f));
+  });
 }
 
-function mcPickFood(itemId, fStr) {
-  const f = typeof fStr === 'string' ? JSON.parse(fStr) : fStr;
+function mcPickFood(itemId, f) {
   const item = mealItems.find(i => i.id === itemId);
   if (!item) return;
   item.food_id   = f.id;

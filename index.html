@@ -155,26 +155,27 @@
         <div class="view-sub" id="log-date-label" style="flex:1;font-size:14px"></div>
         <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:13px" onclick="pickLogDate()">📅</button>
       </div>
-      <div class="log-meal-label">Refeição</div>
-      <div class="meal-tabs" id="log-meal-tabs">
-        <button class="meal-tab active" data-meal="breakfast"  onclick="selectMeal(this)">Pequeno-almoço</button>
-        <button class="meal-tab" data-meal="morning"           onclick="selectMeal(this)">Lanche manhã</button>
-        <button class="meal-tab" data-meal="lunch"             onclick="selectMeal(this)">Almoço</button>
-        <button class="meal-tab" data-meal="afternoon1"        onclick="selectMeal(this)">Lanche tarde 1</button>
-        <button class="meal-tab" data-meal="afternoon2"        onclick="selectMeal(this)">Lanche tarde 2</button>
-        <button class="meal-tab" data-meal="dinner"            onclick="selectMeal(this)">Jantar</button>
-        <button class="meal-tab" data-meal="supper"            onclick="selectMeal(this)">Ceia</button>
+      <div class="log-meal-label" style="margin-bottom:8px">Refeição</div>
+      <div id="meal-selector">
+        <div class="meal-selector-collapsed" id="meal-selector-head" onclick="toggleMealSelector()">
+          <span id="meal-selector-label">Pequeno-almoço</span>
+          <span id="meal-selector-chevron">▾</span>
+        </div>
+        <div class="meal-selector-expanded" id="meal-selector-grid">
+          <button class="meal-selector-opt active" data-meal="breakfast"  onclick="selectMealFromSelector('breakfast')">Pequeno-almoço</button>
+          <button class="meal-selector-opt"         data-meal="morning"    onclick="selectMealFromSelector('morning')">Lanche manhã</button>
+          <button class="meal-selector-opt"         data-meal="lunch"      onclick="selectMealFromSelector('lunch')">Almoço</button>
+          <button class="meal-selector-opt"         data-meal="afternoon1" onclick="selectMealFromSelector('afternoon1')">Lanche tarde 1</button>
+          <button class="meal-selector-opt"         data-meal="afternoon2" onclick="selectMealFromSelector('afternoon2')">Lanche tarde 2</button>
+          <button class="meal-selector-opt"         data-meal="dinner"     onclick="selectMealFromSelector('dinner')">Jantar</button>
+          <button class="meal-selector-opt"         data-meal="supper"     onclick="selectMealFromSelector('supper')">Ceia</button>
+        </div>
       </div>
     </div>
-    <div class="log-actions">
-      <button class="btn btn-primary" style="flex:1.2" onclick="openLog('db')">Pesquisar alimento</button>
-      <button class="btn btn-secondary" style="flex:1" onclick="openLog('quick')">Entrada rápida</button>
-    </div>
-    <div style="padding:0 20px;margin-top:4px">
-      <p style="font-size:13px;color:var(--text3);line-height:1.6">
-        <b style="color:var(--text2)">Pesquisar alimento</b> — pesquisa na tua base de dados, insere os gramas e os macros são calculados automaticamente.<br><br>
-        <b style="color:var(--text2)">Entrada rápida</b> — para restaurantes ou estimativas. Inseres directamente os macros sem criar alimento na base de dados.
-      </p>
+    <div class="log-type-chips">
+      <button class="log-type-chip" onclick="openLog('db')">Alimento</button>
+      <button class="log-type-chip" onclick="openLogMeals()">Refeição</button>
+      <button class="log-type-chip" onclick="openLog('quick')">Entrada rápida</button>
     </div>
   </div>
 

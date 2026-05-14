@@ -82,11 +82,10 @@ function clearQuick() {
 }
 
 function openLogForMeal(mealKey) {
-  document.querySelectorAll('#log-meal-tabs .meal-tab').forEach(t => {
-    t.classList.toggle('active', t.dataset.meal === mealKey);
-  });
   selectedMeal = mealKey;
   mealManuallySelected = true;
+  updateMealSelectorLabel(mealKey);
+  updateSheetMealTabs();
   openLog('db');
 }
 
@@ -129,4 +128,109 @@ function selectMeal(btn) {
   btn.classList.add('active');
   selectedMeal = btn.dataset.meal;
   mealManuallySelected = true;
+}
+
+// ── COLLAPSED MEAL SELECTOR ──────────────────────────────────────────────────
+
+const MEAL_LABELS = {
+  breakfast:  'Pequeno-almoço',
+  morning:    'Lanche manhã',
+  lunch:      'Almoço',
+  afternoon1: 'Lanche tarde 1',
+  afternoon2: 'Lanche tarde 2',
+  dinner:     'Jantar',
+  supper:     'Ceia',
+};
+
+function updateMealSelectorLabel(mealKey) {
+  const el = document.getElementById('meal-selector-label');
+  if (el) el.textContent = MEAL_LABELS[mealKey] || mealKey;
+  document.querySelectorAll('.meal-selector-opt').forEach(b => {
+    b.classList.toggle('active', b.dataset.meal === mealKey);
+  });
+}
+
+function toggleMealSelector() {
+  const grid = document.getElementById('meal-selector-grid');
+  const chev = document.getElementById('meal-selector-chevron');
+  if (!grid) return;
+  const isOpen = grid.classList.toggle('open');
+  if (chev) chev.textContent = isOpen ? '▴' : '▾';
+}
+
+function selectMealFromSelector(mealKey) {
+  selectedMeal = mealKey;
+  mealManuallySelected = true;
+  updateMealSelectorLabel(mealKey);
+  updateSheetMealTabs();
+  // Collapse grid
+  const grid = document.getElementById('meal-selector-grid');
+  const chev = document.getElementById('meal-selector-chevron');
+  if (grid) grid.classList.remove('open');
+  if (chev) chev.textContent = '▾';
+}
+
+// ── LOG MEALS SHEET (Refeição chip) ─────────────────────────────────────────
+
+async function openLogMeals() {
+  let overlay = document.getElementById('log-meals-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'log-meals-overlay';
+    overlay.className = 'sheet-overlay';
+    overlay.style.zIndex = '210';
+    overlay.innerHTML = `
+      <div class="sheet" style="max-height:80dvh;overflow-y:auto">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <div class="sheet-title">Aplicar refeição</div>
+          <div class="sheet-close" id="log-meals-close">×</div>
+        </div>
+        <div id="log-meals-list"></div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('open'); };
+    document.getElementById('log-meals-close').onclick = () => overlay.classList.remove('open');
+  }
+
+  const listEl = document.getElementById('log-meals-list');
+  listEl.innerHTML = '<div class="loading">A carregar...</div>';
+  overlay.classList.add('open');
+
+  if (!db) { listEl.innerHTML = '<div class="loading">Sem ligação</div>'; return; }
+
+  const { data: templates } = await db
+    .from('meal_templates').select('id, name').order('name');
+
+  if (!templates || !templates.length) {
+    listEl.innerHTML = '<div style="padding:20px;font-size:13px;color:var(--text3)">Sem refeições guardadas.<br><br>Cria uma na tab <b style="color:var(--text2)">Comida → Refeições</b>.</div>';
+    return;
+  }
+
+  const ids = templates.map(t => t.id);
+  const { data: items } = await db
+    .from('meal_template_items').select('template_id').in('template_id', ids);
+  const countMap = new Map();
+  (items || []).forEach(i => countMap.set(i.template_id, (countMap.get(i.template_id) || 0) + 1));
+
+  listEl.innerHTML = templates.map(t => {
+    const n = countMap.get(t.id) || 0;
+    const sub = n === 1 ? '1 alimento' : `${n} alimentos`;
+    return `<div class="meal-tpl-row log-meals-tpl" data-idx="">
+      <div class="meal-tpl-info">
+        <div class="meal-tpl-name">${t.name}</div>
+        <div class="meal-tpl-sub">${sub}</div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" style="flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>`;
+  }).join('');
+
+  listEl.querySelectorAll('.log-meals-tpl').forEach((row, idx) => {
+    const t = templates[idx];
+    row.style.cursor = 'pointer';
+    row.addEventListener('click', () => {
+      overlay.classList.remove('open');
+      openApplyMeal(t.id, t.name);
+    });
+  });
 }

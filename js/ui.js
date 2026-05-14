@@ -10,9 +10,7 @@ function overlayClose(e, id) { if(e.target.id===id) document.getElementById(id).
 function openLog(mode) {
   if (!mealManuallySelected) {
     selectedMeal = getMealByHour();
-    document.querySelectorAll('#log-meal-tabs .meal-tab').forEach(t => {
-      t.classList.toggle('active', t.dataset.meal === selectedMeal);
-    });
+    updateMealSelectorLabel(selectedMeal);
   }
   updateSheetMealTabs();
   document.getElementById('log-sheet-title').textContent = mode==='db' ? 'Pesquisar alimento' : 'Entrada rápida';

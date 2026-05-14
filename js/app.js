@@ -54,7 +54,11 @@ function go(view) {
     if (currentFoodsTab === 'foods') loadFoods();
     else loadMeals();
   }
-  if (view==='log')      updateLogDateLabel();
+  if (view==='log') {
+    if (!mealManuallySelected) selectedMeal = getMealByHour();
+    updateLogDateLabel();
+    updateMealSelectorLabel(selectedMeal);
+  }
   if (view==='settings') loadSettingsView();
 }
 

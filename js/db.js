@@ -110,21 +110,6 @@ async function delEntryFromEdit() {
   loadToday();
 }
 
-async function getDaysWithEntries(year, month) {
-  if (!db) return new Set();
-  const from = `${year}-${String(month + 1).padStart(2, '0')}-01`;
-  const nm   = month === 11 ? 0 : month + 1;
-  const ny   = month === 11 ? year + 1 : year;
-  const to   = `${ny}-${String(nm + 1).padStart(2, '0')}-01`;
-  try {
-    const { data } = await db.from('diary').select('date').gte('date', from).lt('date', to);
-    if (!data) return new Set();
-    return new Set(data.map(e => e.date));
-  } catch {
-    return new Set();
-  }
-}
-
 async function getDayScores(year, month) {
   if (!db) return new Map();
   const from = `${year}-${String(month + 1).padStart(2, '0')}-01`;

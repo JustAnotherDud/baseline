@@ -54,6 +54,7 @@ function closeAddFood() {
 }
 
 async function openEditEntry(id) {
+  if (!db) return;
   const { data, error } = await db.from('diary').select('*').eq('id', id).single();
   if (error || !data) return;
   editingEntry = data;

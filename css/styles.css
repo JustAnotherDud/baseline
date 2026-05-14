@@ -461,3 +461,26 @@ input[readonly] { opacity: 0.45; cursor: default; }
   .search-wrap { padding: 14px 24px; }
   .form-body { padding: 20px 24px; gap: 16px; }
 }
+
+/* ── FOODS SUB-TABS ── */
+.foods-subtabs { display: flex; padding: 0 20px 0; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 0; }
+.foods-subtab { flex: 1; padding: 10px 0; font-size: 13px; font-family: var(--mono); color: var(--text3); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; letter-spacing: .04em; transition: color .15s, border-color .15s; }
+.foods-subtab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ── MEAL TEMPLATE LIST ── */
+.empty-meals { padding: 24px 20px; font-size: 13px; color: var(--text3); font-style: italic; }
+.meal-tpl-row { display: flex; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--border); gap: 12px; }
+.meal-tpl-info { flex: 1; min-width: 0; cursor: pointer; }
+.meal-tpl-name { font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meal-tpl-sub  { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-top: 3px; }
+.meal-tpl-del  { background: none; border: none; color: var(--text3); font-size: 14px; cursor: pointer; padding: 6px 8px; border-radius: 6px; flex-shrink: 0; }
+.meal-tpl-del:active { color: var(--red); background: var(--surface2); }
+
+/* ── CREATE MEAL SHEET ── */
+.mc-item { background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+.mc-item-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mc-item-name { font-size: 13px; font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mc-food-search { width: 100%; margin-top: 4px; }
+.mc-search-results { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; max-height: 160px; overflow-y: auto; }
+.mc-food-option { padding: 8px 10px; background: var(--surface3); border-radius: 6px; cursor: pointer; }
+.mc-food-option:active { background: var(--surface); }

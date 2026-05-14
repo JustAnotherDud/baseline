@@ -360,6 +360,11 @@ function openMealBreakdown(mealKey, allEntries) {
         </div>
         <div id="meal-bd-chips" class="meal-bd-chips-row"></div>
         <div id="meal-bd-content" class="meal-bd-content"></div>
+        <div style="padding:0 14px 8px">
+          <button id="meal-bd-save-btn" class="btn btn-secondary" style="font-size:13px;padding:10px">
+            Guardar como refeição
+          </button>
+        </div>
       </div>`;
     document.body.appendChild(overlay);
     overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('open'); };
@@ -367,6 +372,37 @@ function openMealBreakdown(mealKey, allEntries) {
   }
 
   document.getElementById('meal-bd-title').textContent = mealLabel.toUpperCase();
+
+  // Wire "Guardar como refeição" — rebind every open so mes/mealLabel are fresh
+  const saveBtn = document.getElementById('meal-bd-save-btn');
+  if (saveBtn) {
+    saveBtn.onclick = () => {
+      overlay.classList.remove('open');
+      const prefillItems = mes.map(e => ({
+        food_id:      e.food_id || null,
+        food_name:    e.food_name,
+        grams:        e.grams || 0,
+        calories:     e.calories,
+        protein:      e.protein,
+        carbs:        e.carbs,
+        fat:          e.fat,
+        saturated_fat: e.saturated_fat || 0,
+        sugar:        e.sugar || 0,
+        fiber:        e.fiber || 0,
+        _food:        e.food_id ? {
+          id: e.food_id,
+          calories_per_100g:      e.grams ? e.calories      / e.grams * 100 : 0,
+          protein_per_100g:       e.grams ? e.protein       / e.grams * 100 : 0,
+          carbs_per_100g:         e.grams ? e.carbs         / e.grams * 100 : 0,
+          fat_per_100g:           e.grams ? e.fat           / e.grams * 100 : 0,
+          saturated_fat_per_100g: e.grams ? (e.saturated_fat||0)/ e.grams * 100 : 0,
+          sugar_per_100g:         e.grams ? (e.sugar||0)    / e.grams * 100 : 0,
+          fiber_per_100g:         e.grams ? (e.fiber||0)    / e.grams * 100 : 0,
+        } : null,
+      }));
+      openCreateMeal(mealLabel, prefillItems);
+    };
+  }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
   function fmtVal(v, n) {

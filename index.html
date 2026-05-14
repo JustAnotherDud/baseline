@@ -178,24 +178,43 @@
     </div>
   </div>
 
-  <!-- ─── VIEW: ALIMENTOS ─── -->
+  <!-- ─── VIEW: COMIDA ─── -->
   <div id="view-foods" class="view">
     <div class="view-header">
-      <div class="view-title">Alimentos</div>
+      <div class="view-title">Comida</div>
       <div class="view-sub" id="foods-count"></div>
     </div>
-    <div class="search-wrap">
-      <input type="search" id="foods-search" placeholder="Pesquisar..." oninput="filterFoods()" autocomplete="off">
+
+    <!-- Sub-tabs -->
+    <div class="foods-subtabs" id="foods-subtabs">
+      <button class="foods-subtab active" id="subtab-foods" onclick="switchFoodsTab('foods')">Alimentos</button>
+      <button class="foods-subtab"        id="subtab-meals" onclick="switchFoodsTab('meals')">Refeições</button>
     </div>
-    <div class="sort-chips">
-      <button class="sort-chip active" data-sort="name"     onclick="setSortFoods('name')">Nome A→Z</button>
-      <button class="sort-chip"        data-sort="protein"  onclick="setSortFoods('protein')">Proteína ↑</button>
-      <button class="sort-chip"        data-sort="calories" onclick="setSortFoods('calories')">Kcal ↑</button>
-      <button class="sort-chip"        id="sort-chip-more"  onclick="toggleMoreMenu()">Mais ↓</button>
+
+    <!-- Sub-tab: Alimentos -->
+    <div id="foods-panel">
+      <div class="search-wrap">
+        <input type="search" id="foods-search" placeholder="Pesquisar..." oninput="filterFoods()" autocomplete="off">
+      </div>
+      <div class="sort-chips">
+        <button class="sort-chip active" data-sort="name"     onclick="setSortFoods('name')">Nome A→Z</button>
+        <button class="sort-chip"        data-sort="protein"  onclick="setSortFoods('protein')">Proteína ↑</button>
+        <button class="sort-chip"        data-sort="calories" onclick="setSortFoods('calories')">Kcal ↑</button>
+        <button class="sort-chip"        id="sort-chip-more"  onclick="toggleMoreMenu()">Mais ↓</button>
+      </div>
+      <div id="sort-more-menu" class="sort-more-menu" style="display:none"></div>
+      <div id="foods-list"></div>
     </div>
-    <div id="sort-more-menu" class="sort-more-menu" style="display:none"></div>
-    <div id="foods-list"></div>
-    <button class="fab" onclick="openAddFood()">+</button>
+
+    <!-- Sub-tab: Refeições -->
+    <div id="meals-panel" style="display:none">
+      <div id="meals-list" style="padding:8px 0"></div>
+      <div style="padding:0 20px 20px">
+        <button class="btn btn-primary" onclick="openCreateMeal()">+ Nova refeição</button>
+      </div>
+    </div>
+
+    <button class="fab" id="foods-fab" onclick="openAddFood()">+</button>
   </div>
 
   <!-- ─── VIEW: TARGETS ─── -->
@@ -269,7 +288,7 @@
       <div class="target-section-title">App</div>
       <div class="settings-row">
         <span class="settings-label">Versão</span>
-        <span class="settings-value">v1.0.0</span>
+        <span class="settings-value">v1.1.0</span>
       </div>
     </div>
 
@@ -295,7 +314,7 @@
     </button>
     <button class="nav-btn" id="nav-foods" onclick="go('foods')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-      <span class="nav-label">Alimentos</span>
+      <span class="nav-label">Comida</span>
     </button>
     <button class="nav-btn" id="nav-targets" onclick="go('targets')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg>
@@ -474,6 +493,7 @@
 <script src="js/views/diary.js?v=20260514"></script>
 <script src="js/views/log.js?v=20260514"></script>
 <script src="js/views/foods.js?v=20260514"></script>
+<script src="js/views/meals.js?v=20260514"></script>
 <script src="js/views/targets.js?v=20260514"></script>
 <script src="js/app.js?v=20260514"></script>
 </body>

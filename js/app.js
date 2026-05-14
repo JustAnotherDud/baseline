@@ -41,6 +41,8 @@ function resetSetup() {
   localStorage.removeItem('nt_url'); localStorage.removeItem('nt_key'); init();
 }
 
+let currentFoodsTab = 'foods'; // 'foods' | 'meals'
+
 function go(view) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -48,9 +50,29 @@ function go(view) {
   const nb = document.getElementById('nav-'+view);
   if (nb) nb.classList.add('active');
   if (view==='today')    loadToday();
-  if (view==='foods')    loadFoods();
+  if (view==='foods') {
+    if (currentFoodsTab === 'foods') loadFoods();
+    else loadMeals();
+  }
   if (view==='log')      updateLogDateLabel();
   if (view==='settings') loadSettingsView();
+}
+
+function switchFoodsTab(tab) {
+  currentFoodsTab = tab;
+  // Sub-tab buttons
+  document.getElementById('subtab-foods').classList.toggle('active', tab === 'foods');
+  document.getElementById('subtab-meals').classList.toggle('active', tab === 'meals');
+  // Panels
+  document.getElementById('foods-panel').style.display = tab === 'foods' ? 'block' : 'none';
+  document.getElementById('meals-panel').style.display = tab === 'meals' ? 'block' : 'none';
+  // FAB — only on Alimentos
+  const fab = document.getElementById('foods-fab');
+  if (fab) fab.style.display = tab === 'foods' ? 'flex' : 'none';
+  // Sub text
+  document.getElementById('foods-count').textContent = '';
+  if (tab === 'foods') loadFoods();
+  else loadMeals();
 }
 
 async function loadSettingsView() {

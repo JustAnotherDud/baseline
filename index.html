@@ -70,13 +70,81 @@
           <div class="kcal-remaining" id="kcal-rem"></div>
         </div>
       </div>
-      <div class="macro-bars">
-        <div class="macro-bar-row"><div class="mbl">G</div><div class="mbt"><div class="mbf g" id="bar-g" style="width:0%"></div></div><div class="mbv" id="val-g">0 / 0g</div></div>
-        <div class="macro-bar-row"><div class="mbl">GS</div><div class="mbt"><div class="mbf gs" id="bar-gs" style="width:0%"></div></div><div class="mbv" id="val-gs">0 / 0g</div></div>
-        <div class="macro-bar-row"><div class="mbl">H</div><div class="mbt"><div class="mbf c" id="bar-c" style="width:0%"></div></div><div class="mbv" id="val-c">0 / 0g</div></div>
-        <div class="macro-bar-row"><div class="mbl">A</div><div class="mbt"><div class="mbf a" id="bar-a" style="width:0%"></div></div><div class="mbv" id="val-a">0g</div></div>
-        <div class="macro-bar-row"><div class="mbl">Fb</div><div class="mbt"><div class="mbf f" id="bar-f" style="width:0%"></div></div><div class="mbv" id="val-f">0 / 0g</div></div>
-        <div class="macro-bar-row"><div class="mbl">P</div><div class="mbt"><div class="mbf p" id="bar-p" style="width:0%"></div></div><div class="mbv" id="val-p">0 / 0g</div></div>
+      <!-- kcal progress bar -->
+      <div class="kcal-bar-track"><div id="bar-kcal" class="kcal-bar-fill" style="width:0%"></div></div>
+
+      <!-- Primary macros: Proteína · Hidratos · Gordura -->
+      <div class="macro-primary">
+        <div class="mpr" id="mpr-protein" onclick="toggleMacroDetail('protein')">
+          <div class="mpr-top">
+            <span class="mpr-name">Proteína</span>
+            <div class="mpr-val-group">
+              <span class="mpr-num" id="val-p-num">0</span><span class="mpr-unit">g</span><span class="mpr-tgt" id="val-p-tgt">/0g</span>
+            </div>
+          </div>
+          <div class="mbt mbt-primary"><div class="mbf p" id="bar-p" style="width:0%"></div></div>
+          <div class="mpr-detail" id="detail-protein">
+            <span class="mpr-detail-pct" id="detail-pct-protein">0%</span>
+            <span class="mpr-detail-sub">da meta</span>
+            <span class="mpr-detail-rem" id="detail-rem-protein"></span>
+          </div>
+        </div>
+        <div class="mpr" id="mpr-carbs" onclick="toggleMacroDetail('carbs')">
+          <div class="mpr-top">
+            <span class="mpr-name">Hidratos</span>
+            <div class="mpr-val-group">
+              <span class="mpr-num" id="val-c-num">0</span><span class="mpr-unit">g</span><span class="mpr-tgt" id="val-c-tgt">/0g</span>
+            </div>
+          </div>
+          <div class="mbt mbt-primary"><div class="mbf c" id="bar-c" style="width:0%"></div></div>
+          <div class="mpr-detail" id="detail-carbs">
+            <span class="mpr-detail-pct" id="detail-pct-carbs">0%</span>
+            <span class="mpr-detail-sub">da meta</span>
+            <span class="mpr-detail-rem" id="detail-rem-carbs"></span>
+          </div>
+        </div>
+        <div class="mpr" id="mpr-fat" onclick="toggleMacroDetail('fat')">
+          <div class="mpr-top">
+            <span class="mpr-name">Gordura</span>
+            <div class="mpr-val-group">
+              <span class="mpr-num" id="val-g-num">0</span><span class="mpr-unit">g</span><span class="mpr-tgt" id="val-g-tgt">/0g</span>
+            </div>
+          </div>
+          <div class="mbt mbt-primary"><div class="mbf g" id="bar-g" style="width:0%"></div></div>
+          <div class="mpr-detail" id="detail-fat">
+            <span class="mpr-detail-pct" id="detail-pct-fat">0%</span>
+            <span class="mpr-detail-sub">da meta</span>
+            <span class="mpr-detail-rem" id="detail-rem-fat"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Separator -->
+      <div class="macro-sep"></div>
+
+      <!-- Secondary chips: Gord. Sat. · Fibra · Açúcar -->
+      <div class="macro-secondary">
+        <div class="msc">
+          <div class="msc-header">
+            <span class="msc-name">Gord. Sat.</span>
+            <span class="msc-val" id="val-gs">0/0g</span>
+          </div>
+          <div class="mbt mbt-sec"><div class="mbf gs" id="bar-gs" style="width:0%"></div></div>
+        </div>
+        <div class="msc">
+          <div class="msc-header">
+            <span class="msc-name">Fibra</span>
+            <span class="msc-val" id="val-f">0/0g</span>
+          </div>
+          <div class="mbt mbt-sec"><div class="mbf f" id="bar-f" style="width:0%"></div></div>
+        </div>
+        <div class="msc">
+          <div class="msc-header">
+            <span class="msc-name">Açúcar</span>
+            <span class="msc-val" id="val-a">0/0g</span>
+          </div>
+          <div class="mbt mbt-sec"><div class="mbf a" id="bar-a" style="width:0%"></div></div>
+        </div>
       </div>
     </div>
     <div id="diary-container"></div>

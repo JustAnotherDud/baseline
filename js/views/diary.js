@@ -144,44 +144,6 @@ function pickDate() {
   });
 }
 
-function pickLogDate() {
-  openDatePicker(currentDate, date => {
-    currentDate = date;
-    setDateLabel();
-    updateLogDateLabel();
-  });
-}
-
-function updateLogDateLabel() {
-  const today = new Date().toISOString().split('T')[0];
-  const d = new Date(currentDate+'T12:00:00');
-  const dateStr = d.toLocaleDateString('pt-PT',{weekday:'long',day:'numeric',month:'long'});
-  const el = document.getElementById('log-date-label');
-  if (el) el.textContent = currentDate === today ? `Hoje — ${dateStr}` : dateStr;
-}
-
-async function loadLogTotalsStrip() {
-  const strip = document.getElementById('log-totals-strip');
-  if (!strip || !db) return;
-  const { data } = await db.from('diary').select('calories,protein,carbs,fat').eq('date', currentDate);
-  if (!data) return;
-  const t = await getTargetsForDate(currentDate);
-  const r = n => Math.round(n);
-  const tot = { kcal:0, prot:0, carb:0, fat:0 };
-  data.forEach(e => { tot.kcal+=+e.calories; tot.prot+=+e.protein; tot.carb+=+e.carbs; tot.fat+=+e.fat; });
-  const rem = t.calories - r(tot.kcal);
-  const remColor = rem >= 0 ? 'var(--text2)' : 'var(--red)';
-  strip.innerHTML = `
-    <div style="font-family:var(--mono);font-size:12px">
-      <span style="color:var(--accent);font-weight:600">${r(tot.kcal)}</span>
-      <span style="color:var(--text3)">/${t.calories}</span>
-    </div>
-    <div style="font-family:var(--mono);font-size:11px;color:${remColor}">${rem>=0?rem+'↓':Math.abs(rem)+'↑'} kcal</div>
-    <div style="font-family:var(--mono);font-size:11px;color:var(--blue)">P ${r(tot.prot)}g</div>
-    <div style="font-family:var(--mono);font-size:11px;color:var(--yellow)">H ${r(tot.carb)}g</div>
-    <div style="font-family:var(--mono);font-size:11px;color:var(--orange)">G ${r(tot.fat)}g</div>`;
-}
-
 function toggleMacroDetail(key) {
   const detail = document.getElementById('detail-' + key);
   const row    = document.getElementById('mpr-' + key);
@@ -191,31 +153,3 @@ function toggleMacroDetail(key) {
   row.classList.toggle('mpr-expanded', !isOpen);
 }
 
-async function loadRecentFoods() {
-  const el = document.getElementById('recent-foods');
-  if (!db || !el) return;
-  const { data } = await db.from('diary')
-    .select('food_id, food_name')
-    .not('food_id', 'is', null)
-    .order('logged_at', { ascending: false })
-    .limit(50);
-
-  if (!data || !data.length) {
-    el.innerHTML = '<div style="font-size:12px;color:var(--text3);font-family:var(--mono)">Sem histórico ainda</div>';
-    return;
-  }
-
-  const seen = new Set();
-  const recents = [];
-  for (const e of data) {
-    if (!seen.has(e.food_id)) {
-      seen.add(e.food_id);
-      recents.push(e);
-      if (recents.length >= 8) break;
-    }
-  }
-
-  el.innerHTML = recents.map(e =>
-    `<button class="recent-chip" onclick="pickFood(${e.food_id})">${e.food_name}</button>`
-  ).join('');
-}

@@ -32,18 +32,24 @@ async function loadMeals() {
     const n = countMap.get(t.id) || 0;
     const sub = n === 1 ? '1 alimento' : `${n} alimentos`;
     return `
-    <div class="meal-tpl-row">
-      <div class="meal-tpl-info" onclick="openMealDetail(${t.id})">
+    <div class="meal-tpl-row" data-id="${t.id}">
+      <div class="meal-tpl-info">
         <div class="meal-tpl-name">${t.name}</div>
         <div class="meal-tpl-sub">${sub}</div>
       </div>
-      <button class="meal-tpl-del" onclick="deleteMeal(${t.id}, event)">✕</button>
+      <button class="meal-tpl-del" data-del="${t.id}">✕</button>
     </div>`;
   }).join('');
+
+  // Attach listeners — avoids inline onclick issues with special chars in names
+  el.querySelectorAll('.meal-tpl-row').forEach((row, idx) => {
+    const t = templates[idx];
+    row.querySelector('.meal-tpl-info').addEventListener('click', () => openApplyMeal(t.id, t.name));
+    row.querySelector('.meal-tpl-del').addEventListener('click', e => { e.stopPropagation(); deleteMeal(t.id); });
+  });
 }
 
-async function deleteMeal(id, e) {
-  if (e) e.stopPropagation();
+async function deleteMeal(id) {
   if (!confirm('Eliminar esta refeição?')) return;
   const { error } = await db.from('meal_templates').delete().eq('id', id);
   if (error) { toast('Erro ao eliminar'); return; }
@@ -260,13 +266,110 @@ async function saveMeal() {
   loadMeals();
 }
 
-// ── MEAL DETAIL (future use) ─────────────────────────────────────────────────
-async function openMealDetail(id) {
-  // Placeholder — future fase 2 will allow logging a template
-  const { data } = await db
-    .from('meal_templates')
-    .select('name')
-    .eq('id', id)
-    .single();
-  if (data) toast(`"${data.name}" — em breve: registar refeição`);
+// ── APPLY MEAL TO DIARY ──────────────────────────────────────────────────────
+
+let _applyMealItems = null; // items loaded for the current apply sheet
+
+async function openApplyMeal(templateId, templateName) {
+  let overlay = document.getElementById('apply-meal-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'apply-meal-overlay';
+    overlay.className = 'sheet-overlay';
+    overlay.style.zIndex = '220';
+    overlay.innerHTML = `
+      <div class="sheet" style="max-height:80dvh;overflow-y:auto">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <div id="apply-meal-title" class="sheet-title"></div>
+          <div class="sheet-close" id="apply-meal-close">×</div>
+        </div>
+        <div class="form-body">
+          <div id="apply-meal-items"></div>
+          <div class="divider"></div>
+          <label>
+            <span class="lt">Adicionar a</span>
+            <select id="apply-meal-select">
+              <option value="breakfast">Pequeno-almoço</option>
+              <option value="morning">Lanche manhã</option>
+              <option value="lunch">Almoço</option>
+              <option value="afternoon1">Lanche tarde 1</option>
+              <option value="afternoon2">Lanche tarde 2</option>
+              <option value="dinner">Jantar</option>
+              <option value="supper">Ceia</option>
+            </select>
+          </label>
+          <button class="btn btn-primary" id="apply-meal-btn">Adicionar ao diário</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('open'); };
+    document.getElementById('apply-meal-close').onclick = () => overlay.classList.remove('open');
+    document.getElementById('apply-meal-btn').onclick = applyMealToDiary;
+  }
+
+  document.getElementById('apply-meal-title').textContent = templateName.toUpperCase();
+
+  // Default to current selectedMeal
+  const sel = document.getElementById('apply-meal-select');
+  sel.value = (typeof selectedMeal !== 'undefined' ? selectedMeal : null)
+              || (typeof getMealByHour === 'function' ? getMealByHour() : 'breakfast');
+
+  // Show overlay immediately, load items async
+  const itemsEl = document.getElementById('apply-meal-items');
+  itemsEl.innerHTML = '<div class="loading">A carregar...</div>';
+  _applyMealItems = null;
+  overlay.classList.add('open');
+
+  const { data: items, error } = await db
+    .from('meal_template_items')
+    .select('*')
+    .eq('template_id', templateId)
+    .order('id');
+
+  if (error || !items || !items.length) {
+    itemsEl.innerHTML = '<div style="font-size:13px;color:var(--text3)">Sem alimentos nesta refeição.</div>';
+    return;
+  }
+
+  _applyMealItems = items;
+  const r = n => Math.round(+(n || 0) * 10) / 10;
+  const totalKcal = items.reduce((s, i) => s + +(i.calories || 0), 0);
+
+  itemsEl.innerHTML = items.map(i => `
+    <div class="apply-meal-item">
+      <div class="apply-meal-item-name">${i.food_name}</div>
+      <div class="apply-meal-item-detail">${i.grams}g · ${Math.round(+(i.calories||0))} kcal · P${r(i.protein)}g H${r(i.carbs)}g G${r(i.fat)}g</div>
+    </div>`).join('')
+    + `<div class="apply-meal-total">${Math.round(totalKcal)} kcal total</div>`;
+}
+
+async function applyMealToDiary() {
+  if (!_applyMealItems || !_applyMealItems.length) return;
+  const meal = document.getElementById('apply-meal-select').value;
+  const rows = _applyMealItems.map(i => ({
+    date:          currentDate,
+    meal,
+    food_id:       i.food_id || null,
+    food_name:     i.food_name,
+    grams:         +(i.grams),
+    calories:      +(i.calories),
+    protein:       +(i.protein),
+    carbs:         +(i.carbs),
+    fat:           +(i.fat),
+    saturated_fat: +(i.saturated_fat || 0),
+    sugar:         +(i.sugar || 0),
+    fiber:         +(i.fiber || 0),
+  }));
+
+  const { error } = await db.from('diary').insert(rows);
+  if (error) { toast('Erro ao adicionar'); return; }
+
+  const n = rows.length;
+  toast(`${n} alimento${n !== 1 ? 's' : ''} adicionado${n !== 1 ? 's' : ''} ✓`);
+  document.getElementById('apply-meal-overlay').classList.remove('open');
+  _applyMealItems = null;
+  selectedMeal = meal;
+  loadToday();
+  go('today');
 }

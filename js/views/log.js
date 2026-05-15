@@ -1,3 +1,5 @@
+let loadTotalsGen = 0;
+
 async function searchDB() {
   const q = document.getElementById('log-q').value.trim().toLowerCase();
   const res = document.getElementById('log-results');
@@ -243,11 +245,13 @@ function updateLogDateLabel() {
 }
 
 async function loadLogTotalsStrip() {
+  const gen = ++loadTotalsGen;
   const strip = document.getElementById('log-totals-strip');
   if (!strip || !db) return;
   const { data } = await db.from('diary').select('calories,protein,carbs,fat').eq('date', currentDate);
   if (!data) return;
   const t = await getTargetsForDate(currentDate);
+  if (gen !== loadTotalsGen) return;
   const r = n => Math.round(n);
   const tot = { kcal:0, prot:0, carb:0, fat:0 };
   data.forEach(e => { tot.kcal+=+e.calories; tot.prot+=+e.protein; tot.carb+=+e.carbs; tot.fat+=+e.fat; });

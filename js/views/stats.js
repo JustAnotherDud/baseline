@@ -1,4 +1,7 @@
+let loadStatsGen = 0;
+
 async function loadStats() {
+  const gen = ++loadStatsGen;
   const container = document.getElementById('stats-container');
   const periodEl  = document.getElementById('stats-period');
   if (!container) return;
@@ -33,6 +36,8 @@ async function loadStats() {
   const diaryRows   = diaryRes.data   || [];
   const targetRows  = targetsRes.data || [];
   const foodRows    = foodsRes.data   || [];
+
+  if (gen !== loadStatsGen) return;
 
   // ── Aggregate diary by date ──────────────────────────────────────────────
   const diaryMap = new Map();

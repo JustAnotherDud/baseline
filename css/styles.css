@@ -487,3 +487,9 @@ input[readonly] { opacity: 0.45; cursor: default; }
 .apply-meal-item-name { font-size: 14px; font-weight: 500; }
 .apply-meal-item-detail { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-top: 3px; }
 .apply-meal-total { font-family: var(--mono); font-size: 13px; color: var(--accent); font-weight: 600; padding-top: 10px; text-align: right; }
+
+/* ── SHEET: MAIS ── */
+.mais-item { display: flex; justify-content: space-between; align-items: center; padding: 18px 20px; border-bottom: 1px solid var(--border); cursor: pointer; font-size: 16px; }
+.mais-item:active { background: var(--surface2); }
+.mais-item-label { font-weight: 500; }
+.mais-item-arrow { color: var(--text3); font-size: 18px; }

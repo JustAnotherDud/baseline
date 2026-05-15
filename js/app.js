@@ -62,16 +62,6 @@ function go(view) {
   if (view==='stats')    loadStats();
 }
 
-function openMaisMenu() {
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('nav-mais').classList.add('active');
-  document.getElementById('sheet-mais').classList.add('open');
-}
-
-function goFromMais(view) {
-  document.getElementById('sheet-mais').classList.remove('open');
-  go(view);
-}
 
 function loadStats() {
   // Fase 2

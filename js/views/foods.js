@@ -155,7 +155,8 @@ function renderFoods(foods) {
   const RATIO_LABEL = { p_kcal: 'P/kcal', h_kcal: 'H/kcal', f_kcal: 'Fb/kcal' };
   const HL = 'color:var(--accent);font-weight:600';
 
-  el.innerHTML = foods.map(f => {
+  el.innerHTML = '';
+  foods.forEach(f => {
     // Protein — highlight when main 'protein' chip active
     const pStr = activeSort === 'protein'
       ? `<span style="${HL}">P${f.protein_per_100g}</span>`
@@ -172,6 +173,7 @@ function renderFoods(foods) {
       : `G${f.fat_per_100g}`;
 
     // Right column: kcal default, swapped for hidden fields + ratios
+    // All values are numeric — safe for innerHTML
     let rightCol;
     if (RATIO_LABEL[ms]) {
       const kcal  = f.calories_per_100g || 0;
@@ -188,15 +190,35 @@ function renderFoods(foods) {
       rightCol = `<div class="fi-kcal" style="${kcalStyle}">${f.calories_per_100g}<br><span style="font-size:9px;color:var(--text3)">kcal/100g</span></div>`;
     }
 
-    return `
-    <div class="food-item" onclick="editFood(${f.id})">
-      <div class="fi-info">
-        <div class="fi-name">${f.name}</div>
-        <div class="fi-detail">${f.brand?f.brand+' · ':''}${pStr} ${cStr} ${gStr}${f.serving_size_g?' · porção '+f.serving_size_g+'g':''}</div>
-      </div>
-      ${rightCol}
-    </div>`;
-  }).join('');
+    const item = document.createElement('div');
+    item.className = 'food-item';
+    item.onclick = () => editFood(f.id);
+
+    const info = document.createElement('div');
+    info.className = 'fi-info';
+
+    // name and brand are user data — use textContent / createTextNode
+    const nameEl = document.createElement('div');
+    nameEl.className = 'fi-name';
+    nameEl.textContent = f.name;
+
+    const detail = document.createElement('div');
+    detail.className = 'fi-detail';
+    const servingStr = f.serving_size_g ? ` · porção ${f.serving_size_g}g` : '';
+    detail.innerHTML = `${pStr} ${cStr} ${gStr}${servingStr}`;
+    if (f.brand) {
+      detail.insertBefore(document.createTextNode(f.brand + ' · '), detail.firstChild);
+    }
+
+    const rightEl = document.createElement('div');
+    rightEl.innerHTML = rightCol;
+
+    info.appendChild(nameEl);
+    info.appendChild(detail);
+    item.appendChild(info);
+    item.appendChild(rightEl.firstElementChild);
+    el.appendChild(item);
+  });
 }
 
 function editFood(id) {

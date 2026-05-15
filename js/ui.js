@@ -57,9 +57,10 @@ async function openEditEntry(id) {
   if (error || !data) return;
   editingEntry = data;
 
-  document.getElementById('edit-food-card').innerHTML = `
-    <div class="food-card-name">${data.food_name}</div>
-    <div class="food-card-sub">${data.grams ? 'Peso original: ' + data.grams + 'g' : 'Entrada rápida'}</div>`;
+  const card = document.getElementById('edit-food-card');
+  card.innerHTML = '<div class="food-card-name"></div><div class="food-card-sub"></div>';
+  card.querySelector('.food-card-name').textContent = data.food_name;
+  card.querySelector('.food-card-sub').textContent = data.grams ? 'Peso original: ' + data.grams + 'g' : 'Entrada rápida';
 
   document.getElementById('edit-grams').value = data.grams || '';
   updateEditPreview();
@@ -240,7 +241,7 @@ function openNutrientSheet(entries, nutrient) {
       item.innerHTML = `
         <div class="nutri-rank-top" style="${multi ? 'cursor:pointer' : ''}">
           <div style="display:flex;align-items:center;gap:5px;flex:1;min-width:0">
-            <div class="nutri-rank-name">${name}</div>
+            <div class="nutri-rank-name"></div>
             ${multi ? `<span style="font-family:var(--mono);font-size:10px;color:var(--text3);background:var(--surface3);padding:1px 5px;border-radius:10px;flex-shrink:0">×${count}</span>` : ''}
           </div>
           <div style="display:flex;align-items:center;gap:6px">
@@ -255,6 +256,7 @@ function openNutrientSheet(entries, nutrient) {
           <div class="nutri-rank-pct">${pct}%</div>
         </div>
         ${multi ? `<div class="nutri-rank-subs" style="display:none">${subsHTML}</div>` : ''}`;
+      item.querySelector('.nutri-rank-name').textContent = name;
 
       if (multi) {
         const topRow = item.querySelector('.nutri-rank-top');
@@ -422,22 +424,33 @@ function openMealBreakdown(mealKey, allEntries) {
 
   // ── Food list (sorted by calories DESC) ──────────────────────────────────
   const sorted = [...mes].sort((a, b) => +(b.calories || 0) - +(a.calories || 0));
-  const foodListHTML = sorted.map(e => {
-    const gramsStr = (e.grams != null && +e.grams > 0) ? `${Math.round(+e.grams)}g` : '—';
-    return `<div class="meal-bd-food-row" data-id="${e.id}">
-      <div class="meal-bd-food-name">${e.food_name}</div>
-      <div class="meal-bd-food-meta">${gramsStr} &nbsp; ${Math.round(+(e.calories || 0))} kcal</div>
-    </div>`;
-  }).join('');
 
   // ── Render ───────────────────────────────────────────────────────────────
-  document.getElementById('meal-bd-content').innerHTML = `
+  const contentEl = document.getElementById('meal-bd-content');
+  contentEl.innerHTML = `
     <div style="display:flex;justify-content:center;padding:16px 0 0">
       ${buildMealDonut(totalProt, totalCarbs, totalFat, totalKcal)}
     </div>
     ${legendHTML}
     <div style="height:1px;background:var(--border);margin:0 0 4px"></div>
-    <div>${foodListHTML}</div>`;
+    <div id="meal-bd-food-list"></div>`;
+
+  const foodListEl = document.getElementById('meal-bd-food-list');
+  sorted.forEach(e => {
+    const gramsStr = (e.grams != null && +e.grams > 0) ? `${Math.round(+e.grams)}g` : '—';
+    const row = document.createElement('div');
+    row.className = 'meal-bd-food-row';
+    row.dataset.id = e.id;
+    const nameEl = document.createElement('div');
+    nameEl.className = 'meal-bd-food-name';
+    nameEl.textContent = e.food_name;
+    const metaEl = document.createElement('div');
+    metaEl.className = 'meal-bd-food-meta';
+    metaEl.textContent = `${gramsStr}   ${Math.round(+(e.calories || 0))} kcal`;
+    row.appendChild(nameEl);
+    row.appendChild(metaEl);
+    foodListEl.appendChild(row);
+  });
 
   document.querySelectorAll('#meal-bd-overlay .meal-bd-food-row').forEach(row => {
     const id = +row.dataset.id;

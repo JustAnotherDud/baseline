@@ -63,9 +63,6 @@ function go(view) {
 }
 
 
-function loadStats() {
-  // Fase 2
-}
 
 function switchFoodsTab(tab) {
   currentFoodsTab = tab;

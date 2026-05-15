@@ -1,6 +1,6 @@
 # NutriTrack — Handoff Document
 
-> Estado actual: **15 Mai 2026** — Fase 3.5 activa  
+> Estado actual: **16 Mai 2026** — Fase 3.5 activa  
 > Última actualização automática gerada por Claude Code.
 
 ---
@@ -37,28 +37,36 @@ nutrition-tracker/
 ├── js/
 │   ├── config.js               — MEALS (dict), cachedTargets (fallback)
 │   ├── nutrition.js            — getNutrientColor(), getTargets()
-│   ├── db.js                   — Supabase queries: loadToday, saveDiary, saveEditEntry,
-│   │                             delEntry, getDayScores, getActivePhase, getPhaseTargets,
-│   │                             getTargetsForDate (lê daily_targets → fallback cache)
+│   ├── db.js                   — Supabase queries: getTargetsForDate (daily_targets → fallback cache),
+│   │                             loadToday, saveDiary, saveEditEntry, delEntryFromEdit,
+│   │                             getDayScores, getActivePhase
 │   ├── ui.js                   — Componentes de UI reutilizáveis:
-│   │                             toast, openLog, openAddFood, openEditEntry,
-│   │                             openDatePicker, openNutrientSheet, openMealBreakdown,
-│   │                             updateEditPreview, openLogMeals, loadRecentFoods,
-│   │                             loadLogTotalsStrip, getMealByHour, updateMealSelectorLabel
-│   ├── app.js                  — init(), go(view), saveSetup(), resetSetup(),
+│   │                             toast, overlayClose,
+│   │                             openLog, closeLog, openAddFood, closeAddFood,
+│   │                             openEditEntry, closeEditEntry,
+│   │                             openDatePicker (opts.showScores), openNutrientSheet,
+│   │                             openMealBreakdown, updateEditPreview,
+│   │                             renderMealTemplateList
+│   ├── app.js                  — init(), go(view), switchFoodsTab(), saveSetup(), resetSetup(),
 │   │                             loadSettingsView(), clearCacheAndReload()
 │   └── views/
 │       ├── diary.js            — renderToday(), setDateLabel(), changeDay(), pickDate()
 │       │                         NUTRIENT_MAP, tap handlers nas barras de macros
 │       ├── log.js              — searchDB(), pickFood(), updatePreview(), backToSearch(),
-│       │                         saveQuick(), handleSaveDiary(), openLogForMeal(),
-│       │                         selectMealFromSelector(), pickLogDate(), updateLogDateLabel()
+│       │                         saveQuick(), clearQuick(), handleSaveDiary(),
+│       │                         openLogForMeal(), openAddFoodFromLog(),
+│       │                         getMealByHour(), updateMealSelectorLabel(),
+│       │                         toggleMealSelector(), selectMealFromSelector(),
+│       │                         updateSheetMealTabs(), selectSheetMeal(),
+│       │                         openLogMeals(), pickLogDate(), updateLogDateLabel(),
+│       │                         loadLogTotalsStrip(), loadRecentFoods()
 │       ├── foods.js            — loadFoods(), filterFoods(), renderFoods(), editFood(),
 │       │                         saveFood(), deleteFood(), sortFoods(), setSortFoods(),
-│       │                         toggleMoreMenu(), selectMoreSort()
-│       ├── meals.js            — loadMeals(), deleteMeal(), openCreateMeal(), saveMeal(),
-│       │                         openApplyMeal(), applyMealToDiary(), mcAddItem(),
-│       │                         mcPickFood(), mcGramsChange()
+│       │                         toggleMoreMenu(), closeMoreMenu(), selectMoreSort()
+│       ├── meals.js            — loadMeals(), deleteMeal(), openCreateMeal(), closeMealCreate(),
+│       │                         saveMeal(), openApplyMeal(), applyMealToDiary(),
+│       │                         mcAddItem(), mcRemoveItem(), renderMcItems(),
+│       │                         mcSearchFood(), mcPickFood(), mcGramsChange()
 │       ├── targets.js          — loadTargetsForm(), refreshPhaseAndTargets(),
 │       │                         updatePhaseBadge(), onTargetsDateChange(),
 │       │                         updateTargetsDateLabel()
@@ -489,6 +497,18 @@ Projecto pessoal, acesso único. A `secret_key` está em `athlete.json` (local) 
 ### Date picker com scores de cor
 O calendário faz 2 queries em `Promise.all` para o mês visível: diary e daily_targets. Agrega client-side e calcula score por dia (verde/amarelo/vermelho/neutro). Feedback visual imediato do histórico de aderência.
 
+`openDatePicker` aceita terceiro argumento `opts = {}`. Quando `opts.showScores === false`, o fetch de scores é omitido e não são desenhados dots — usado no date picker da vista Targets onde os scores são irrelevantes.
+
+### `renderMealTemplateList` como função partilhada (ui.js)
+`openLogMeals()` (log.js) e `loadMeals()` (meals.js) partilhavam código de renderização de listas de templates quase idêntico. Extraído para `renderMealTemplateList(containerEl, templates, countMap, opts)` em `ui.js`.
+
+`opts`:
+- `showDelete: bool` — `true` mostra botão ✕ com listener; `false` mostra chevron `→` e o row inteiro é clicável
+- `onItemClick: fn(t)` — chamado com o objecto template ao clicar (no row inteiro ou só no `.meal-tpl-info` quando `showDelete`)
+- `onDeleteClick: fn(id)` — só obrigatório se `showDelete: true`; recebe `t.id`, com `stopPropagation`
+
+O nome do template é sempre escrito via `.textContent` (XSS-safe). A sub-linha ("N alimentos") é construída com dados numéricos, safe para `innerHTML`.
+
 ---
 
 ## 9. Padrões de desenvolvimento
@@ -521,6 +541,27 @@ Em mobile, após push para `main` com alterações ao CSS ou JS:
 3. Adicionar `if (view==='X') loadX();` no `go()` de `app.js`
 4. Criar `js/views/X.js` com `function loadX() { ... }`
 5. Adicionar `<script src="js/views/X.js?v=…">` antes de `app.js` em `index.html`
+
+### Guard de concorrência por geração (funções async)
+Funções assíncronas que escrevem no DOM usam um counter de geração para evitar race conditions quando são invocadas rapidamente em sequência (ex: navegação rápida entre datas):
+
+```js
+let loadXGen = 0;
+
+async function loadX() {
+  const gen = ++loadXGen;
+  // ... um ou mais awaits ...
+  if (gen !== loadXGen) return; // chamada mais recente já está a correr — abandonar
+  // só chega aqui a invocação mais recente
+  element.innerHTML = '...';
+}
+```
+
+Aplicado actualmente em:
+- `loadStats()` em `stats.js` — counter `loadStatsGen`
+- `loadLogTotalsStrip()` em `log.js` — counter `loadTotalsGen`
+
+Usar sempre que uma função async faz ≥1 await antes de escrever no DOM e pode ser invocada por eventos rápidos (navegação de datas, mudança de tab, etc.). O counter é declarado a nível de módulo (escopo global do ficheiro), não dentro da função.
 
 ### Adicionar um sheet (overlay)
 Os sheets são criados uma vez via `document.createElement` dentro da função `openXxx()` com o padrão:

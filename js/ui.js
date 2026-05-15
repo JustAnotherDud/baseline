@@ -57,15 +57,59 @@ async function openEditEntry(id) {
   if (error || !data) return;
   editingEntry = data;
 
+  const isQuick = !data.grams && data.grams !== 0;
+
   const card = document.getElementById('edit-food-card');
   card.innerHTML = '<div class="food-card-name"></div><div class="food-card-sub"></div>';
   card.querySelector('.food-card-name').textContent = data.food_name;
-  card.querySelector('.food-card-sub').textContent = data.grams ? 'Peso original: ' + data.grams + 'g' : 'Entrada rápida';
+  card.querySelector('.food-card-sub').textContent = isQuick
+    ? 'Entrada rápida'
+    : 'Peso original: ' + data.grams + 'g';
 
-  document.getElementById('edit-grams').value = data.grams || '';
-  updateEditPreview();
-  document.getElementById('sheet-edit').classList.add('open');
-  setTimeout(() => document.getElementById('edit-grams').focus(), 300);
+  const gramsLabel = document.getElementById('edit-grams').closest('label');
+  const previewEl  = document.getElementById('edit-preview');
+
+  if (isQuick) {
+    gramsLabel.style.display = 'none';
+    previewEl.style.display  = 'none';
+
+    let qf = document.getElementById('edit-quick-fields');
+    if (!qf) {
+      qf = document.createElement('div');
+      qf.id = 'edit-quick-fields';
+      qf.innerHTML = `
+        <label><span class="lt">Calorias (kcal)</span><input type="number" id="eq-calories" inputmode="decimal" placeholder="0"></label>
+        <label><span class="lt">Proteína (g)</span><input type="number" id="eq-protein" inputmode="decimal" placeholder="0"></label>
+        <label><span class="lt">Hidratos (g)</span><input type="number" id="eq-carbs" inputmode="decimal" placeholder="0"></label>
+        <label><span class="lt">Gordura (g)</span><input type="number" id="eq-fat" inputmode="decimal" placeholder="0"></label>
+        <label><span class="lt">Gord. Saturada (g)</span><input type="number" id="eq-satfat" inputmode="decimal" placeholder="0"></label>
+        <label><span class="lt">Açúcar (g)</span><input type="number" id="eq-sugar" inputmode="decimal" placeholder="0"></label>
+        <label><span class="lt">Fibra (g)</span><input type="number" id="eq-fiber" inputmode="decimal" placeholder="0"></label>`;
+      previewEl.after(qf);
+    }
+    qf.style.display = 'block';
+
+    document.getElementById('eq-calories').value = data.calories      ?? '';
+    document.getElementById('eq-protein').value  = data.protein       ?? '';
+    document.getElementById('eq-carbs').value    = data.carbs         ?? '';
+    document.getElementById('eq-fat').value      = data.fat           ?? '';
+    document.getElementById('eq-satfat').value   = data.saturated_fat ?? '';
+    document.getElementById('eq-sugar').value    = data.sugar         ?? '';
+    document.getElementById('eq-fiber').value    = data.fiber         ?? '';
+
+    document.getElementById('sheet-edit').classList.add('open');
+    setTimeout(() => document.getElementById('eq-calories').focus(), 300);
+  } else {
+    gramsLabel.style.display = '';
+    previewEl.style.display  = '';
+    const qf = document.getElementById('edit-quick-fields');
+    if (qf) qf.style.display = 'none';
+
+    document.getElementById('edit-grams').value = data.grams || '';
+    updateEditPreview();
+    document.getElementById('sheet-edit').classList.add('open');
+    setTimeout(() => document.getElementById('edit-grams').focus(), 300);
+  }
 }
 
 function closeEditEntry() {

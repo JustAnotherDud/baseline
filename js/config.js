@@ -8,4 +8,4 @@ const MEALS = {
   supper:      'Ceia',
 };
 
-let cachedTargets = { calories:2300, fat:70, saturated_fat:20, carbs:230, sugar:150, fiber:30, protein:160 };
+let cachedTargets = { calories: 2300, fat: 65, saturated_fat: 25, carbs: 254, sugar: 150, fiber: 30, protein: 175 };

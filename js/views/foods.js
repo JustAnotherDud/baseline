@@ -28,8 +28,20 @@ let currentMoreDir   = 'desc';
 
 async function loadFoods() {
   if (!db) return;
-  const {data} = await db.from('foods').select('*').order('name');
-  allFoods = data||[];
+  const { data, error } = await db.from('foods').select('*').order('name');
+  if (error) {
+    console.error('loadFoods error:', error.message);
+    const list = document.getElementById('foods-list');
+    if (list) {
+      list.innerHTML = '';
+      const msg = document.createElement('p');
+      msg.className = 'empty-state';
+      msg.textContent = 'Erro ao carregar alimentos. Verifica a ligação.';
+      list.appendChild(msg);
+    }
+    return;
+  }
+  allFoods = data || [];
   document.getElementById('foods-count').textContent = `${allFoods.length} alimentos`;
   filterFoods();
 }

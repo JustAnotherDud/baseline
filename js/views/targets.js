@@ -6,11 +6,6 @@ const TARGET_FIELD_IDS = ['t-kcal','t-fat','t-satfat','t-carb','t-sugar','t-fibe
 async function loadTargetsForm() {
   currentTargetsDate = new Date().toISOString().split('T')[0];
   updateTargetsDateLabel();
-  // Enforce read-only on all numeric fields
-  TARGET_FIELD_IDS.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.readOnly = true;
-  });
   await refreshPhaseAndTargets();
 }
 
@@ -45,35 +40,39 @@ async function refreshPhaseAndTargets() {
   document.getElementById('targets-loading').style.display = 'none';
   document.getElementById('targets-display').style.opacity = '1';
 
-  const hint       = document.getElementById('targets-hint');
-  const blocksEl   = document.getElementById('targets-blocks');
-  const blocksDetail = document.getElementById('targets-blocks-detail');
-  const pushTime   = document.getElementById('targets-push-time');
+  const hint     = document.getElementById('targets-hint');
+  const blocksEl = document.getElementById('targets-blocks');
+  const pushTime = document.getElementById('targets-push-time');
 
   if (row) {
     // ── Com target ──────────────────────────────────────────────
-    document.getElementById('t-kcal').value   = row.calories      ?? 0;
-    document.getElementById('t-fat').value    = row.fat           ?? 0;
-    document.getElementById('t-satfat').value = row.saturated_fat ?? 0;
-    document.getElementById('t-carb').value   = row.carbs         ?? 0;
-    document.getElementById('t-sugar').value  = row.sugar         ?? 0;
-    document.getElementById('t-fiber').value  = row.fiber         ?? 0;
-    document.getElementById('t-prot').value   = row.protein       ?? 0;
+    document.getElementById('t-kcal').textContent   = row.calories      ?? '—';
+    document.getElementById('t-fat').textContent    = row.fat           ?? '—';
+    document.getElementById('t-satfat').textContent = row.saturated_fat ?? '—';
+    document.getElementById('t-carb').textContent   = row.carbs         ?? '—';
+    document.getElementById('t-sugar').textContent  = row.sugar         ?? '—';
+    document.getElementById('t-fiber').textContent  = row.fiber         ?? '—';
+    document.getElementById('t-prot').textContent   = row.protein       ?? '—';
 
-    // Blocos activos
-    if (row.blocks_active && typeof row.blocks_active === 'object') {
+    // Blocos activos — chips
+    const chipsEl = document.getElementById('targets-blocks-chips');
+    if (row.blocks_active && typeof row.blocks_active === 'object' && chipsEl) {
       const BLOCK_LABELS = {
-        base:      'base',
-        trabalho:  'trabalho',
-        ginasio:   'ginásio',
-        surplus:   'surplus',
-        deficit:   'défice',
+        base:     'base',
+        trabalho: 'trabalho',
+        ginasio:  'ginásio',
+        surplus:  'surplus',
+        deficit:  'défice',
       };
-      const parts = Object.entries(row.blocks_active)
-        .filter(([, v]) => +v > 0)
-        .map(([k, v]) => `${BLOCK_LABELS[k] || k} ${Math.round(+v)}kcal`);
-      if (parts.length) {
-        blocksDetail.textContent = parts.join(' · ');
+      const entries = Object.entries(row.blocks_active).filter(([, v]) => +v > 0);
+      if (entries.length) {
+        chipsEl.innerHTML = '';
+        entries.forEach(([k, v]) => {
+          const chip = document.createElement('span');
+          chip.className = 'block-chip';
+          chip.textContent = `${BLOCK_LABELS[k] || k} ${Math.round(+v)}kcal`;
+          chipsEl.appendChild(chip);
+        });
         blocksEl.style.display = 'block';
       } else {
         blocksEl.style.display = 'none';
@@ -98,7 +97,7 @@ async function refreshPhaseAndTargets() {
     // ── Sem target ───────────────────────────────────────────────
     TARGET_FIELD_IDS.forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.value = 0;
+      if (el) el.textContent = '—';
     });
     blocksEl.style.display   = 'none';
     pushTime.style.display   = 'none';

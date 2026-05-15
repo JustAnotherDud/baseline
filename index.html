@@ -274,6 +274,19 @@
     </div>
   </div>
 
+  <!-- ─── VIEW: STATS ─── -->
+  <div id="view-stats" class="view">
+    <div class="view-header">
+      <div>
+        <div class="view-title">Estatísticas</div>
+        <div class="view-sub" id="stats-period">últimos 7 dias</div>
+      </div>
+    </div>
+    <div id="stats-container" style="padding:20px">
+      <div class="loading">A carregar...</div>
+    </div>
+  </div>
+
   <!-- ─── NAV ─── -->
   <nav>
     <button class="nav-btn active" id="nav-today" onclick="go('today')">
@@ -290,16 +303,13 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
       <span class="nav-label">Comida</span>
     </button>
-    <button class="nav-btn" id="nav-targets" onclick="go('targets')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg>
-      <span class="nav-label">Targets</span>
-    </button>
-    <button class="nav-btn" id="nav-settings" onclick="go('settings')">
+    <button class="nav-btn" id="nav-mais" onclick="openMaisMenu()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-        <circle cx="12" cy="12" r="3"/>
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        <circle cx="12" cy="5" r="1.5" fill="currentColor"/>
+        <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+        <circle cx="12" cy="19" r="1.5" fill="currentColor"/>
       </svg>
-      <span class="nav-label">Settings</span>
+      <span class="nav-label">Mais</span>
     </button>
   </nav>
 </div>
@@ -453,6 +463,31 @@
       <div style="display:flex;gap:10px">
         <button class="btn btn-danger" style="flex:1" onclick="delEntryFromEdit()">Eliminar</button>
         <button class="btn btn-primary" style="flex:2" onclick="saveEditEntry()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════ SHEET: MAIS -->
+<div class="sheet-overlay" id="sheet-mais" onclick="overlayClose(event,'sheet-mais')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title">MAIS</div>
+      <div class="sheet-close" onclick="document.getElementById('sheet-mais').classList.remove('open')">×</div>
+    </div>
+    <div id="mais-menu-list">
+      <div class="mais-item" onclick="goFromMais('targets')">
+        <div class="mais-item-label">Targets</div>
+        <div class="mais-item-arrow">→</div>
+      </div>
+      <div class="mais-item" onclick="goFromMais('stats')">
+        <div class="mais-item-label">Estatísticas</div>
+        <div class="mais-item-arrow">→</div>
+      </div>
+      <div class="mais-item" onclick="goFromMais('settings')">
+        <div class="mais-item-label">Settings</div>
+        <div class="mais-item-arrow">→</div>
       </div>
     </div>
   </div>

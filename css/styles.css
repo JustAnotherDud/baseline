@@ -69,7 +69,6 @@ body {
 .kcal-value { font-family: var(--mono); font-size: 42px; font-weight: 600; color: var(--accent); line-height: 1; }
 .kcal-label { font-family: var(--mono); font-size: 13px; color: var(--text3); margin-top: 3px; }
 .kcal-remaining { font-family: var(--mono); font-size: 13px; color: var(--text2); text-align: right; }
-.nutri-analyse-btn { background: var(--surface2); border: none; border-radius: 6px; cursor: pointer; padding: 4px 8px; display: flex; align-items: center; justify-content: center; align-self: flex-end; margin-bottom: 2px; }
 /* kcal bar */
 .kcal-bar-track { height: 6px; background: var(--surface3); border-radius: 999px; overflow: hidden; margin-top: 14px; }
 .kcal-bar-fill  { height: 100%; border-radius: 999px; width: 0%; transition: width .5s ease; }
@@ -298,11 +297,6 @@ input[type="number"] { font-family: var(--mono); }
 }
 
 /* ── NUTRIENT ANALYSIS SHEET ── */
-.nutri-pick-item {
-  padding: 16px 20px; border-bottom: 1px solid var(--border);
-  cursor: pointer; display: flex; align-items: center; justify-content: space-between;
-}
-.nutri-pick-item:active { background: var(--surface2); }
 .nutri-rank-item { padding: 12px 20px; border-bottom: 1px solid var(--border); }
 .nutri-rank-top {
   display: flex; justify-content: space-between; align-items: baseline;

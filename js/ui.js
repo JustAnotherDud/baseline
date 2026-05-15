@@ -169,17 +169,7 @@ async function openDatePicker(selectedVal, onSelect) {
   overlay.classList.add('open');
 }
 
-function openNutrientSheet(entries) {
-  const NUTRIENTS = [
-    { key: 'calories',      label: 'Calorias',      unit: 'kcal', color: 'var(--accent)' },
-    { key: 'protein',       label: 'Proteína',       unit: 'g',    color: 'var(--blue)'   },
-    { key: 'fat',           label: 'Gordura',         unit: 'g',    color: 'var(--orange)' },
-    { key: 'carbs',         label: 'Hidratos',        unit: 'g',    color: 'var(--yellow)' },
-    { key: 'fiber',         label: 'Fibra',           unit: 'g',    color: 'var(--accent)' },
-    { key: 'saturated_fat', label: 'Gord. Saturada',  unit: 'g',    color: '#f97316'       },
-    { key: 'sugar',         label: 'Açúcar',          unit: 'g',    color: '#e879f9'       },
-  ];
-
+function openNutrientSheet(entries, nutrient) {
   let overlay = document.getElementById('nutri-overlay');
   if (!overlay) {
     overlay = document.createElement('div');
@@ -188,30 +178,17 @@ function openNutrientSheet(entries) {
     overlay.innerHTML = `
       <div class="sheet" style="max-height:80dvh">
         <div class="sheet-handle"></div>
-        <div id="nutri-stage-pick">
-          <div class="sheet-header">
-            <div class="sheet-title">Analisar nutriente</div>
-            <div class="sheet-close" id="nutri-close">×</div>
-          </div>
-          <div id="nutri-pick-list"></div>
+        <div class="sheet-header">
+          <button id="nutri-back" style="background:none;border:none;color:var(--text2);font-size:15px;cursor:pointer;padding:2px 0;font-family:var(--sans)">← Voltar</button>
+          <div id="nutri-rank-title" class="sheet-title" style="flex:1;text-align:center;padding:0 8px"></div>
+          <div class="sheet-close" id="nutri-close">×</div>
         </div>
-        <div id="nutri-stage-rank" style="display:none">
-          <div class="sheet-header">
-            <button id="nutri-back" style="background:none;border:none;color:var(--text2);font-size:15px;cursor:pointer;padding:2px 0;font-family:var(--sans)">← Voltar</button>
-            <div id="nutri-rank-title" class="sheet-title" style="flex:1;text-align:center;padding:0 8px"></div>
-            <div class="sheet-close" id="nutri-close2">×</div>
-          </div>
-          <div id="nutri-rank-list"></div>
-        </div>
+        <div id="nutri-rank-list"></div>
       </div>`;
     document.body.appendChild(overlay);
     overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('open'); };
-    document.getElementById('nutri-close').onclick  = () => overlay.classList.remove('open');
-    document.getElementById('nutri-close2').onclick = () => overlay.classList.remove('open');
-    document.getElementById('nutri-back').onclick   = () => {
-      document.getElementById('nutri-stage-pick').style.display = 'block';
-      document.getElementById('nutri-stage-rank').style.display = 'none';
-    };
+    document.getElementById('nutri-close').onclick = () => overlay.classList.remove('open');
+    document.getElementById('nutri-back').onclick  = () => overlay.classList.remove('open');
   }
 
   function showRanking(n) {
@@ -240,8 +217,6 @@ function openNutrientSheet(entries) {
 
     if (entries.length === 0) {
       list.innerHTML = '<div class="loading">Sem entradas hoje</div>';
-      document.getElementById('nutri-stage-pick').style.display = 'none';
-      document.getElementById('nutri-stage-rank').style.display = 'block';
       return;
     }
 
@@ -296,23 +271,9 @@ function openNutrientSheet(entries) {
 
       list.appendChild(item);
     });
-
-    document.getElementById('nutri-stage-pick').style.display = 'none';
-    document.getElementById('nutri-stage-rank').style.display = 'block';
   }
 
-  const pickList = document.getElementById('nutri-pick-list');
-  pickList.innerHTML = '';
-  NUTRIENTS.forEach(n => {
-    const item = document.createElement('div');
-    item.className = 'nutri-pick-item';
-    item.innerHTML = `<span style="font-size:15px">${n.label}</span><span style="font-family:var(--mono);font-size:12px;color:var(--text3)">${n.unit}</span>`;
-    item.onclick = () => showRanking(n);
-    pickList.appendChild(item);
-  });
-
-  document.getElementById('nutri-stage-pick').style.display = 'block';
-  document.getElementById('nutri-stage-rank').style.display = 'none';
+  showRanking(nutrient);
   overlay.classList.add('open');
 }
 

@@ -1,5 +1,14 @@
 let diaryEntries = [];
 
+const NUTRIENT_MAP = {
+  protein: { key: 'protein',       label: 'Proteína',      unit: 'g', color: 'var(--blue)'   },
+  carbs:   { key: 'carbs',         label: 'Hidratos',       unit: 'g', color: 'var(--yellow)' },
+  fat:     { key: 'fat',           label: 'Gordura',         unit: 'g', color: 'var(--orange)' },
+  satfat:  { key: 'saturated_fat', label: 'Gord. Saturada',  unit: 'g', color: '#f97316'       },
+  fiber:   { key: 'fiber',         label: 'Fibra',           unit: 'g', color: 'var(--accent)' },
+  sugar:   { key: 'sugar',         label: 'Açúcar',          unit: 'g', color: '#e879f9'       },
+};
+
 function renderToday(entries, t) {
   diaryEntries = entries;
   const tot = {kcal:0, fat:0, satfat:0, carb:0, sugar:0, fiber:0, prot:0};
@@ -62,6 +71,33 @@ function renderToday(entries, t) {
         const rem = target - r(actual);
         el.textContent = rem > 0 ? `${rem}g por atingir` : 'Meta atingida!';
         el.style.color = rem > 0 ? 'var(--text3)' : 'var(--accent)';
+      }
+    }
+  });
+
+  // Tap on bar tracks / secondary chips → open nutrient ranking
+  [
+    { barId: 'bar-p',  nutrientKey: 'protein', isPrimary: true  },
+    { barId: 'bar-c',  nutrientKey: 'carbs',   isPrimary: true  },
+    { barId: 'bar-g',  nutrientKey: 'fat',     isPrimary: true  },
+    { barId: 'bar-gs', nutrientKey: 'satfat',  isPrimary: false },
+    { barId: 'bar-f',  nutrientKey: 'fiber',   isPrimary: false },
+    { barId: 'bar-a',  nutrientKey: 'sugar',   isPrimary: false },
+  ].forEach(({ barId, nutrientKey, isPrimary }) => {
+    const n      = NUTRIENT_MAP[nutrientKey];
+    const fillEl = document.getElementById(barId);
+    if (!n || !fillEl) return;
+    if (isPrimary) {
+      const trackEl = fillEl.parentElement; // .mbt.mbt-primary
+      if (trackEl) {
+        trackEl.style.cursor = 'pointer';
+        trackEl.onclick = e => { e.stopPropagation(); openNutrientSheet(diaryEntries, n); };
+      }
+    } else {
+      const mscEl = fillEl.closest('.msc');
+      if (mscEl) {
+        mscEl.style.cursor = 'pointer';
+        mscEl.onclick = () => openNutrientSheet(diaryEntries, n);
       }
     }
   });

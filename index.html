@@ -196,7 +196,10 @@
 
   <!-- ─── VIEW: TARGETS ─── -->
   <div id="view-targets" class="view">
-    <div class="view-header"><div class="view-title">Targets</div></div>
+    <div class="view-header">
+      <button onclick="go('mais')" style="background:none;border:none;color:var(--text2);font-size:15px;cursor:pointer;padding:0;font-family:var(--sans)">←</button>
+      <div class="view-title">Targets</div>
+    </div>
 
     <!-- Data + badge de fase -->
     <div class="target-section" style="padding-bottom:14px">
@@ -238,7 +241,10 @@
 
   <!-- ─── VIEW: SETTINGS ─── -->
   <div id="view-settings" class="view">
-    <div class="view-header"><div class="view-title">Settings</div></div>
+    <div class="view-header">
+      <button onclick="go('mais')" style="background:none;border:none;color:var(--text2);font-size:15px;cursor:pointer;padding:0;font-family:var(--sans)">←</button>
+      <div class="view-title">Settings</div>
+    </div>
 
     <!-- PERFIL -->
     <div class="target-section">
@@ -274,9 +280,31 @@
     </div>
   </div>
 
+  <!-- ─── VIEW: MAIS ─── -->
+  <div id="view-mais" class="view">
+    <div class="view-header">
+      <div class="view-title">Mais</div>
+    </div>
+    <div>
+      <div class="mais-item" onclick="go('targets')">
+        <div class="mais-item-label">Targets</div>
+        <div class="mais-item-arrow">→</div>
+      </div>
+      <div class="mais-item" onclick="go('stats')">
+        <div class="mais-item-label">Estatísticas</div>
+        <div class="mais-item-arrow">→</div>
+      </div>
+      <div class="mais-item" onclick="go('settings')">
+        <div class="mais-item-label">Settings</div>
+        <div class="mais-item-arrow">→</div>
+      </div>
+    </div>
+  </div>
+
   <!-- ─── VIEW: STATS ─── -->
   <div id="view-stats" class="view">
     <div class="view-header">
+      <button onclick="go('mais')" style="background:none;border:none;color:var(--text2);font-size:15px;cursor:pointer;padding:0;font-family:var(--sans)">←</button>
       <div>
         <div class="view-title">Estatísticas</div>
         <div class="view-sub" id="stats-period">últimos 7 dias</div>
@@ -303,7 +331,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
       <span class="nav-label">Comida</span>
     </button>
-    <button class="nav-btn" id="nav-mais" onclick="openMaisMenu()">
+    <button class="nav-btn" id="nav-mais" onclick="go('mais')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
         <circle cx="12" cy="5" r="1.5" fill="currentColor"/>
         <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
@@ -468,30 +496,6 @@
   </div>
 </div>
 
-<!-- ════════════════════════════════════ SHEET: MAIS -->
-<div class="sheet-overlay" id="sheet-mais" onclick="overlayClose(event,'sheet-mais')">
-  <div class="sheet">
-    <div class="sheet-handle"></div>
-    <div class="sheet-header">
-      <div class="sheet-title">MAIS</div>
-      <div class="sheet-close" onclick="document.getElementById('sheet-mais').classList.remove('open')">×</div>
-    </div>
-    <div id="mais-menu-list">
-      <div class="mais-item" onclick="goFromMais('targets')">
-        <div class="mais-item-label">Targets</div>
-        <div class="mais-item-arrow">→</div>
-      </div>
-      <div class="mais-item" onclick="goFromMais('stats')">
-        <div class="mais-item-label">Estatísticas</div>
-        <div class="mais-item-arrow">→</div>
-      </div>
-      <div class="mais-item" onclick="goFromMais('settings')">
-        <div class="mais-item-label">Settings</div>
-        <div class="mais-item-arrow">→</div>
-      </div>
-    </div>
-  </div>
-</div>
 
 <div id="toast"></div>
 

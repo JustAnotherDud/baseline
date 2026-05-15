@@ -56,6 +56,26 @@ async function saveDiary() {
 
 async function saveEditEntry() {
   if (!editingEntry) return;
+  const isQuick = !editingEntry.grams && editingEntry.grams !== 0;
+
+  if (isQuick) {
+    const n = id => parseFloat(document.getElementById(id).value) || 0;
+    const { error } = await db.from('diary').update({
+      calories:      n('eq-calories'),
+      protein:       n('eq-protein'),
+      carbs:         n('eq-carbs'),
+      fat:           n('eq-fat'),
+      saturated_fat: n('eq-satfat'),
+      sugar:         n('eq-sugar'),
+      fiber:         n('eq-fiber'),
+    }).eq('id', editingEntry.id);
+    if (error) { toast('Erro ao guardar'); return; }
+    toast('Actualizado');
+    closeEditEntry();
+    loadToday();
+    return;
+  }
+
   const g = parseFloat(document.getElementById('edit-grams').value);
   if (!g || g <= 0) { toast('Indica a quantidade'); return; }
 

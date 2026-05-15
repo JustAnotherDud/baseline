@@ -118,7 +118,7 @@ function closeEditEntry() {
   editingEntry = null;
 }
 
-async function openDatePicker(selectedVal, onSelect) {
+async function openDatePicker(selectedVal, onSelect, opts = {}) {
   const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
                   'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const DAYS   = ['S','T','Q','Q','S','S','D'];
@@ -161,7 +161,9 @@ async function openDatePicker(selectedVal, onSelect) {
   };
 
   async function render() {
-    try { dayScores = await getDayScores(viewYear, viewMonth); } catch {}
+    if (opts.showScores !== false) {
+      try { dayScores = await getDayScores(viewYear, viewMonth); } catch {}
+    }
     document.getElementById('dp-label').textContent = `${MONTHS[viewMonth]} ${viewYear}`;
     const grid = document.getElementById('dp-grid');
     grid.innerHTML = '';
@@ -193,7 +195,7 @@ async function openDatePicker(selectedVal, onSelect) {
       const dow = new Date(viewYear, viewMonth, d).getDay(); // 0=Sun,6=Sat
       btn.style.cssText = 'width:100%;display:flex;flex-direction:column;align-items:center;cursor:pointer;background:none;border:none;padding:2px 0;border-radius:6px';
       if (dow === 0 || dow === 6) btn.classList.add('cal-weekend');
-      const dotHTML = score !== undefined
+      const dotHTML = (opts.showScores !== false) && score !== undefined
         ? `<span class="cal-dot" style="background:${SCORE_COLOR[score]}"></span>`
         : '';
       btn.innerHTML = `<span style="${numStyle}">${d}</span>${dotHTML}`;
@@ -518,4 +520,33 @@ function updateEditPreview() {
   document.getElementById('ep-sugar').textContent  = c(editingEntry.sugar);
   document.getElementById('ep-fiber').textContent  = c(editingEntry.fiber);
   document.getElementById('ep-prot').textContent   = c(editingEntry.protein);
+}
+
+// ── SHARED: MEAL TEMPLATE LIST ───────────────────────────────────────────────
+// opts: { showDelete: bool, onItemClick: fn(t), onDeleteClick?: fn(id) }
+function renderMealTemplateList(containerEl, templates, countMap, opts) {
+  containerEl.innerHTML = '';
+  templates.forEach(t => {
+    const n = countMap.get(t.id) || 0;
+    const sub = n === 1 ? '1 alimento' : `${n} alimentos`;
+    const row = document.createElement('div');
+    row.className = 'meal-tpl-row';
+    row.innerHTML = `
+      <div class="meal-tpl-info">
+        <div class="meal-tpl-name"></div>
+        <div class="meal-tpl-sub">${sub}</div>
+      </div>
+      ${opts.showDelete
+        ? '<button class="meal-tpl-del">✕</button>'
+        : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" style="flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>'}`;
+    row.querySelector('.meal-tpl-name').textContent = t.name;
+    if (opts.showDelete) {
+      row.querySelector('.meal-tpl-info').addEventListener('click', () => opts.onItemClick(t));
+      row.querySelector('.meal-tpl-del').addEventListener('click', e => { e.stopPropagation(); opts.onDeleteClick(t.id); });
+    } else {
+      row.style.cursor = 'pointer';
+      row.addEventListener('click', () => opts.onItemClick(t));
+    }
+    containerEl.appendChild(row);
+  });
 }

@@ -204,25 +204,12 @@ async function openLogMeals() {
   const countMap = new Map();
   (items || []).forEach(i => countMap.set(i.template_id, (countMap.get(i.template_id) || 0) + 1));
 
-  listEl.innerHTML = templates.map(t => {
-    const n = countMap.get(t.id) || 0;
-    const sub = n === 1 ? '1 alimento' : `${n} alimentos`;
-    return `<div class="meal-tpl-row log-meals-tpl" data-idx="">
-      <div class="meal-tpl-info">
-        <div class="meal-tpl-name">${t.name}</div>
-        <div class="meal-tpl-sub">${sub}</div>
-      </div>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" style="flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
-    </div>`;
-  }).join('');
-
-  listEl.querySelectorAll('.log-meals-tpl').forEach((row, idx) => {
-    const t = templates[idx];
-    row.style.cursor = 'pointer';
-    row.addEventListener('click', () => {
+  renderMealTemplateList(listEl, templates, countMap, {
+    showDelete: false,
+    onItemClick: t => {
       overlay.classList.remove('open');
       openApplyMeal(t.id, t.name);
-    });
+    },
   });
 }
 
@@ -232,6 +219,7 @@ function pickLogDate() {
   openDatePicker(currentDate, date => {
     currentDate = date;
     setDateLabel();
+    loadToday();
     updateLogDateLabel();
   });
 }

@@ -95,12 +95,6 @@ body {
 .mpr-num { font-size: 22px; font-weight: 600; transition: color .2s; }
 .mpr-unit { font-size: 11px; color: var(--text3); }
 .mpr-tgt { font-size: 11px; color: var(--text3); margin-left: 3px; }
-/* expand panel */
-.mpr-detail { display: flex; align-items: baseline; gap: 7px; overflow: hidden; max-height: 0; opacity: 0; padding-top: 0; transition: max-height .28s cubic-bezier(.4,0,.2,1), opacity .2s ease, padding-top .2s; }
-.mpr-detail.open { max-height: 60px; opacity: 1; padding-top: 11px; }
-.mpr-detail-pct { font-family: var(--mono); font-size: 24px; font-weight: 700; letter-spacing: -.02em; }
-.mpr-detail-sub { font-family: var(--sans); font-size: 12px; color: var(--text3); }
-.mpr-detail-rem { font-family: var(--mono); font-size: 11px; margin-left: auto; }
 /* separator */
 .macro-sep { height: 1px; background: var(--border); margin: 18px 0 12px; }
 /* secondary chips */
@@ -233,12 +227,6 @@ input[type="number"] { font-family: var(--mono); }
 .fi-kcal { font-family: var(--mono); font-size: 14px; color: var(--text2); white-space: nowrap; }
 
 /* ── MEAL TABS ── */
-.meal-tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  padding: 0 20px 4px;
-}
 .meal-tab {
   padding: 7px 14px; border-radius: 20px; font-size: 13px;
   font-weight: 500; white-space: nowrap; cursor: pointer;
@@ -369,8 +357,6 @@ input[type="number"] { font-family: var(--mono); }
 .settings-value { font-family: var(--mono); font-size: 13px; color: var(--text); }
 .phase-badge { font-family: var(--mono); font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: .08em; padding: 6px 10px; background: rgba(74,222,128,.08); border-radius: 6px; display: inline-block; }
 .phase-badge-empty { color: var(--text3); background: transparent; }
-input[readonly] { opacity: 0.45; cursor: default; }
-
 /* ── LOG VIEW ── */
 .log-meal-wrap { padding: 0 20px 4px; }
 .log-meal-label { font-family: var(--mono); font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px; }

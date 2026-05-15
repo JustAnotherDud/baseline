@@ -2,7 +2,16 @@ async function searchDB() {
   const q = document.getElementById('log-q').value.trim().toLowerCase();
   const res = document.getElementById('log-results');
   if (q.length<1) { res.innerHTML='<div class="loading">Começa a escrever para pesquisar</div>'; return; }
-  const {data} = await db.from('foods').select('*').ilike('name',`%${q}%`).limit(25);
+  const { data, error } = await db.from('foods').select('*').ilike('name',`%${q}%`).limit(25);
+  if (error) {
+    console.error('searchDB error:', error.message);
+    res.innerHTML = '';
+    const msg = document.createElement('p');
+    msg.className = 'empty-state';
+    msg.textContent = 'Erro ao pesquisar. Verifica a ligação.';
+    res.appendChild(msg);
+    return;
+  }
   if (!data||!data.length) {
     const q2 = document.getElementById('log-q').value.trim();
     const q2h = q2.replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));

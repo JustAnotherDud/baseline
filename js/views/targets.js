@@ -22,20 +22,16 @@ async function refreshPhaseAndTargets() {
   document.getElementById('targets-loading').style.display = 'block';
   document.getElementById('targets-display').style.opacity = '0.4';
 
-  // 1. Badge de fase (mantém — informativo)
-  currentPhase = await getActivePhase(currentTargetsDate);
+  // Fase + daily_targets em paralelo
+  const [phase, targetsResult] = await Promise.all([
+    getActivePhase(currentTargetsDate),
+    db
+      ? db.from('daily_targets').select('*').eq('date', currentTargetsDate).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+  currentPhase = phase;
   updatePhaseBadge();
-
-  // 2. Lê daily_targets para a data seleccionada
-  let row = null;
-  if (db) {
-    const { data } = await db
-      .from('daily_targets')
-      .select('*')
-      .eq('date', currentTargetsDate)
-      .maybeSingle();
-    row = data || null;
-  }
+  const row = (targetsResult && targetsResult.data) || null;
 
   document.getElementById('targets-loading').style.display = 'none';
   document.getElementById('targets-display').style.opacity = '1';
@@ -81,11 +77,17 @@ async function refreshPhaseAndTargets() {
       blocksEl.style.display = 'none';
     }
 
-    // Push time
+    // Push time — mostra data quando o push não é de hoje
     if (row.updated_at) {
-      const d = new Date(row.updated_at);
-      const hhmm = d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
-      pushTime.textContent = `Push às ${hhmm}`;
+      const pushDate = new Date(row.updated_at);
+      const hhmm     = pushDate.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+      const isToday  = pushDate.toLocaleDateString('pt-PT') === new Date().toLocaleDateString('pt-PT');
+      if (isToday) {
+        pushTime.textContent = `Push às ${hhmm}`;
+      } else {
+        const ddmm = pushDate.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' });
+        pushTime.textContent = `Push a ${ddmm} às ${hhmm}`;
+      }
       pushTime.style.display = 'block';
     } else {
       pushTime.style.display = 'none';

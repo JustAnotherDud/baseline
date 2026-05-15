@@ -33,7 +33,8 @@ function openLog(mode) {
 
 function closeLog() {
   document.getElementById('sheet-log').classList.remove('open');
-  selectedFood=null;
+  selectedFood = null;
+  mealManuallySelected = false;
 }
 
 function openAddFood() {

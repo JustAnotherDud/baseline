@@ -28,24 +28,10 @@ async function loadMeals() {
   const countMap = new Map();
   (items || []).forEach(i => countMap.set(i.template_id, (countMap.get(i.template_id) || 0) + 1));
 
-  el.innerHTML = templates.map(t => {
-    const n = countMap.get(t.id) || 0;
-    const sub = n === 1 ? '1 alimento' : `${n} alimentos`;
-    return `
-    <div class="meal-tpl-row" data-id="${t.id}">
-      <div class="meal-tpl-info">
-        <div class="meal-tpl-name">${t.name}</div>
-        <div class="meal-tpl-sub">${sub}</div>
-      </div>
-      <button class="meal-tpl-del" data-del="${t.id}">✕</button>
-    </div>`;
-  }).join('');
-
-  // Attach listeners — avoids inline onclick issues with special chars in names
-  el.querySelectorAll('.meal-tpl-row').forEach((row, idx) => {
-    const t = templates[idx];
-    row.querySelector('.meal-tpl-info').addEventListener('click', () => openApplyMeal(t.id, t.name));
-    row.querySelector('.meal-tpl-del').addEventListener('click', e => { e.stopPropagation(); deleteMeal(t.id); });
+  renderMealTemplateList(el, templates, countMap, {
+    showDelete: true,
+    onItemClick: t => openApplyMeal(t.id, t.name),
+    onDeleteClick: id => deleteMeal(id),
   });
 }
 

@@ -209,32 +209,68 @@
       <div id="phase-badge" class="phase-badge" style="margin-top:10px"></div>
     </div>
 
-    <!-- Campos nutricionais (read-only — populados pelo DCB) -->
-    <div class="target-section">
-      <div id="targets-loading" class="loading" style="display:none">A carregar targets...</div>
-      <div id="targets-display" style="display:flex;flex-direction:column;gap:12px">
-        <label><span class="lt">Calorias (kcal)</span><input type="number" id="t-kcal" inputmode="decimal"></label>
-        <div class="r2">
-          <label><span class="lt">Gordura (g)</span><input type="number" id="t-fat" inputmode="decimal"></label>
-          <label><span class="lt">Gord. Saturada (g)</span><input type="number" id="t-satfat" inputmode="decimal"></label>
-        </div>
-        <div class="r2">
-          <label><span class="lt">Hidratos (g)</span><input type="number" id="t-carb" inputmode="decimal"></label>
-          <label><span class="lt">Açúcar (g)</span><input type="number" id="t-sugar" inputmode="decimal"></label>
-        </div>
-        <div class="r2">
-          <label><span class="lt">Fibra (g)</span><input type="number" id="t-fiber" inputmode="decimal"></label>
-          <label><span class="lt">Proteína (g)</span><input type="number" id="t-prot" inputmode="decimal"></label>
-        </div>
-        <div id="targets-blocks" style="display:none">
-          <div class="target-section-title" style="margin-top:16px">BLOCOS ACTIVOS</div>
-          <div id="targets-blocks-detail"
-               style="font-family:var(--mono);font-size:12px;color:var(--text2);margin-top:6px;line-height:1.8"></div>
-        </div>
-        <div id="targets-push-time"
-             style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:8px;display:none"></div>
-        <p id="targets-hint" style="font-size:12px;color:var(--text3);font-family:var(--mono);display:none"></p>
+    <!-- Valores nutricionais (populados pelo DCB via daily_targets) -->
+    <div id="targets-loading" class="loading" style="display:none;padding:0 20px 12px">A carregar targets...</div>
+    <div id="targets-display">
+
+      <!-- Calorias em destaque -->
+      <div id="t-kcal-display" style="padding:20px 20px 8px">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Calorias</div>
+        <div id="t-kcal" style="font-family:var(--mono);font-size:42px;font-weight:600;color:var(--accent);line-height:1">—</div>
+        <div style="font-family:var(--mono);font-size:12px;color:var(--text3);margin-top:4px">kcal</div>
       </div>
+
+      <!-- Primários -->
+      <div class="target-section">
+        <div class="t-row">
+          <span class="t-row-label">Proteína</span>
+          <span class="t-row-value" id="t-prot">—</span>
+          <span class="t-row-unit">g</span>
+        </div>
+        <div class="t-row">
+          <span class="t-row-label">Hidratos</span>
+          <span class="t-row-value" id="t-carb">—</span>
+          <span class="t-row-unit">g</span>
+        </div>
+        <div class="t-row">
+          <span class="t-row-label">Gordura</span>
+          <span class="t-row-value" id="t-fat">—</span>
+          <span class="t-row-unit">g</span>
+        </div>
+      </div>
+
+      <!-- Secundários -->
+      <div class="target-section">
+        <div class="target-section-title">Secundários</div>
+        <div class="t-row">
+          <span class="t-row-label">Gord. Saturada</span>
+          <span class="t-row-value" id="t-satfat">—</span>
+          <span class="t-row-unit">g</span>
+        </div>
+        <div class="t-row">
+          <span class="t-row-label">Fibra</span>
+          <span class="t-row-value" id="t-fiber">—</span>
+          <span class="t-row-unit">g</span>
+        </div>
+        <div class="t-row">
+          <span class="t-row-label">Açúcar</span>
+          <span class="t-row-value" id="t-sugar">—</span>
+          <span class="t-row-unit">g</span>
+        </div>
+      </div>
+
+      <!-- Blocos activos -->
+      <div id="targets-blocks" style="display:none">
+        <div class="target-section" style="padding-top:16px">
+          <div class="target-section-title" style="margin-bottom:10px">Blocos activos</div>
+          <div id="targets-blocks-chips" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+        </div>
+      </div>
+
+      <div id="targets-push-time"
+           style="font-family:var(--mono);font-size:11px;color:var(--text3);padding:8px 20px 0;display:none"></div>
+      <p id="targets-hint"
+         style="font-size:12px;color:var(--text3);font-family:var(--mono);padding:0 20px;display:none"></p>
     </div>
 
   </div>

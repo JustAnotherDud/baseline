@@ -523,5 +523,5 @@ input[readonly] { opacity: 0.45; cursor: default; }
 .stats-top-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
 .stats-top-item:last-child { border-bottom: none; }
 .stats-top-rank { font-family: var(--mono); font-size: 11px; color: var(--text3); width: 16px; text-align: center; flex-shrink: 0; }
-.stats-top-name { flex: 1; font-size: 14px; color: var(--text1); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stats-top-name { flex: 1; font-size: 14px; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .stats-top-meta { font-family: var(--mono); font-size: 12px; color: var(--text3); flex-shrink: 0; }

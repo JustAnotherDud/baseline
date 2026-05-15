@@ -80,12 +80,6 @@ async function saveEditEntry() {
   loadToday();
 }
 
-async function delEntry(id) {
-  if (!confirm('Eliminar este registo?')) return;
-  const {error} = await db.from('diary').delete().eq('id',id);
-  if (error) { toast('Erro ao eliminar'); return; }
-  toast('Eliminado'); loadToday();
-}
 
 async function delEntryFromEdit() {
   if (!editingEntry) return;
@@ -150,18 +144,6 @@ async function getActivePhase(dateStr) {
     .select('id, label, objetivo')
     .lte('start_date', dateStr)
     .or(`end_date.is.null,end_date.gte.${dateStr}`)
-    .maybeSingle();
-  if (error || !data) return null;
-  return data;
-}
-
-async function getPhaseTargets(phaseId, dayType) {
-  if (!db) return null;
-  const { data, error } = await db
-    .from('phase_targets')
-    .select('*')
-    .eq('phase_id', phaseId)
-    .eq('day_type', dayType)
     .maybeSingle();
   if (error || !data) return null;
   return data;

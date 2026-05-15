@@ -58,11 +58,11 @@ async function refreshPhaseAndTargets() {
     const chipsEl = document.getElementById('targets-blocks-chips');
     if (row.blocks_active && typeof row.blocks_active === 'object' && chipsEl) {
       const BLOCK_LABELS = {
-        base:     'base',
-        trabalho: 'trabalho',
-        ginasio:  'ginásio',
-        surplus:  'surplus',
-        deficit:  'défice',
+        base:    'Base',
+        work:    'Trabalho',
+        gym:     'Ginásio',
+        run:     'Corrida',
+        surplus: 'Surplus',
       };
       const entries = Object.entries(row.blocks_active).filter(([, v]) => +v > 0);
       if (entries.length) {

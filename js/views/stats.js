@@ -121,22 +121,23 @@ async function loadStats() {
 
   const dots = [];
   for (let i = 6; i >= 0; i--) {
-    const d = new Date(); d.setDate(d.getDate() - i);
-    const dateStr  = d.toISOString().split('T')[0];
-    const weekday  = d.toLocaleDateString('pt-PT', { weekday: 'narrow' });
-    const diary    = diaryMap.get(dateStr);
-    const target   = targetsMap.get(dateStr);
+    const d = new Date(new Date().toISOString().split('T')[0] + 'T12:00:00');
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
+    const label   = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+    const diary   = diaryMap.get(dateStr);
+    const target  = targetsMap.get(dateStr);
     let color = 'var(--surface3)'; // no data
     let pct   = null;
     if (diary && target && target.calories > 0) {
       pct   = diary.calories / target.calories * 100;
       color = getNutrientColor('calories', pct);
     }
-    const title = pct !== null ? `${weekday} · ${Math.round(pct)}%` : `${weekday} · sem dados`;
+    const title = pct !== null ? `${label} · ${Math.round(pct)}%` : `${label} · sem dados`;
     dots.push(`
       <div class="stats-dot-col">
         <div class="stats-dot" style="background:${color}" title="${title}"></div>
-        <div class="stats-dot-label">${weekday}</div>
+        <div class="stats-dot-label">${label}</div>
       </div>`);
   }
 

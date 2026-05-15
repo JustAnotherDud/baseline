@@ -179,8 +179,7 @@ function openNutrientSheet(entries, nutrient) {
       <div class="sheet" style="max-height:80dvh">
         <div class="sheet-handle"></div>
         <div class="sheet-header">
-          <button id="nutri-back" style="background:none;border:none;color:var(--text2);font-size:15px;cursor:pointer;padding:2px 0;font-family:var(--sans)">← Voltar</button>
-          <div id="nutri-rank-title" class="sheet-title" style="flex:1;text-align:center;padding:0 8px"></div>
+          <div id="nutri-rank-title" class="sheet-title"></div>
           <div class="sheet-close" id="nutri-close">×</div>
         </div>
         <div id="nutri-rank-list"></div>
@@ -188,7 +187,6 @@ function openNutrientSheet(entries, nutrient) {
     document.body.appendChild(overlay);
     overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('open'); };
     document.getElementById('nutri-close').onclick = () => overlay.classList.remove('open');
-    document.getElementById('nutri-back').onclick  = () => overlay.classList.remove('open');
   }
 
   function showRanking(n) {

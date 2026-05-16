@@ -212,7 +212,7 @@ function renderFoods(foods) {
     // name and brand are user data — use textContent / createTextNode
     const nameEl = document.createElement('div');
     nameEl.className = 'fi-name';
-    nameEl.textContent = f.name;
+    nameEl.innerHTML = highlightFoodKeywords(f.name);
 
     const detail = document.createElement('div');
     detail.className = 'fi-detail';

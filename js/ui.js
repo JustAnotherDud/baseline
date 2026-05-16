@@ -571,6 +571,26 @@ function openMoveMealSheet(entryId, currentMeal) {
   overlay.classList.add('open');
 }
 
+function highlightFoodKeywords(name) {
+  const KEYWORDS = [
+    { word: 'Light',    color: 'var(--text3)'  },
+    { word: 'Integral', color: '#a3845a'        },
+    { word: 'Proteico', color: 'var(--blue)'    },
+    { word: 'Zero',     color: 'var(--text3)'   },
+  ];
+  const escaped = name.replace(/[<>&"]/g, c =>
+    ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+  const pattern = new RegExp(
+    `(${KEYWORDS.map(k => k.word).join('|')})`, 'gi');
+  return escaped.replace(pattern, match => {
+    const kw = KEYWORDS.find(k =>
+      k.word.toLowerCase() === match.toLowerCase());
+    return kw
+      ? `<span style="color:${kw.color};font-weight:600">${match}</span>`
+      : match;
+  });
+}
+
 // ── SHARED: MEAL TEMPLATE LIST ───────────────────────────────────────────────
 // opts: { showDelete: bool, onItemClick: fn(t), onDeleteClick?: fn(id) }
 function renderMealTemplateList(containerEl, templates, countMap, opts) {

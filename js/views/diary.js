@@ -157,7 +157,7 @@ function renderToday(entries, t) {
             <div class="entry-detail">${entry.grams ? entry.grams + 'g · ' : ''}G ${r(entry.fat)}g · C ${r(entry.carbs)}g · P ${r(entry.protein)}g</div>
           </div>
           <div class="entry-kcal">${r(entry.calories)}</div>`;
-        entryEl.querySelector('.entry-name').textContent = entry.food_name;
+        entryEl.querySelector('.entry-name').innerHTML = highlightFoodKeywords(entry.food_name);
         entryEl.addEventListener('click', () => openEditEntry(entry.id));
         div.appendChild(entryEl);
       });

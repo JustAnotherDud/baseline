@@ -562,7 +562,7 @@ function openMoveMealSheet(entryId, currentMeal) {
       row.addEventListener('click', async () => {
         overlay.classList.remove('open');
         const ok = await moveEntryToMeal(entryId, mealKey);
-        if (ok) { toast('Movido para ' + mealLabel); loadToday(); }
+        if (ok) { toast('Movido para ' + mealLabel); document.getElementById('sheet-edit').classList.remove('open'); loadToday(); }
       });
     }
     list.appendChild(row);

@@ -529,6 +529,11 @@
         <div class="mp-chip"><div class="mp-val f"    id="ep-fiber">0</div><div class="mp-lbl">fibra</div></div>
         <div class="mp-chip"><div class="mp-val prot" id="ep-prot">0</div><div class="mp-lbl">prot</div></div>
       </div>
+      <button class="btn btn-secondary"
+              onclick="openMoveMealSheet(editingEntry.id, editingEntry.meal)"
+              style="margin-bottom:4px">
+        Mover para refeição
+      </button>
       <div style="display:flex;gap:10px">
         <button class="btn btn-danger" style="flex:1" onclick="delEntryFromEdit()">Eliminar</button>
         <button class="btn btn-primary" style="flex:2" onclick="saveEditEntry()">Guardar</button>

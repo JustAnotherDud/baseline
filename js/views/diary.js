@@ -118,16 +118,6 @@ function renderToday(entries, t) {
     const macroStr = mes.length > 0
       ? `<div class="meal-macros">G ${r(mfat)}g · C ${r(mcarb)}g · P ${r(mprot)}g</div>`
       : '';
-    const rows = mes.length===0
-      ? `<div class="no-entries">Sem registos</div>`
-      : mes.map(e=>`
-        <div class="diary-entry" onclick="openEditEntry(${e.id})" style="cursor:pointer">
-          <div class="entry-info">
-            <div class="entry-name">${e.food_name}</div>
-            <div class="entry-detail">${e.grams?e.grams+'g · ':''}G ${r(e.fat)}g · C ${r(e.carbs)}g · P ${r(e.protein)}g</div>
-          </div>
-          <div class="entry-kcal">${r(e.calories)}</div>
-        </div>`).join('');
     div.innerHTML = `
       <div class="meal-header">
         <div class="meal-header-left" style="cursor:pointer;flex:1;min-width:0">
@@ -138,7 +128,7 @@ function renderToday(entries, t) {
           <div class="meal-kcal">${r(mkcal)} kcal</div>
           <div style="color:var(--text3);font-size:18px;line-height:1">+</div>
         </div>
-      </div>${rows}`;
+      </div>`;
     const leftEl  = div.querySelector('.meal-header-left');
     const rightEl = div.querySelector('.meal-header-right');
     leftEl.addEventListener('click', e => {
@@ -150,6 +140,99 @@ function renderToday(entries, t) {
       e.stopPropagation();
       openLogForMeal(k);
     });
+
+    if (mes.length === 0) {
+      const noEntry = document.createElement('div');
+      noEntry.className = 'no-entries';
+      noEntry.textContent = 'Sem registos';
+      div.appendChild(noEntry);
+    } else {
+      mes.forEach(entry => {
+        const entryEl = document.createElement('div');
+        entryEl.className = 'diary-entry';
+        entryEl.style.cursor = 'pointer';
+        entryEl.innerHTML = `
+          <div class="entry-info">
+            <div class="entry-name"></div>
+            <div class="entry-detail">${entry.grams ? entry.grams + 'g · ' : ''}G ${r(entry.fat)}g · C ${r(entry.carbs)}g · P ${r(entry.protein)}g</div>
+          </div>
+          <div class="entry-kcal">${r(entry.calories)}</div>`;
+        entryEl.querySelector('.entry-name').textContent = entry.food_name;
+
+        let lpTimer = null;
+        let lpFired = false;
+        let startX, startY;
+        const THRESHOLD = 10;
+        const DELAY = 500;
+
+        entryEl.addEventListener('touchstart', e => {
+          const t = e.touches[0];
+          startX = t.clientX; startY = t.clientY;
+          lpFired = false;
+          lpTimer = setTimeout(() => {
+            lpFired = true;
+            entryEl.style.opacity = '1';
+            if (navigator.vibrate) navigator.vibrate(50);
+            openMoveMealSheet(entry.id, entry.meal);
+          }, DELAY);
+          entryEl.style.opacity = '0.6';
+        }, { passive: true });
+
+        entryEl.addEventListener('touchmove', e => {
+          const t = e.touches[0];
+          if (Math.abs(t.clientX - startX) > THRESHOLD ||
+              Math.abs(t.clientY - startY) > THRESHOLD) {
+            clearTimeout(lpTimer);
+            entryEl.style.opacity = '1';
+          }
+        }, { passive: true });
+
+        entryEl.addEventListener('touchend', () => {
+          clearTimeout(lpTimer);
+          entryEl.style.opacity = '1';
+          if (!lpFired) openEditEntry(entry.id);
+        });
+
+        entryEl.addEventListener('touchcancel', () => {
+          clearTimeout(lpTimer);
+          entryEl.style.opacity = '1';
+        });
+
+        entryEl.addEventListener('mousedown', e => {
+          if (e.button !== 0) return;
+          startX = e.clientX; startY = e.clientY;
+          lpFired = false;
+          lpTimer = setTimeout(() => {
+            lpFired = true;
+            entryEl.style.opacity = '1';
+            openMoveMealSheet(entry.id, entry.meal);
+          }, DELAY);
+          entryEl.style.opacity = '0.6';
+        });
+
+        entryEl.addEventListener('mousemove', e => {
+          if (Math.abs(e.clientX - startX) > THRESHOLD ||
+              Math.abs(e.clientY - startY) > THRESHOLD) {
+            clearTimeout(lpTimer);
+            entryEl.style.opacity = '1';
+          }
+        });
+
+        entryEl.addEventListener('mouseup', () => {
+          clearTimeout(lpTimer);
+          entryEl.style.opacity = '1';
+          if (!lpFired) openEditEntry(entry.id);
+        });
+
+        entryEl.addEventListener('mouseleave', () => {
+          clearTimeout(lpTimer);
+          entryEl.style.opacity = '1';
+        });
+
+        div.appendChild(entryEl);
+      });
+    }
+
     container.appendChild(div);
   });
 }

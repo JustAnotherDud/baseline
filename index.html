@@ -343,8 +343,13 @@
       <button onclick="go('mais')" style="background:none;border:none;color:var(--text2);font-size:15px;cursor:pointer;padding:0;font-family:var(--sans)">←</button>
       <div>
         <div class="view-title">Estatísticas</div>
-        <div class="view-sub" id="stats-period">últimos 7 dias</div>
+        <div class="view-sub" id="stats-period"></div>
       </div>
+    </div>
+    <div id="stats-period-chips" style="display:flex;gap:8px;padding:12px 20px 0">
+      <button class="sort-chip active" data-p="7"  onclick="setStatsPeriod(7)">7 dias</button>
+      <button class="sort-chip"        data-p="14" onclick="setStatsPeriod(14)">14 dias</button>
+      <button class="sort-chip"        data-p="30" onclick="setStatsPeriod(30)">30 dias</button>
     </div>
     <div id="stats-container" style="padding:20px">
       <div class="loading">A carregar...</div>
@@ -544,7 +549,7 @@
 <script src="js/views/foods.js?v=20260515"></script>
 <script src="js/views/meals.js?v=20260516"></script>
 <script src="js/views/targets.js?v=20260515"></script>
-<script src="js/views/stats.js?v=20260515"></script>
+<script src="js/views/stats.js?v=20260516"></script>
 <script src="js/app.js?v=20260514"></script>
 </body>
 </html>

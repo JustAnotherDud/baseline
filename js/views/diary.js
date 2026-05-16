@@ -161,6 +161,7 @@ function renderToday(entries, t) {
 
         let lpTimer = null;
         let lpFired = false;
+        let lpMoved = false;
         let startX, startY;
         const THRESHOLD = 10;
         const DELAY = 500;
@@ -169,6 +170,7 @@ function renderToday(entries, t) {
           const t = e.touches[0];
           startX = t.clientX; startY = t.clientY;
           lpFired = false;
+          lpMoved = false;
           lpTimer = setTimeout(() => {
             lpFired = true;
             entryEl.style.opacity = '1';
@@ -182,6 +184,7 @@ function renderToday(entries, t) {
           const t = e.touches[0];
           if (Math.abs(t.clientX - startX) > THRESHOLD ||
               Math.abs(t.clientY - startY) > THRESHOLD) {
+            lpMoved = true;
             clearTimeout(lpTimer);
             entryEl.style.opacity = '1';
           }
@@ -190,7 +193,7 @@ function renderToday(entries, t) {
         entryEl.addEventListener('touchend', () => {
           clearTimeout(lpTimer);
           entryEl.style.opacity = '1';
-          if (!lpFired) openEditEntry(entry.id);
+          if (!lpFired && !lpMoved) openEditEntry(entry.id);
         });
 
         entryEl.addEventListener('touchcancel', () => {

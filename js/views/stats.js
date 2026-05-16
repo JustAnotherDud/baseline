@@ -1,4 +1,5 @@
 let loadStatsGen = 0;
+let statsPeriod = 7; // 7 | 14 | 30
 
 async function loadStats() {
   const gen = ++loadStatsGen;
@@ -7,39 +8,51 @@ async function loadStats() {
   if (!container) return;
   container.innerHTML = '<div class="loading">A carregar...</div>';
 
-  // ── Date range: last 7 days including today ──────────────────────────────
-  const today = new Date().toISOString().split('T')[0];
+  // ── Date range: from = today - N days, to = yesterday ──────────────────
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const to = yesterday.toISOString().split('T')[0];
+
   const fromDate = new Date();
-  fromDate.setDate(fromDate.getDate() - 6);
+  fromDate.setDate(fromDate.getDate() - statsPeriod);
   const from = fromDate.toISOString().split('T')[0];
 
+  // Streak: always last 60 days regardless of selected period
+  const sixtyDaysAgo = new Date();
+  sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+  const streakFrom = sixtyDaysAgo.toISOString().split('T')[0];
+
   if (periodEl) {
-    const fmt = d => new Date(d + 'T12:00:00').toLocaleDateString('pt-PT', { day: 'numeric', month: 'short' });
-    periodEl.textContent = `${fmt(from)} – ${fmt(today)}`;
+    const fmt = d => { const p = d.split('-'); return `${p[2]}/${p[1]}`; };
+    periodEl.textContent = `${fmt(from)} – ${fmt(to)}`;
   }
 
   if (!db) { container.innerHTML = '<div class="loading">Sem ligação à base de dados.</div>'; return; }
 
-  // ── 3 parallel queries ───────────────────────────────────────────────────
-  const [diaryRes, targetsRes, foodsRes] = await Promise.all([
+  // ── 4 parallel queries ─────────────────────────────────────────────────
+  const [diaryRes, targetsRes, foodsRes, streakRes] = await Promise.all([
     db.from('diary')
       .select('date,calories,protein,carbs,fat,saturated_fat,fiber,sugar')
-      .gte('date', from).lte('date', today),
+      .gte('date', from).lte('date', to),
     db.from('daily_targets')
       .select('date,calories,protein,carbs,fat')
-      .gte('date', from).lte('date', today),
+      .gte('date', from).lte('date', to),
     db.from('diary')
       .select('food_name,calories')
-      .gte('date', from).lte('date', today),
+      .gte('date', from).lte('date', to),
+    db.from('diary')
+      .select('date')
+      .gte('date', streakFrom).lte('date', to),
   ]);
 
-  const diaryRows   = diaryRes.data   || [];
-  const targetRows  = targetsRes.data || [];
-  const foodRows    = foodsRes.data   || [];
+  const diaryRows  = diaryRes.data   || [];
+  const targetRows = targetsRes.data || [];
+  const foodRows   = foodsRes.data   || [];
+  const streakRows = streakRes.data  || [];
 
   if (gen !== loadStatsGen) return;
 
-  // ── Aggregate diary by date ──────────────────────────────────────────────
+  // ── Aggregate diary by date ────────────────────────────────────────────
   const diaryMap = new Map();
   diaryRows.forEach(e => {
     const d = diaryMap.get(e.date) || { calories:0, protein:0, carbs:0, fat:0, saturated_fat:0, fiber:0, sugar:0 };
@@ -53,14 +66,29 @@ async function loadStats() {
     diaryMap.set(e.date, d);
   });
 
-  // ── Target map by date ───────────────────────────────────────────────────
+  // ── Target map ────────────────────────────────────────────────────────
   const targetsMap = new Map();
   targetRows.forEach(t => targetsMap.set(t.date, t));
 
-  // ── Days with both diary + target data ──────────────────────────────────
+  // ── Days with both diary + target ─────────────────────────────────────
   const pairedDates = [...diaryMap.keys()].filter(d => targetsMap.has(d));
 
-  // ── Build sections ───────────────────────────────────────────────────────
+  // ── Streak calculation ────────────────────────────────────────────────
+  const datesWithEntries = new Set(streakRows.map(r => r.date));
+  let streak = 0;
+  if (datesWithEntries.has(to)) {
+    streak = 1;
+    const checkDate = new Date(to + 'T12:00:00');
+    checkDate.setDate(checkDate.getDate() - 1);
+    while (true) {
+      const ds = checkDate.toISOString().split('T')[0];
+      if (!datesWithEntries.has(ds)) break;
+      streak++;
+      checkDate.setDate(checkDate.getDate() - 1);
+    }
+  }
+
+  // ── Build sections ─────────────────────────────────────────────────────
   container.innerHTML = '';
 
   // ════════════════════════════════════════════════════════════════════════
@@ -119,36 +147,70 @@ async function loadStats() {
   container.appendChild(sec1);
 
   // ════════════════════════════════════════════════════════════════════════
-  // SECTION 2 — 7-day calorie adherence
+  // SECTION STREAK — consecutive days with diary entries
+  // ════════════════════════════════════════════════════════════════════════
+  const secStreak = document.createElement('div');
+  secStreak.className = 'stats-section';
+  const streakMsg = streak >= 7 ? 'Mantém o ritmo!' : streak >= 3 ? 'Bom começo!' : streak === 0 ? 'Começa hoje!' : '';
+  secStreak.innerHTML = `
+    <div class="stats-section-title">Streak de registo</div>
+    <div style="display:flex;align-items:baseline;gap:8px">
+      <span style="font-family:var(--mono);font-size:36px;font-weight:600;color:var(--accent)">${streak}</span>
+      <span style="font-size:14px;color:var(--text2)">dias consecutivos</span>
+    </div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:4px">${streakMsg}</div>`;
+  container.appendChild(secStreak);
+
+  // ════════════════════════════════════════════════════════════════════════
+  // SECTION 2 — Calorie adherence dots
   // ════════════════════════════════════════════════════════════════════════
   const sec2 = document.createElement('div');
   sec2.className = 'stats-section';
 
   const dots = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(new Date().toISOString().split('T')[0] + 'T12:00:00');
-    d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split('T')[0];
-    const label   = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
-    const diary   = diaryMap.get(dateStr);
-    const target  = targetsMap.get(dateStr);
-    let color = 'var(--surface3)'; // no data
+  const iterDate = new Date(from + 'T12:00:00');
+  const toDateObj = new Date(to + 'T12:00:00');
+  while (iterDate <= toDateObj) {
+    const dateStr = iterDate.toISOString().split('T')[0];
+    const dd = String(iterDate.getDate()).padStart(2, '0');
+    const mm = String(iterDate.getMonth() + 1).padStart(2, '0');
+    const label = `${dd}/${mm}`;
+    const diary  = diaryMap.get(dateStr);
+    const target = targetsMap.get(dateStr);
+    let color = 'var(--surface3)';
     let pct   = null;
     if (diary && target && target.calories > 0) {
       pct   = diary.calories / target.calories * 100;
       color = getNutrientColor('calories', pct);
     }
-    const title = pct !== null ? `${label} · ${Math.round(pct)}%` : `${label} · sem dados`;
-    dots.push(`
-      <div class="stats-dot-col">
-        <div class="stats-dot" style="background:${color}" title="${title}"></div>
-        <div class="stats-dot-label">${label}</div>
-      </div>`);
+    const titleAttr = pct !== null ? `${label} · ${Math.round(pct)}%` : `${label} · sem dados`;
+
+    if (statsPeriod === 7) {
+      dots.push(`
+        <div class="stats-dot-col">
+          <div class="stats-dot" style="background:${color}" title="${titleAttr}"></div>
+          <div class="stats-dot-label">${label}</div>
+        </div>`);
+    } else if (statsPeriod === 14) {
+      dots.push(`<div class="stats-dot" style="background:${color};width:calc(100%/7 - 4px);aspect-ratio:1;max-width:32px;flex-shrink:0" title="${titleAttr}"></div>`);
+    } else {
+      dots.push(`<div class="stats-dot" style="background:${color};aspect-ratio:1" title="${titleAttr}"></div>`);
+    }
+    iterDate.setDate(iterDate.getDate() + 1);
+  }
+
+  let dotsHtml;
+  if (statsPeriod === 7) {
+    dotsHtml = `<div class="stats-dots">${dots.join('')}</div>`;
+  } else if (statsPeriod === 14) {
+    dotsHtml = `<div style="display:flex;flex-wrap:wrap;gap:4px">${dots.join('')}</div>`;
+  } else {
+    dotsHtml = `<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px">${dots.join('')}</div>`;
   }
 
   sec2.innerHTML = `
-    <div class="stats-section-title">Aderência calórica · 7 dias</div>
-    <div class="stats-dots">${dots.join('')}</div>`;
+    <div class="stats-section-title">Aderência calórica · ${statsPeriod} dias</div>
+    ${dotsHtml}`;
   container.appendChild(sec2);
 
   // ════════════════════════════════════════════════════════════════════════
@@ -186,4 +248,11 @@ async function loadStats() {
       ${topRows}`;
   }
   container.appendChild(sec3);
+}
+
+function setStatsPeriod(n) {
+  statsPeriod = n;
+  document.querySelectorAll('#stats-period-chips .sort-chip')
+    .forEach(c => c.classList.toggle('active', +c.dataset.p === n));
+  loadStats();
 }

@@ -1,0 +1,265 @@
+# NutriTrack — Documento de Contexto
+
+## O que é o NutriTrack
+
+PWA de tracking de nutrição construída de raiz para o José (Dud), corredor de endurance com turnos variáveis no Lidl. Substituição do MyFitnessPal — mais aberto, com API acessível, e integrado no ecossistema sync_hub/DCB.
+
+A app corre em **GitHub Pages** (estática, sem servidor), usa **Supabase** como base de dados, e está integrada com o **sync_hub** via MCP para que o DCB leia e escreva dados de nutrição automaticamente.
+
+---
+
+## Stack técnica
+
+| Componente | Tecnologia |
+|---|---|
+| Frontend | PWA — HTML/CSS/JS vanilla, sem framework |
+| Base de dados | Supabase (PostgreSQL) — free tier |
+| Hosting | GitHub Pages |
+| Fontes | IBM Plex Mono + DM Sans (Google Fonts) |
+| Supabase client | supabase-js v2 via CDN |
+
+---
+
+## Repositório e URLs
+
+- **GitHub:** `https://github.com/JustAnotherDud/nutrition-tracker`
+- **App (produção):** `https://justanotherdud.github.io/nutrition-tracker`
+- **Supabase dashboard:** `https://supabase.com/dashboard/project/yvsjchzvoikqlpbqsphs`
+
+### Credenciais Supabase (em `athlete.json`)
+```
+URL:              https://yvsjchzvoikqlpbqsphs.supabase.co
+Publishable key:  sb_publishable_KyVdGk01DDLgQ9aGsBhHdQ_UdKEn8Wh
+Secret key:       [ver D:\sync_hub\data\athlete.json → secção "nutrition_tracker"]
+```
+
+---
+
+## Estrutura de ficheiros
+
+```
+nutrition-tracker/
+├── index.html              # HTML puro — sem CSS nem JS inline
+├── manifest.json           # PWA manifest
+├── css/
+│   └── styles.css          # Todo o CSS (dark theme, mobile-first, media queries desktop)
+└── js/
+    ├── config.js           # Constante MEALS, cachedTargets default
+    ├── nutrition.js        # getNutrientColor(), getTargets()
+    ├── db.js               # Operações Supabase partilhadas
+    ├── ui.js               # toast(), overlayClose(), gestão de sheets, openLog()
+    ├── app.js              # Estado global, init(), go(), saveSetup(), resetSetup()
+    └── views/
+        ├── diary.js        # renderToday(), navegação de data, setDateLabel()
+        ├── log.js          # searchDB(), pickFood(), getMealByHour(), loadLogTotalsStrip(), openLogMeals()
+        ├── foods.js        # loadFoods(), renderFoods(), saveFood(), deleteFood()
+        ├── meals.js        # loadMeals(), openCreateMeal(), openApplyMeal(), saveMeal()
+        ├── targets.js      # loadTargetsForm(), refreshPhaseAndTargets(), onTargetsDateChange()
+        └── stats.js        # loadStats()
+```
+
+### Ordem de carregamento dos scripts (index.html)
+```
+config.js → nutrition.js → db.js → ui.js →
+views/diary.js → views/log.js → views/foods.js → views/meals.js → views/targets.js → views/stats.js → app.js
+```
+
+---
+
+## Schema Supabase
+
+### Tabela `foods`
+```sql
+id               bigint PK
+name             text NOT NULL
+brand            text
+serving_size_g   numeric          -- porção habitual, pré-preenche o campo de gramas
+calories_per_100g numeric NOT NULL
+protein_per_100g  numeric NOT NULL
+carbs_per_100g    numeric NOT NULL
+fat_per_100g      numeric NOT NULL
+saturated_fat_per_100g numeric default 0
+sugar_per_100g    numeric default 0
+fiber_per_100g    numeric default 0
+created_at        timestamptz
+```
+
+### Tabela `diary`
+```sql
+id            bigint PK
+date          date NOT NULL default current_date
+logged_at     timestamptz default now()
+meal          text NOT NULL   -- ver MEALS abaixo
+food_id       bigint → foods(id) (nullable — quick adds não têm food_id)
+food_name     text NOT NULL   -- snapshot do nome (intencional)
+grams         numeric         -- null para quick adds
+calories      numeric NOT NULL
+protein       numeric NOT NULL
+carbs         numeric NOT NULL
+fat           numeric NOT NULL
+saturated_fat numeric default 0
+sugar         numeric default 0
+fiber         numeric default 0
+```
+
+### Tabela `daily_targets` ← tabela activa (lida pela PWA)
+```sql
+id            bigint PK
+date          date NOT NULL UNIQUE
+calories      numeric NOT NULL
+fat           numeric NOT NULL
+saturated_fat numeric NOT NULL
+carbs         numeric NOT NULL
+sugar         numeric NOT NULL
+fiber         numeric NOT NULL
+protein       numeric NOT NULL
+blocks_active jsonb             -- blocos activos enviados pelo DCB (ex: {base:1800,run:400})
+updated_at    timestamptz
+```
+
+### Tabela `targets` ← DEPRECATED (não lida pela PWA)
+```sql
+id            bigint PK
+day_type      text NOT NULL UNIQUE  -- rest_pure | work_only | training_only | …
+calories      numeric NOT NULL
+fat           numeric NOT NULL
+saturated_fat numeric NOT NULL
+carbs         numeric NOT NULL
+sugar         numeric NOT NULL
+fiber         numeric NOT NULL
+protein       numeric NOT NULL
+updated_at    timestamptz
+```
+> **Nota:** A PWA lê exclusivamente de `daily_targets` (chave por `date`).
+> A tabela `targets` (chave por `day_type`) está deprecated — o antigo
+> `sync_hub_push_targets` escrevia aqui; o actual `sync_hub_push_daily_target`
+> escreve em `daily_targets`. Não escrever novos dados em `targets`.
+
+---
+
+## Constantes importantes
+
+### MEALS (refeições)
+```js
+breakfast:  'Pequeno-almoço'
+morning:    'Lanche manhã'
+lunch:      'Almoço'
+afternoon1: 'Lanche tarde 1'
+afternoon2: 'Lanche tarde 2'
+dinner:     'Jantar'
+supper:     'Ceia'
+```
+
+### Auto-selecção de refeição por hora
+```
+6h-10h  → breakfast
+10h-12h → morning
+12h-15h → lunch
+15h-18h → afternoon1
+18h-20h → afternoon2
+20h-23h → dinner
+23h-6h  → supper
+```
+
+### Day types (targets)
+```
+rest_pure | work_only | training_only | training_plus_work | race_or_intense | custom
+```
+
+### Indicadores de cor por nutriente
+| Nutriente | Verde | Amarelo | Vermelho |
+|---|---|---|---|
+| Calorias, Hidratos | 90–110% | 80–90% / 110–120% | <80% / >120% |
+| Proteína | 90–130% | 80–90% / 130–150% | <80% / >150% |
+| Gordura total | 50–120% | 30–50% / 120–140% | <30% / >140% |
+| Gord. Saturada, Açúcar | ≤85% | 85–100% | >100% |
+| Fibra | ≥90% | 70–90% | <70% |
+
+---
+
+## Integração sync_hub / DCB
+
+### Ferramentas MCP disponíveis
+```python
+sync_hub_nutrition_fetch(target_date: str)
+# Lê o diário do Supabase para uma data. Devolve totais e breakdown por refeição.
+# Output guardado em D:\sync_hub\output\nutrition_today.json
+
+sync_hub_push_targets(day_type, calories, fat, saturated_fat, carbs, sugar, fiber, protein)
+# Upsert na tabela targets do Supabase.
+# A PWA lê os targets desta tabela — DCB actualiza, app reflecte automaticamente.
+```
+
+### Fluxo DCB → NutriTrack
+1. DCB determina `day_type` do dia (trabalho calendar + plano de treino)
+2. Chama `sync_hub_push_targets` com os valores correctos
+3. PWA lê da tabela `targets` no próximo reload — sem intervenção do utilizador
+
+### Ficheiro de credenciais
+```
+D:\sync_hub\data\athlete.json → secção "nutrition_tracker"
+```
+
+---
+
+## Como fazer deploy
+
+O projecto usa **Claude Code** para editar e fazer push:
+
+```bash
+cd C:\Users\josef\nutrition-tracker
+claude
+```
+
+Dentro do Claude Code:
+- Trabalhar sempre no branch `main` directamente
+- Fazer commit e push no final de cada sessão de trabalho
+- A GitHub Pages faz deploy automático após push (1-2 min)
+- Após deploy: Ctrl+Shift+R no browser para limpar cache
+
+---
+
+## Decisões de arquitectura
+
+**Script tags em vez de ES modules** — sem build step, sem bundler, compatibilidade máxima para GitHub Pages estático.
+
+**Snapshot intencional no diary** — os valores nutricionais são copiados para cada entrada do diário em vez de calculados a partir do alimento. Histórico não muda quando um alimento é corrigido. Trade-off aceite.
+
+**Targets em Supabase em vez de localStorage** — permite que o DCB faça push de targets sem o utilizador interagir com a app. localStorage como cache local para arranque rápido.
+
+**Quick add separado da DB** — entradas de restaurante/estimativas não criam alimentos na base de dados. `food_id` é null, `grams` é null.
+
+**Sem RLS** — projecto pessoal, uso único. Publishable key não é secret, mas sem RLS qualquer pessoa com a key pode ler/escrever. Aceitável para uso pessoal sem dados sensíveis.
+
+---
+
+## Roadmap actual
+
+1. **Ícone na tab do Chrome** — favicon/PWA icon
+2. **Ajustar cores de Gordura e Saturada + thresholds** — feedback visual melhorado
+3. **Filtro/sort nos alimentos** — por nome, kcal, proteína
+4. **Targets salvos por dia** — actualmente um target muda para todos os dias
+5. **Calendário no telemóvel** — date picker nativo não funciona bem em Android
+6. **Estatísticas semanais** — médias 7d, alimentos mais consumidos, aderência
+7. **Mover alimentos entre refeições** — drag and drop
+
+---
+
+## Contexto do utilizador
+
+- **Nome:** José (Dud), 26 anos, Rio Maior, Portugal
+- **Ocupação:** Lidl (turnos variáveis — afecta timing das refeições e tipo de dia)
+- **Desporto:** Corrida de endurance + ginásio
+- **Objectivo nutricional:** Surplus +150 kcal/dia (Fase 3, desde 11 Mai 2026)
+- **Proteína mínima:** 160g/dia
+- **Padrão de sono:** Estruturalmente tardio (01h–02h) — não sugerir treino cedo
+- **Inserção manual:** Pesa tudo, insere cada alimento separado, usa tabelas INSA
+
+---
+
+## Notas de desenvolvimento
+
+- Verificar sempre sintaxe JS antes de fazer push — extrair script com Python + `node --check`
+- O Claude Code cria branches separados por sessão — pedir explicitamente para trabalhar no `main`
+- Após refactorização, hard refresh (Ctrl+Shift+R) pode ser necessário para limpar cache
+- O ficheiro `js/app.js` contém o estado global — cuidado ao mover variáveis para outros ficheiros

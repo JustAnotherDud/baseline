@@ -256,8 +256,10 @@ async function saveMeal() {
 // ── APPLY MEAL TO DIARY ──────────────────────────────────────────────────────
 
 let _applyMealItems = null; // items loaded for the current apply sheet
+let openApplyMealGen = 0;
 
 async function openApplyMeal(templateId, templateName) {
+  const gen = ++openApplyMealGen;
   let overlay = document.getElementById('apply-meal-overlay');
   if (!overlay) {
     overlay = document.createElement('div');
@@ -319,6 +321,7 @@ async function openApplyMeal(templateId, templateName) {
     return;
   }
 
+  if (gen !== openApplyMealGen) return;
   _applyMealItems = items;
   const r = n => Math.round(+(n || 0) * 10) / 10;
   const totalKcal = items.reduce((s, i) => s + +(i.calories || 0), 0);

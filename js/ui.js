@@ -522,6 +522,55 @@ function updateEditPreview() {
   document.getElementById('ep-prot').textContent   = c(editingEntry.protein);
 }
 
+function openMoveMealSheet(entryId, currentMeal) {
+  let overlay = document.getElementById('move-meal-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'move-meal-overlay';
+    overlay.className = 'sheet-overlay';
+    overlay.innerHTML = `
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <div class="sheet-title">Mover para refeição</div>
+          <div class="sheet-close" id="move-meal-close">×</div>
+        </div>
+        <div id="move-meal-list"></div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('open'); };
+    document.getElementById('move-meal-close').onclick = () => overlay.classList.remove('open');
+  }
+
+  const list = document.getElementById('move-meal-list');
+  list.innerHTML = '';
+  Object.entries(MEALS).forEach(([mealKey, mealLabel]) => {
+    const isCurrent = mealKey === currentMeal;
+    const row = document.createElement('div');
+    row.className = 'mais-item';
+    row.style.cursor = isCurrent ? 'default' : 'pointer';
+    if (isCurrent) row.style.color = 'var(--text3)';
+    const labelEl = document.createElement('div');
+    labelEl.className = 'mais-item-label';
+    labelEl.textContent = mealLabel;
+    const arrowEl = document.createElement('div');
+    arrowEl.className = 'mais-item-arrow';
+    arrowEl.textContent = isCurrent ? '✓' : '→';
+    row.appendChild(labelEl);
+    row.appendChild(arrowEl);
+    if (!isCurrent) {
+      row.addEventListener('click', async () => {
+        overlay.classList.remove('open');
+        const ok = await moveEntryToMeal(entryId, mealKey);
+        if (ok) { toast('Movido para ' + mealLabel); loadToday(); }
+      });
+    }
+    list.appendChild(row);
+  });
+
+  overlay.classList.add('open');
+}
+
 // ── SHARED: MEAL TEMPLATE LIST ───────────────────────────────────────────────
 // opts: { showDelete: bool, onItemClick: fn(t), onDeleteClick?: fn(id) }
 function renderMealTemplateList(containerEl, templates, countMap, opts) {

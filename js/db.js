@@ -169,4 +169,14 @@ async function getActivePhase(dateStr) {
   return data;
 }
 
+async function moveEntryToMeal(entryId, newMeal) {
+  if (!db) return false;
+  const { error } = await db
+    .from('diary')
+    .update({ meal: newMeal })
+    .eq('id', entryId);
+  if (error) { toast('Erro ao mover entrada'); return false; }
+  return true;
+}
+
 

@@ -25,7 +25,7 @@ async function searchDB() {
   }
   res.innerHTML = data.map(f=>`
     <div class="sr-item" onclick="pickFood(${f.id})">
-      <div><div class="sr-name">${f.name}</div><div class="sr-detail">${f.brand?f.brand+' · ':''}${f.calories_per_100g} kcal · P${f.protein_per_100g} C${f.carbs_per_100g} G${f.fat_per_100g}</div></div>
+      <div><div class="sr-name">${highlightFoodKeywords(f.name)}</div><div class="sr-detail">${f.brand?f.brand+' · ':''}${f.calories_per_100g} kcal · P${f.protein_per_100g} C${f.carbs_per_100g} G${f.fat_per_100g}</div></div>
       <div class="sr-kcal">${f.calories_per_100g}<br><span style="font-size:9px;color:var(--text3)">kcal/100g</span></div>
     </div>`).join('');
 }
@@ -281,7 +281,7 @@ async function loadRecentFoods() {
   }
 
   el.innerHTML = recents.map(e =>
-    `<button class="recent-chip" onclick="pickFood(${e.food_id})">${e.food_name}</button>`
+    `<button class="recent-chip" onclick="pickFood(${e.food_id})">${highlightFoodKeywords(e.food_name)}</button>`
   ).join('');
 }
 

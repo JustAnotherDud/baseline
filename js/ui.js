@@ -593,6 +593,47 @@ function highlightFoodKeywords(name) {
 
 // ── SHARED: MEAL TEMPLATE LIST ───────────────────────────────────────────────
 // opts: { showDelete: bool, onItemClick: fn(t), onDeleteClick?: fn(id) }
+function buildSegmentedBar(actual, target, macro) {
+  const ZONES = {
+    protein: { bounds: [63, 86, 130, 150], maxPct: 155 },
+    carbs:   { bounds: [70, 85, 135, 150], maxPct: 155 },
+    fat:     { bounds: [54, 85, 160, 200], maxPct: 205 },
+  };
+  const { bounds, maxPct } = ZONES[macro];
+  const [b1, b2, b3, b4] = bounds;
+
+  const segs = [
+    { w: b1,          color: 'var(--red)'    },
+    { w: b2 - b1,     color: 'var(--yellow)' },
+    { w: b3 - b2,     color: 'var(--accent)' },
+    { w: b4 - b3,     color: 'var(--yellow)' },
+    { w: maxPct - b4, color: 'var(--red)'    },
+  ];
+  const segsHTML = segs.map(s =>
+    `<div style="flex-basis:${(s.w / maxPct * 100).toFixed(3)}%;background:${s.color}"></div>`
+  ).join('');
+
+  const pct = target > 0 ? actual / target * 100 : 0;
+  const indicatorPos = Math.min(pct / maxPct * 100, 100).toFixed(3);
+
+  const greenStartG   = Math.round(b2 / 100 * target);
+  const greenEndG     = Math.round(b3 / 100 * target);
+  const greenStartPos = (b2 / maxPct * 100).toFixed(3);
+  const greenEndPos   = (b3 / maxPct * 100).toFixed(3);
+
+  return `<div class="seg-bar-wrap">` +
+    `<div class="seg-bar-indicator" style="left:${indicatorPos}%">` +
+      `<div class="seg-bar-tick">▼</div>` +
+      `<div class="seg-bar-line"></div>` +
+    `</div>` +
+    `<div class="seg-bar-bg">${segsHTML}</div>` +
+    `<div class="seg-bar-labels">` +
+      `<span style="left:${greenStartPos}%">${greenStartG}g</span>` +
+      `<span style="left:${greenEndPos}%">${greenEndG}g</span>` +
+    `</div>` +
+  `</div>`;
+}
+
 function renderMealTemplateList(containerEl, templates, countMap, opts) {
   containerEl.innerHTML = '';
   templates.forEach(t => {

@@ -488,6 +488,40 @@ input[type="number"] { font-family: var(--mono); }
 .t-row-unit { font-family: var(--mono); font-size: 12px; color: var(--text3); width: 16px; }
 .block-chip { padding: 4px 10px; border-radius: 20px; font-family: var(--mono); font-size: 11px; background: var(--surface2); border: 1px solid var(--border); color: var(--text2); }
 
+/* ── SEGMENTED BAR ──────────────────────────────────────────────────────── */
+.seg-bar-wrap {
+  position: relative;
+  padding-top: 10px;
+  margin: 8px 0 14px;
+}
+.seg-bar-bg {
+  display: flex; height: 12px;
+  border-radius: 6px; overflow: hidden;
+}
+.seg-bar-indicator {
+  position: absolute; top: 0;
+  transform: translateX(-50%);
+  display: flex; flex-direction: column;
+  align-items: center; pointer-events: none; z-index: 1;
+}
+.seg-bar-tick {
+  font-size: 8px; line-height: 1;
+  color: var(--text); margin-bottom: 1px;
+}
+.seg-bar-line {
+  width: 2px; height: 20px; background: var(--text);
+  border-radius: 1px;
+}
+.seg-bar-labels {
+  position: relative; height: 14px; margin-top: 2px;
+}
+.seg-bar-labels span {
+  position: absolute;
+  font-family: var(--mono); font-size: 9px;
+  color: var(--text3); transform: translateX(-50%);
+  white-space: nowrap;
+}
+
 /* ── Stats view ─────────────────────────────────────────────────────────── */
 .stats-section { margin-bottom: 28px; }
 .stats-section-title { font-family: var(--mono); font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 14px; }

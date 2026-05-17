@@ -601,28 +601,32 @@ function buildSegmentedBar(actual, target, macro) {
   };
   const { bounds, maxPct } = ZONES[macro];
   const [b1, b2, b3, b4] = bounds;
+  const minPct = 50;
+  const range  = maxPct - minPct;
 
   const segs = [
-    { w: b1,          color: 'var(--red)'    },
-    { w: b2 - b1,     color: 'var(--yellow)' },
-    { w: b3 - b2,     color: 'var(--accent)' },
-    { w: b4 - b3,     color: 'var(--yellow)' },
-    { w: maxPct - b4, color: 'var(--red)'    },
+    { w: b1 - minPct,  color: 'var(--red)'    },
+    { w: b2 - b1,      color: 'var(--yellow)' },
+    { w: b3 - b2,      color: 'var(--accent)' },
+    { w: b4 - b3,      color: 'var(--yellow)' },
+    { w: maxPct - b4,  color: 'var(--red)'    },
   ];
   const segsHTML = segs.map(s =>
-    `<div style="flex-basis:${(s.w / maxPct * 100).toFixed(3)}%;background:${s.color}"></div>`
+    `<div style="flex-basis:${(s.w / range * 100).toFixed(3)}%;background:${s.color}"></div>`
   ).join('');
 
   const pct = target > 0 ? actual / target * 100 : 0;
-  const indicatorPos = Math.min(pct / maxPct * 100, 100).toFixed(3);
+  const indicatorPos = pct <= minPct ? 0
+    : pct >= maxPct ? 100
+    : (pct - minPct) / range * 100;
 
   const greenStartG   = Math.round(b2 / 100 * target);
   const greenEndG     = Math.round(b3 / 100 * target);
-  const greenStartPos = (b2 / maxPct * 100).toFixed(3);
-  const greenEndPos   = (b3 / maxPct * 100).toFixed(3);
+  const greenStartPos = ((b2 - minPct) / range * 100).toFixed(3);
+  const greenEndPos   = ((b3 - minPct) / range * 100).toFixed(3);
 
   return `<div class="seg-bar-wrap">` +
-    `<div class="seg-bar-indicator" style="left:${indicatorPos}%">` +
+    `<div class="seg-bar-indicator" style="left:${indicatorPos.toFixed(3)}%">` +
       `<div class="seg-bar-tick">▼</div>` +
       `<div class="seg-bar-line"></div>` +
     `</div>` +

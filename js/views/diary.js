@@ -34,18 +34,28 @@ function renderToday(entries, t) {
   const rawPct = (v, m) => m > 0 ? v / m * 100 : 0;
   const pct    = (v, m) => Math.min(100, rawPct(v, m)) + '%';
 
-  const bars = [
-    // Primary — split num/tgt display
-    { bar: 'bar-p', numEl: 'val-p-num', tgtEl: 'val-p-tgt', nutrient: 'protein', actual: tot.prot,   target: t.protein       },
-    { bar: 'bar-c', numEl: 'val-c-num', tgtEl: 'val-c-tgt', nutrient: 'carbs',   actual: tot.carb,   target: t.carbs         },
-    { bar: 'bar-g', numEl: 'val-g-num', tgtEl: 'val-g-tgt', nutrient: 'fat',     actual: tot.fat,    target: t.fat           },
-    // Secondary — single val element
+  // Primary macros: num/tgt labels + segmented bars
+  [
+    { numEl: 'val-p-num', tgtEl: 'val-p-tgt', wrapId: 'bar-p-wrap', nutrient: 'protein', actual: tot.prot, target: t.protein },
+    { numEl: 'val-c-num', tgtEl: 'val-c-tgt', wrapId: 'bar-c-wrap', nutrient: 'carbs',   actual: tot.carb, target: t.carbs  },
+    { numEl: 'val-g-num', tgtEl: 'val-g-tgt', wrapId: 'bar-g-wrap', nutrient: 'fat',     actual: tot.fat,  target: t.fat    },
+  ].forEach(({ numEl, tgtEl, wrapId, nutrient, actual, target }) => {
+    const p     = rawPct(actual, target);
+    const color = entries.length > 0 ? getNutrientColor(nutrient, p) : 'var(--text2)';
+    const numElem = document.getElementById(numEl);
+    if (numElem) { numElem.textContent = r(actual); numElem.style.color = color; }
+    const tgtElem = document.getElementById(tgtEl);
+    if (tgtElem) tgtElem.textContent = `/${target}g`;
+    const wrapEl = document.getElementById(wrapId);
+    if (wrapEl) wrapEl.innerHTML = buildSegmentedBar(actual, target, nutrient);
+  });
+
+  // Secondary bars
+  [
     { bar: 'bar-gs', val: 'val-gs', nutrient: 'satfat', actual: tot.satfat, target: t.saturated_fat },
     { bar: 'bar-f',  val: 'val-f',  nutrient: 'fiber',  actual: tot.fiber,  target: t.fiber         },
     { bar: 'bar-a',  val: 'val-a',  nutrient: 'sugar',  actual: tot.sugar,  target: t.sugar         },
-  ];
-
-  bars.forEach(({ bar, val, numEl, tgtEl, nutrient, actual, target }) => {
+  ].forEach(({ bar, val, nutrient, actual, target }) => {
     const p     = rawPct(actual, target);
     const color = entries.length > 0 ? getNutrientColor(nutrient, p) : 'var(--surface3)';
     const barEl = document.getElementById(bar);
@@ -54,40 +64,34 @@ function renderToday(entries, t) {
       const el = document.getElementById(val);
       if (el) { el.textContent = `${r(actual)}/${target}g`; el.style.color = entries.length > 0 ? color : 'var(--text2)'; }
     }
-    if (numEl) {
-      const el = document.getElementById(numEl);
-      if (el) { el.textContent = r(actual); el.style.color = entries.length > 0 ? color : 'var(--text2)'; }
-    }
-    if (tgtEl) {
-      const el = document.getElementById(tgtEl);
-      if (el) el.textContent = `/${target}g`;
-    }
   });
 
-  // Tap on primary rows (.mpr) / secondary chips (.msc) → open nutrient ranking
+  // Tap on primary rows (.mpr) → open nutrient ranking
   [
-    { barId: 'bar-p',  nutrientKey: 'protein', isPrimary: true  },
-    { barId: 'bar-c',  nutrientKey: 'carbs',   isPrimary: true  },
-    { barId: 'bar-g',  nutrientKey: 'fat',     isPrimary: true  },
-    { barId: 'bar-gs', nutrientKey: 'satfat',  isPrimary: false },
-    { barId: 'bar-f',  nutrientKey: 'fiber',   isPrimary: false },
-    { barId: 'bar-a',  nutrientKey: 'sugar',   isPrimary: false },
-  ].forEach(({ barId, nutrientKey, isPrimary }) => {
+    { mprId: 'mpr-protein', nutrientKey: 'protein' },
+    { mprId: 'mpr-carbs',   nutrientKey: 'carbs'   },
+    { mprId: 'mpr-fat',     nutrientKey: 'fat'     },
+  ].forEach(({ mprId, nutrientKey }) => {
+    const n     = NUTRIENT_MAP[nutrientKey];
+    const mprEl = document.getElementById(mprId);
+    if (!n || !mprEl) return;
+    mprEl.style.cursor = 'pointer';
+    mprEl.onclick = () => openNutrientSheet(diaryEntries, n);
+  });
+
+  // Tap on secondary chips (.msc) → open nutrient ranking
+  [
+    { barId: 'bar-gs', nutrientKey: 'satfat' },
+    { barId: 'bar-f',  nutrientKey: 'fiber'  },
+    { barId: 'bar-a',  nutrientKey: 'sugar'  },
+  ].forEach(({ barId, nutrientKey }) => {
     const n      = NUTRIENT_MAP[nutrientKey];
     const fillEl = document.getElementById(barId);
     if (!n || !fillEl) return;
-    if (isPrimary) {
-      const mprEl = fillEl.closest('.mpr'); // full row: name + val + bar
-      if (mprEl) {
-        mprEl.style.cursor = 'pointer';
-        mprEl.onclick = () => openNutrientSheet(diaryEntries, n);
-      }
-    } else {
-      const mscEl = fillEl.closest('.msc'); // full chip: label + val + bar
-      if (mscEl) {
-        mscEl.style.cursor = 'pointer';
-        mscEl.onclick = () => openNutrientSheet(diaryEntries, n);
-      }
+    const mscEl = fillEl.closest('.msc');
+    if (mscEl) {
+      mscEl.style.cursor = 'pointer';
+      mscEl.onclick = () => openNutrientSheet(diaryEntries, n);
     }
   });
 

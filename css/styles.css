@@ -492,10 +492,10 @@ input[type="number"] { font-family: var(--mono); }
 .seg-bar-wrap {
   position: relative;
   padding-top: 10px;
-  margin: 8px 0 14px;
+  margin: 8px 0 20px;
 }
 .seg-bar-bg {
-  display: flex; height: 12px;
+  display: flex; height: 10px;
   border-radius: 6px; overflow: hidden;
 }
 .seg-bar-indicator {
@@ -505,20 +505,21 @@ input[type="number"] { font-family: var(--mono); }
   align-items: center; pointer-events: none; z-index: 1;
 }
 .seg-bar-tick {
-  font-size: 8px; line-height: 1;
-  color: var(--text); margin-bottom: 1px;
+  font-size: 10px; line-height: 1; font-weight: 700;
+  color: #fff; margin-bottom: 1px;
+  text-shadow: 0 1px 2px rgba(0,0,0,.8);
 }
 .seg-bar-line {
-  width: 2px; height: 20px; background: var(--text);
-  border-radius: 1px;
+  width: 3px; height: 20px; background: #fff;
+  border-radius: 1px; box-shadow: 0 0 3px rgba(0,0,0,.8);
 }
 .seg-bar-labels {
-  position: relative; height: 14px; margin-top: 2px;
+  position: relative; height: 14px; margin-top: 3px;
 }
 .seg-bar-labels span {
   position: absolute;
-  font-family: var(--mono); font-size: 9px;
-  color: var(--text3); transform: translateX(-50%);
+  font-family: var(--mono); font-size: 11px;
+  color: var(--text2); transform: translateX(-50%);
   white-space: nowrap;
 }
 

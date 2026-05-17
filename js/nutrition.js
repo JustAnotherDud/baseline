@@ -10,9 +10,9 @@ function getNutrientColor(nutrient, pct) {
       if ((pct >= 80 && pct < 90) || (pct > 130 && pct <= 150)) return 'var(--yellow)';
       return 'var(--red)';
     case 'fat':
-      if (pct >= 50 && pct <= 120) return 'var(--accent)';
-      if ((pct >= 30 && pct < 50) || (pct > 120 && pct <= 140)) return 'var(--yellow)';
-      return 'var(--red)';
+  if (pct >= 85 && pct <= 160) return 'var(--accent)';
+  if ((pct >= 54 && pct < 85) || (pct > 160 && pct <= 200)) return 'var(--yellow)';
+  return 'var(--red)';
     case 'satfat':
     case 'sugar':
       if (pct <= 85) return 'var(--accent)';

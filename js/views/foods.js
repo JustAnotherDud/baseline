@@ -50,13 +50,19 @@ async function loadFoods() {
 
 function sortFoods(foods) {
   if (rankerActive) {
+    const maxP  = Math.max(...foods.map(f => f.protein_per_100g          || 0)) || 1;
+    const maxC  = Math.max(...foods.map(f => f.carbs_per_100g            || 0)) || 1;
+    const maxK  = Math.max(...foods.map(f => f.calories_per_100g         || 0)) || 1;
+    const maxG  = Math.max(...foods.map(f => f.fat_per_100g              || 0)) || 1;
+    const maxGS = Math.max(...foods.map(f => f.saturated_fat_per_100g    || 0)) || 1;
+    const maxF  = Math.max(...foods.map(f => f.fiber_per_100g            || 0)) || 1;
     const score = f =>
-      rankerWeights.calories * f.calories_per_100g +
-      rankerWeights.protein  * f.protein_per_100g  +
-      rankerWeights.carbs    * f.carbs_per_100g    +
-      rankerWeights.fat      * f.fat_per_100g      +
-      rankerWeights.satfat   * (f.saturated_fat_per_100g || 0) +
-      rankerWeights.fiber    * (f.fiber_per_100g || 0);
+      rankerWeights.protein  * (f.protein_per_100g           / maxP)  +
+      rankerWeights.carbs    * (f.carbs_per_100g              / maxC)  +
+      rankerWeights.calories * (f.calories_per_100g           / maxK)  +
+      rankerWeights.fat      * (f.fat_per_100g                / maxG)  +
+      rankerWeights.satfat   * ((f.saturated_fat_per_100g||0) / maxGS) +
+      rankerWeights.fiber    * ((f.fiber_per_100g||0)         / maxF);
     return [...foods].sort((a, b) => score(b) - score(a));
   }
   if (currentMoreSort) {
@@ -77,14 +83,9 @@ function sortFoods(foods) {
 function toggleRanker() {
   const chip = document.getElementById('sort-chip-ranker');
   if (!rankerActive) {
-    openRankerSheet();
     if (chip) chip.classList.add('active');
-  } else {
-    rankerActive = false;
-    Object.keys(rankerWeights).forEach(k => rankerWeights[k] = 0);
-    if (chip) chip.classList.remove('active');
-    filterFoods();
   }
+  openRankerSheet();
 }
 
 function setSortFoods(sort) {

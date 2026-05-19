@@ -1,4 +1,6 @@
 let allFoods = [];
+let rankerWeights = { calories:0, protein:0, carbs:0, fat:0, satfat:0, fiber:0 };
+let rankerActive = false;
 
 const SORT_CONFIG = {
   name:     { asc: 'Nome A→Z',   desc: 'Nome Z→A',  default: 'asc'  },
@@ -47,6 +49,16 @@ async function loadFoods() {
 }
 
 function sortFoods(foods) {
+  if (rankerActive) {
+    const score = f =>
+      rankerWeights.calories * f.calories_per_100g +
+      rankerWeights.protein  * f.protein_per_100g  +
+      rankerWeights.carbs    * f.carbs_per_100g    +
+      rankerWeights.fat      * f.fat_per_100g      +
+      rankerWeights.satfat   * (f.saturated_fat_per_100g || 0) +
+      rankerWeights.fiber    * (f.fiber_per_100g || 0);
+    return [...foods].sort((a, b) => score(b) - score(a));
+  }
   if (currentMoreSort) {
     const s   = MORE_SORT_MAP.get(currentMoreSort);
     const mul = currentMoreDir === 'asc' ? 1 : -1;
@@ -59,6 +71,19 @@ function sortFoods(foods) {
     case 'protein':  return arr.sort((a,b) => mul * (a.protein_per_100g  - b.protein_per_100g));
     case 'calories': return arr.sort((a,b) => mul * (a.calories_per_100g - b.calories_per_100g));
     default:         return arr.sort((a,b) => mul * a.name.localeCompare(b.name, 'pt'));
+  }
+}
+
+function toggleRanker() {
+  const chip = document.getElementById('sort-chip-ranker');
+  if (!rankerActive) {
+    openRankerSheet();
+    if (chip) chip.classList.add('active');
+  } else {
+    rankerActive = false;
+    Object.keys(rankerWeights).forEach(k => rankerWeights[k] = 0);
+    if (chip) chip.classList.remove('active');
+    filterFoods();
   }
 }
 

@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="css/styles.css?v=20260516">
+  <link rel="stylesheet" href="css/styles.css?v=20260519">
 </head>
 <body>
 
@@ -177,9 +177,8 @@
         <button class="sort-chip active" data-sort="name"     onclick="setSortFoods('name')">Nome A→Z</button>
         <button class="sort-chip"        data-sort="protein"  onclick="setSortFoods('protein')">Proteína ↑</button>
         <button class="sort-chip"        data-sort="calories" onclick="setSortFoods('calories')">Kcal ↑</button>
-        <button class="sort-chip"        id="sort-chip-more"  onclick="toggleMoreMenu()">Mais ↓</button>
+        <button class="sort-chip" id="sort-chip-ranker" onclick="toggleRanker()">Ranker</button>
       </div>
-      <div id="sort-more-menu" class="sort-more-menu" style="display:none"></div>
       <div id="foods-list"></div>
     </div>
 
@@ -548,10 +547,10 @@
 <script src="js/config.js?v=20260515"></script>
 <script src="js/nutrition.js?v=20260514"></script>
 <script src="js/db.js?v=20260516"></script>
-<script src="js/ui.js?v=20260516"></script>
+<script src="js/ui.js?v=20260519"></script>
 <script src="js/views/diary.js?v=20260516"></script>
 <script src="js/views/log.js?v=20260516"></script>
-<script src="js/views/foods.js?v=20260516"></script>
+<script src="js/views/foods.js?v=20260519"></script>
 <script src="js/views/meals.js?v=20260516"></script>
 <script src="js/views/targets.js?v=20260515"></script>
 <script src="js/views/stats.js?v=20260516"></script>

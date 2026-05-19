@@ -591,6 +591,164 @@ function highlightFoodKeywords(name) {
   });
 }
 
+// ── RANKER ────────────────────────────────────────────────────────────────────
+function openRankerSheet() {
+  let overlay = document.getElementById('ranker-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'ranker-overlay';
+    overlay.className = 'sheet-overlay';
+    overlay.style.zIndex = '210';
+    overlay.innerHTML = `
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <div class="sheet-title">Ranker</div>
+          <div class="sheet-close" id="ranker-close">×</div>
+        </div>
+        <div class="form-body">
+          <button class="btn btn-secondary" style="width:auto" onclick="applyAutoRanker()">Auto ✨</button>
+          <label>
+            <div style="display:flex;justify-content:space-between">
+              <span class="lt">Proteína</span>
+              <span id="rw-protein-val" style="font-family:var(--mono);font-size:12px;color:var(--accent)">0</span>
+            </div>
+            <input type="range" id="rw-protein" min="-2" max="2" step="0.5" value="0"
+              oninput="updateRankerWeight('protein', this.value)">
+          </label>
+          <label>
+            <div style="display:flex;justify-content:space-between">
+              <span class="lt">Hidratos</span>
+              <span id="rw-carbs-val" style="font-family:var(--mono);font-size:12px;color:var(--accent)">0</span>
+            </div>
+            <input type="range" id="rw-carbs" min="-2" max="2" step="0.5" value="0"
+              oninput="updateRankerWeight('carbs', this.value)">
+          </label>
+          <label>
+            <div style="display:flex;justify-content:space-between">
+              <span class="lt">Calorias</span>
+              <span id="rw-calories-val" style="font-family:var(--mono);font-size:12px;color:var(--accent)">0</span>
+            </div>
+            <input type="range" id="rw-calories" min="-2" max="2" step="0.5" value="0"
+              oninput="updateRankerWeight('calories', this.value)">
+          </label>
+          <label>
+            <div style="display:flex;justify-content:space-between">
+              <span class="lt">Gordura</span>
+              <span id="rw-fat-val" style="font-family:var(--mono);font-size:12px;color:var(--accent)">0</span>
+            </div>
+            <input type="range" id="rw-fat" min="-2" max="2" step="0.5" value="0"
+              oninput="updateRankerWeight('fat', this.value)">
+          </label>
+          <label>
+            <div style="display:flex;justify-content:space-between">
+              <span class="lt">Gord. Sat.</span>
+              <span id="rw-satfat-val" style="font-family:var(--mono);font-size:12px;color:var(--accent)">0</span>
+            </div>
+            <input type="range" id="rw-satfat" min="-2" max="2" step="0.5" value="0"
+              oninput="updateRankerWeight('satfat', this.value)">
+          </label>
+          <label>
+            <div style="display:flex;justify-content:space-between">
+              <span class="lt">Fibra</span>
+              <span id="rw-fiber-val" style="font-family:var(--mono);font-size:12px;color:var(--accent)">0</span>
+            </div>
+            <input type="range" id="rw-fiber" min="-2" max="2" step="0.5" value="0"
+              oninput="updateRankerWeight('fiber', this.value)">
+          </label>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-secondary" style="flex:1" onclick="resetRanker()">Limpar</button>
+            <button class="btn btn-primary" style="flex:2" id="ranker-apply-btn">Aplicar</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('open'); };
+    document.getElementById('ranker-close').onclick = () => overlay.classList.remove('open');
+  }
+  ['protein','carbs','calories','fat','satfat','fiber'].forEach(k => {
+    const el = document.getElementById('rw-' + k);
+    if (el) el.value = rankerWeights[k];
+    const val = document.getElementById('rw-' + k + '-val');
+    if (val) {
+      const v = rankerWeights[k];
+      val.textContent = v > 0 ? '+' + v : String(v);
+    }
+  });
+  document.getElementById('ranker-apply-btn').onclick = () => overlay.classList.remove('open');
+  overlay.classList.add('open');
+}
+
+function updateRankerWeight(key, value) {
+  rankerWeights[key] = parseFloat(value);
+  const val = document.getElementById('rw-' + key + '-val');
+  if (val) val.textContent = parseFloat(value) > 0 ? '+' + value : value;
+  rankerActive = true;
+  filterFoods();
+}
+
+function resetRanker() {
+  Object.keys(rankerWeights).forEach(k => rankerWeights[k] = 0);
+  ['protein','carbs','calories','fat','satfat','fiber'].forEach(k => {
+    const el = document.getElementById('rw-' + k);
+    if (el) el.value = 0;
+    const val = document.getElementById('rw-' + k + '-val');
+    if (val) val.textContent = '0';
+  });
+  rankerActive = false;
+  filterFoods();
+}
+
+async function applyAutoRanker() {
+  const targets = await getTargetsForDate(currentDate);
+  const { data } = await db.from('diary')
+    .select('calories,protein,carbs,fat,saturated_fat,fiber')
+    .eq('date', currentDate);
+
+  const totals = { calories: 0, protein: 0, carbs: 0, fat: 0, saturated_fat: 0, fiber: 0 };
+  (data || []).forEach(e => {
+    Object.keys(totals).forEach(k => { totals[k] += +(e[k] || 0); });
+  });
+
+  const nutrientMap = [
+    { target: 'calories',      key: 'calories' },
+    { target: 'protein',       key: 'protein'  },
+    { target: 'carbs',         key: 'carbs'    },
+    { target: 'fat',           key: 'fat'      },
+    { target: 'saturated_fat', key: 'satfat'   },
+    { target: 'fiber',         key: 'fiber'    },
+  ];
+
+  const newWeights = {};
+  nutrientMap.forEach(({ target, key }) => {
+    const t = targets[target] || 0;
+    const a = totals[target]  || 0;
+    let weight = 0;
+    if (t > 0) {
+      const pct    = a / t * 100;
+      const raw    = -(pct - 100) / 50;
+      const clamped = Math.max(-2, Math.min(2, raw));
+      weight = Math.round(clamped * 2) / 2;
+    }
+    newWeights[key] = weight;
+  });
+
+  rankerWeights = newWeights;
+
+  ['protein','carbs','calories','fat','satfat','fiber'].forEach(k => {
+    const el = document.getElementById('rw-' + k);
+    if (el) el.value = rankerWeights[k];
+    const val = document.getElementById('rw-' + k + '-val');
+    if (val) {
+      const v = rankerWeights[k];
+      val.textContent = v > 0 ? '+' + v : String(v);
+    }
+  });
+
+  rankerActive = true;
+  filterFoods();
+}
+
 // ── SHARED: MEAL TEMPLATE LIST ───────────────────────────────────────────────
 // opts: { showDelete: bool, onItemClick: fn(t), onDeleteClick?: fn(id) }
 function renderMealTemplateList(containerEl, templates, countMap, opts) {

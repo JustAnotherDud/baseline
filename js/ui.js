@@ -719,14 +719,19 @@ async function applyAutoRanker() {
     { target: 'fiber',         key: 'fiber'    },
   ];
 
+  const calTarget   = targets['calories'] || 0;
+  const calActual   = totals['calories']  || 0;
+  const progress    = calTarget > 0 ? Math.max(0.20, calActual / calTarget) : 0.20;
+
   const newWeights = {};
   nutrientMap.forEach(({ target, key }) => {
     const t = targets[target] || 0;
     const a = totals[target]  || 0;
     let weight = 0;
     if (t > 0) {
-      const pct    = a / t * 100;
-      const raw    = -(pct - 100) / 50;
+      const tExp    = t * progress;
+      const pct     = a / tExp * 100;
+      const raw     = -(pct - 100) / 50;
       const clamped = Math.max(-2, Math.min(2, raw));
       weight = Math.round(clamped * 2) / 2;
     }

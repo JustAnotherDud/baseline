@@ -784,8 +784,8 @@ function buildSegmentedBar(actual, target, macro) {
     : pct >= maxPct ? 100
     : (pct - minPct) / range * 100;
 
-  const greenStartG   = Math.round(b2 / 100 * target);
-  const greenEndG     = Math.round(b3 / 100 * target);
+  const greenStart    = Math.round(b2 / 100 * target);
+  const greenEnd      = Math.round(b3 / 100 * target);
   const greenStartPos = ((b2 - minPct) / range * 100).toFixed(3);
   const greenEndPos   = ((b3 - minPct) / range * 100).toFixed(3);
 
@@ -796,8 +796,8 @@ function buildSegmentedBar(actual, target, macro) {
     `</div>` +
     `<div class="seg-bar-bg">${segsHTML}</div>` +
     `<div class="seg-bar-labels">` +
-      `<span style="left:${greenStartPos}%">${greenStartG}g</span>` +
-      `<span style="left:${greenEndPos}%">${greenEndG}g</span>` +
+      `<span style="left:${greenStartPos}%">${greenStart}</span>` +
+      `<span style="left:${greenEndPos}%">${greenEnd}</span>` +
     `</div>` +
   `</div>`;
 }

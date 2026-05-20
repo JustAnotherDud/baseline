@@ -50,6 +50,17 @@ function renderToday(entries, t) {
     if (wrapEl) wrapEl.innerHTML = buildSegmentedBar(actual, target, nutrient);
   });
 
+  // Restantes por macro primária
+  const remP = Math.round(t.protein - tot.prot);
+  const elPR = document.getElementById('val-p-rem');
+  if (elPR) elPR.textContent = remP > 0 ? `· ${remP}g rest.` : '';
+  const remC = Math.round(t.carbs - tot.carb);
+  const elCR = document.getElementById('val-c-rem');
+  if (elCR) elCR.textContent = remC > 0 ? `· ${remC}g rest.` : '';
+  const remG = Math.round(t.fat - tot.fat);
+  const elGR = document.getElementById('val-g-rem');
+  if (elGR) elGR.textContent = remG > 0 ? `· ${remG}g rest.` : '';
+
   // Secondary bars
   [
     { bar: 'bar-gs', val: 'val-gs', nutrient: 'satfat', actual: tot.satfat, target: t.saturated_fat },
@@ -101,13 +112,7 @@ function renderToday(entries, t) {
   kcalEl.style.color = kcalColor;
   kcalEl.style.cursor = 'pointer';
   kcalEl.onclick = () => openNutrientSheet(diaryEntries, NUTRIENT_MAP.calories);
-  const kcalBarEl = document.getElementById('bar-kcal');
-  if (kcalBarEl) {
-    kcalBarEl.style.width = Math.min(100, kcalPct) + '%';
-    kcalBarEl.style.background = kcalColor;
-    kcalBarEl.parentElement.style.cursor = 'pointer';
-    kcalBarEl.parentElement.onclick = () => openNutrientSheet(diaryEntries, NUTRIENT_MAP.calories);
-  }
+  document.getElementById('bar-kcal-wrap').innerHTML = buildSegmentedBar(tot.kcal, t.calories, 'calories');
 
   const container = document.getElementById('diary-container');
   container.innerHTML = '';

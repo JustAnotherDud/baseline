@@ -48,6 +48,17 @@ async function loadFoods() {
   filterFoods();
 }
 
+function calcRankerScore(f, maxP, maxC, maxK, maxG, maxGS, maxF) {
+  return (
+    rankerWeights.protein  * (f.protein_per_100g           / maxP)  +
+    rankerWeights.carbs    * (f.carbs_per_100g              / maxC)  +
+    rankerWeights.calories * (f.calories_per_100g           / maxK)  +
+    rankerWeights.fat      * (f.fat_per_100g                / maxG)  +
+    rankerWeights.satfat   * ((f.saturated_fat_per_100g||0) / maxGS) +
+    rankerWeights.fiber    * ((f.fiber_per_100g||0)         / maxF)
+  );
+}
+
 function sortFoods(foods) {
   if (rankerActive) {
     const maxP  = Math.max(...foods.map(f => f.protein_per_100g          || 0)) || 1;
@@ -56,14 +67,7 @@ function sortFoods(foods) {
     const maxG  = Math.max(...foods.map(f => f.fat_per_100g              || 0)) || 1;
     const maxGS = Math.max(...foods.map(f => f.saturated_fat_per_100g    || 0)) || 1;
     const maxF  = Math.max(...foods.map(f => f.fiber_per_100g            || 0)) || 1;
-    const score = f =>
-      rankerWeights.protein  * (f.protein_per_100g           / maxP)  +
-      rankerWeights.carbs    * (f.carbs_per_100g              / maxC)  +
-      rankerWeights.calories * (f.calories_per_100g           / maxK)  +
-      rankerWeights.fat      * (f.fat_per_100g                / maxG)  +
-      rankerWeights.satfat   * ((f.saturated_fat_per_100g||0) / maxGS) +
-      rankerWeights.fiber    * ((f.fiber_per_100g||0)         / maxF);
-    return [...foods].sort((a, b) => score(b) - score(a));
+    return [...foods].sort((a, b) => calcRankerScore(b, maxP, maxC, maxK, maxG, maxGS, maxF) - calcRankerScore(a, maxP, maxC, maxK, maxG, maxGS, maxF));
   }
   if (currentMoreSort) {
     const s   = MORE_SORT_MAP.get(currentMoreSort);
@@ -176,8 +180,18 @@ function selectMoreSort(key) {
 }
 
 function filterFoods() {
-  const q = document.getElementById('foods-search').value.toLowerCase();
-  const filtered = q ? allFoods.filter(f=>f.name.toLowerCase().includes(q)||(f.brand||'').toLowerCase().includes(q)) : allFoods;
+  const raw = document.getElementById('foods-search').value;
+  const terms = raw.split(',')
+    .map(t => t.trim().toLowerCase())
+    .filter(t => t.length > 0);
+  const filtered = terms.length === 0
+    ? allFoods
+    : allFoods.filter(f =>
+        terms.some(t =>
+          f.name.toLowerCase().includes(t) ||
+          (f.brand || '').toLowerCase().includes(t)
+        )
+      );
   renderFoods(sortFoods(filtered));
 }
 
@@ -192,6 +206,16 @@ function renderFoods(foods) {
   const ms = currentMoreSort;
   const RATIO_LABEL = { p_kcal: 'P/kcal', h_kcal: 'H/kcal', f_kcal: 'Fb/kcal' };
   const HL = 'color:var(--accent);font-weight:600';
+
+  let maxP, maxC, maxK, maxG, maxGS, maxF;
+  if (rankerActive) {
+    maxP  = Math.max(...foods.map(f => f.protein_per_100g          || 0)) || 1;
+    maxC  = Math.max(...foods.map(f => f.carbs_per_100g            || 0)) || 1;
+    maxK  = Math.max(...foods.map(f => f.calories_per_100g         || 0)) || 1;
+    maxG  = Math.max(...foods.map(f => f.fat_per_100g              || 0)) || 1;
+    maxGS = Math.max(...foods.map(f => f.saturated_fat_per_100g    || 0)) || 1;
+    maxF  = Math.max(...foods.map(f => f.fiber_per_100g            || 0)) || 1;
+  }
 
   el.innerHTML = '';
   foods.forEach(f => {
@@ -213,7 +237,10 @@ function renderFoods(foods) {
     // Right column: kcal default, swapped for hidden fields + ratios
     // All values are numeric — safe for innerHTML
     let rightCol;
-    if (RATIO_LABEL[ms]) {
+    if (rankerActive) {
+      const score = calcRankerScore(f, maxP, maxC, maxK, maxG, maxGS, maxF);
+      rightCol = `<div class="fi-kcal" style="color:var(--accent)">${score.toFixed(2)}<br><span style="font-size:9px;color:var(--text3)">score</span></div>`;
+    } else if (RATIO_LABEL[ms]) {
       const kcal  = f.calories_per_100g || 0;
       const ratio = kcal ? MORE_SORT_MAP.get(ms).fn(f).toFixed(2) : '—';
       rightCol = `<div class="fi-kcal" style="${HL}">${ratio}<br><span style="font-size:9px;color:var(--text3)">${RATIO_LABEL[ms]}</span></div>`;

@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="css/styles.css?v=20260519">
+  <link rel="stylesheet" href="css/styles.css?v=20260520">
 </head>
 <body>
 
@@ -54,15 +54,18 @@
       </div>
     </div>
     <div class="macro-summary">
-      <div class="kcal-row">
-        <div>
-          <div class="kcal-value" id="tot-kcal">0</div>
-          <div class="kcal-label" id="tot-kcal-label">/ 0 kcal</div>
-        </div>
-        <div class="kcal-remaining" id="kcal-rem"></div>
+      <div style="display:flex;align-items:baseline;
+                  gap:6px;flex-wrap:wrap;margin-bottom:4px">
+        <div class="kcal-value" id="tot-kcal"
+             style="font-size:34px">0</div>
+        <div id="tot-kcal-label"
+             style="font-family:var(--mono);font-size:13px;
+                    color:var(--text3)"></div>
+        <div id="kcal-rem"
+             style="margin-left:auto;font-family:var(--mono);
+                    font-size:13px"></div>
       </div>
-      <!-- kcal progress bar -->
-      <div class="kcal-bar-track"><div id="bar-kcal" class="kcal-bar-fill" style="width:0%"></div></div>
+      <div id="bar-kcal-wrap"></div>
 
       <!-- Primary macros: Proteína · Hidratos · Gordura -->
       <div class="macro-primary">
@@ -70,7 +73,7 @@
           <div class="mpr-top">
             <span class="mpr-name">Proteína</span>
             <div class="mpr-val-group">
-              <span class="mpr-num" id="val-p-num">0</span><span class="mpr-unit">g</span><span class="mpr-tgt" id="val-p-tgt">/0g</span>
+              <span class="mpr-num" id="val-p-num">0</span><span class="mpr-unit">g</span><span class="mpr-tgt" id="val-p-tgt">/0g</span><span id="val-p-rem" style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-left:4px"></span>
             </div>
           </div>
           <div id="bar-p-wrap"></div>
@@ -79,7 +82,7 @@
           <div class="mpr-top">
             <span class="mpr-name">Hidratos</span>
             <div class="mpr-val-group">
-              <span class="mpr-num" id="val-c-num">0</span><span class="mpr-unit">g</span><span class="mpr-tgt" id="val-c-tgt">/0g</span>
+              <span class="mpr-num" id="val-c-num">0</span><span class="mpr-unit">g</span><span class="mpr-tgt" id="val-c-tgt">/0g</span><span id="val-c-rem" style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-left:4px"></span>
             </div>
           </div>
           <div id="bar-c-wrap"></div>
@@ -88,7 +91,7 @@
           <div class="mpr-top">
             <span class="mpr-name">Gordura</span>
             <div class="mpr-val-group">
-              <span class="mpr-num" id="val-g-num">0</span><span class="mpr-unit">g</span><span class="mpr-tgt" id="val-g-tgt">/0g</span>
+              <span class="mpr-num" id="val-g-num">0</span><span class="mpr-unit">g</span><span class="mpr-tgt" id="val-g-tgt">/0g</span><span id="val-g-rem" style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-left:4px"></span>
             </div>
           </div>
           <div id="bar-g-wrap"></div>
@@ -547,8 +550,8 @@
 <script src="js/config.js?v=20260515"></script>
 <script src="js/nutrition.js?v=20260517"></script>
 <script src="js/db.js?v=20260516"></script>
-<script src="js/ui.js?v=20260520"></script>
-<script src="js/views/diary.js?v=20260517"></script>
+<script src="js/ui.js?v=20260520b"></script>
+<script src="js/views/diary.js?v=20260520"></script>
 <script src="js/views/log.js?v=20260516"></script>
 <script src="js/views/foods.js?v=20260520"></script>
 <script src="js/views/meals.js?v=20260516"></script>

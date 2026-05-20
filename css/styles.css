@@ -69,9 +69,6 @@ body {
 .kcal-value { font-family: var(--mono); font-size: 42px; font-weight: 600; color: var(--accent); line-height: 1; }
 .kcal-label { font-family: var(--mono); font-size: 13px; color: var(--text3); margin-top: 3px; }
 .kcal-remaining { font-family: var(--mono); font-size: 13px; color: var(--text2); text-align: right; }
-/* kcal bar */
-.kcal-bar-track { height: 6px; background: var(--surface3); border-radius: 999px; overflow: hidden; margin-top: 14px; }
-.kcal-bar-fill  { height: 100%; border-radius: 999px; width: 0%; transition: width .5s ease; }
 /* bar fills (shared) */
 .mbt { background: var(--surface3); border-radius: 999px; overflow: hidden; }
 .mbt-primary { height: 8px; margin-top: 0; }

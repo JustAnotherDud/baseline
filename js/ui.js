@@ -710,35 +710,45 @@ async function applyAutoRanker() {
     Object.keys(totals).forEach(k => { totals[k] += +(e[k] || 0); });
   });
 
-  const nutrientMap = [
-    { target: 'calories',      key: 'calories' },
-    { target: 'protein',       key: 'protein'  },
-    { target: 'carbs',         key: 'carbs'    },
-    { target: 'fat',           key: 'fat'      },
-    { target: 'saturated_fat', key: 'satfat'   },
-    { target: 'fiber',         key: 'fiber'    },
-  ];
+  // progress com floor 20%
+  const progress = Math.max(0.20, totals.calories / targets.calories);
 
-  const calTarget   = targets['calories'] || 0;
-  const calActual   = totals['calories']  || 0;
-  const progress    = calTarget > 0 ? Math.max(0.20, calActual / calTarget) : 0.20;
+  // helper: clamp e arredondar a 0.5
+  const snap = v => Math.round(Math.max(-2, Math.min(2, v)) * 2) / 2;
 
-  const newWeights = {};
-  nutrientMap.forEach(({ target, key }) => {
-    const t = targets[target] || 0;
-    const a = totals[target]  || 0;
-    let weight = 0;
-    if (t > 0) {
-      const tExp    = t * progress;
-      const pct     = a / tExp * 100;
-      const raw     = -(pct - 100) / 50;
-      const clamped = Math.max(-2, Math.min(2, raw));
-      weight = Math.round(clamped * 2) / 2;
-    }
-    newWeights[key] = weight;
-  });
+  // Calorias — bidirecional
+  const pctK = (totals.calories / (targets.calories * progress)) * 100;
+  rankerWeights.calories = snap(-(pctK - 100) / 50);
 
-  rankerWeights = newWeights;
+  // Proteína — só positivo (nunca negativo)
+  const pctP = (totals.protein / (targets.protein * progress)) * 100;
+  rankerWeights.protein = pctP >= 100 ? 0 : snap(-(pctP - 100) / 50);
+
+  // Hidratos — zona indiferença 80-120%
+  const pctC = (totals.carbs / (targets.carbs * progress)) * 100;
+  if (pctC >= 80 && pctC <= 120) {
+    rankerWeights.carbs = 0;
+  } else {
+    rankerWeights.carbs = snap(-(pctC - 100) / 50);
+  }
+
+  // Gordura — zona indiferença 80-120%
+  const pctG = (totals.fat / (targets.fat * progress)) * 100;
+  if (pctG >= 80 && pctG <= 120) {
+    rankerWeights.fat = 0;
+  } else {
+    rankerWeights.fat = snap(-(pctG - 100) / 50);
+  }
+
+  // Gord. Sat. — sempre -1 fixo
+  rankerWeights.satfat = -1;
+
+  // Fibra — só positivo (nunca negativo)
+  const pctF = (totals.fiber / ((targets.fiber || 30) * progress)) * 100;
+  rankerWeights.fiber = pctF >= 100 ? 0 : snap(-(pctF - 100) / 50);
+
+  // Açúcar — neutro
+  rankerWeights.sugar = 0;
 
   ['protein','carbs','calories','fat','satfat','fiber'].forEach(k => {
     const el = document.getElementById('rw-' + k);

@@ -431,7 +431,11 @@
         <div class="form-body">
           <div class="food-card" id="log-food-card"></div>
           <label>
-            <span class="lt">Quantidade (gramas)</span>
+            <div style="display:flex;justify-content:space-between;align-items:baseline">
+              <span class="lt">Quantidade (gramas)</span>
+              <span id="dose-info"
+                style="font-family:var(--mono);font-size:11px;color:var(--text3)"></span>
+            </div>
             <input type="number" id="log-grams" inputmode="decimal" placeholder="0" oninput="updatePreview()">
           </label>
           <div class="macro-preview" style="flex-wrap:wrap;gap:6px">

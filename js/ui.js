@@ -35,6 +35,8 @@ function closeLog() {
   document.getElementById('sheet-log').classList.remove('open');
   selectedFood = null;
   mealManuallySelected = false;
+  const infoEl = document.getElementById('dose-info');
+  if (infoEl) infoEl.textContent = '';
 }
 
 function openAddFood() {

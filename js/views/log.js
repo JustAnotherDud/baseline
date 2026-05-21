@@ -40,7 +40,7 @@ async function pickFood(id) {
 
   const serving = data.serving_size_g;
   const servingBtn = serving
-    ? `<button id="dose-btn" class="btn btn-secondary" style="margin-top:8px;padding:8px 14px;font-size:13px;width:auto">+ 1 porção (${serving}g)</button>`
+    ? `<button id="dose-btn" class="btn btn-secondary" style="margin-top:8px;padding:8px 14px;font-size:13px;width:auto">+ porção (${serving}g)</button>`
     : '';
 
   document.getElementById('log-food-card').innerHTML=`
@@ -55,10 +55,9 @@ async function pickFood(id) {
       const total = serving * doseCount;
       document.getElementById('log-grams').value = total;
       updatePreview();
-      doseBtn.textContent =
-        doseCount === 1
-          ? `+ 1 porção (${total}g)`
-          : `+ porção · ${total}g (${doseCount}×)`;
+      doseBtn.textContent = `+ porção (${serving}g)`;
+      const infoEl = document.getElementById('dose-info');
+      if (infoEl) infoEl.textContent = doseCount > 0 ? `${doseCount}× · ${total}g` : '';
     });
   }
 
@@ -85,6 +84,8 @@ function backToSearch() {
   document.getElementById('log-stage-search').classList.add('active');
   document.getElementById('log-stage-grams').classList.remove('active');
   selectedFood=null;
+  const infoEl = document.getElementById('dose-info');
+  if (infoEl) infoEl.textContent = '';
 }
 
 async function saveQuick() {

@@ -591,176 +591,76 @@ function highlightFoodKeywords(name) {
   });
 }
 
-// ── RANKER ────────────────────────────────────────────────────────────────────
-function openRankerSheet() {
-  let overlay = document.getElementById('ranker-overlay');
+// ── SMART ─────────────────────────────────────────────────────────────────────
+function openSmartSheet() {
+  let overlay = document.getElementById('smart-overlay');
   if (!overlay) {
     overlay = document.createElement('div');
-    overlay.id = 'ranker-overlay';
+    overlay.id = 'smart-overlay';
     overlay.className = 'sheet-overlay';
     overlay.style.zIndex = '210';
     overlay.innerHTML = `
       <div class="sheet">
         <div class="sheet-handle"></div>
         <div class="sheet-header">
-          <div class="sheet-title">Ranker</div>
-          <div class="sheet-close" id="ranker-close">×</div>
+          <div class="sheet-title">Smart</div>
+          <div class="sheet-close" id="smart-close">×</div>
         </div>
         <div class="form-body">
-          <button class="btn btn-secondary" style="width:auto" onclick="applyAutoRanker()">Auto ✨</button>
-          <label>
-            <div style="display:flex;justify-content:space-between">
-              <span class="lt">Proteína</span>
-              <span id="rw-protein-val" style="font-family:var(--mono);font-size:12px;color:var(--accent)">0</span>
-            </div>
-            <input type="range" id="rw-protein" min="-2" max="2" step="0.5" value="0"
-              oninput="updateRankerWeight('protein', this.value)">
-          </label>
-          <label>
-            <div style="display:flex;justify-content:space-between">
-              <span class="lt">Hidratos</span>
-              <span id="rw-carbs-val" style="font-family:var(--mono);font-size:12px;color:var(--accent)">0</span>
-            </div>
-            <input type="range" id="rw-carbs" min="-2" max="2" step="0.5" value="0"
-              oninput="updateRankerWeight('carbs', this.value)">
-          </label>
-          <label>
-            <div style="display:flex;justify-content:space-between">
-              <span class="lt">Calorias</span>
-              <span id="rw-calories-val" style="font-family:var(--mono);font-size:12px;color:var(--accent)">0</span>
-            </div>
-            <input type="range" id="rw-calories" min="-2" max="2" step="0.5" value="0"
-              oninput="updateRankerWeight('calories', this.value)">
-          </label>
-          <label>
-            <div style="display:flex;justify-content:space-between">
-              <span class="lt">Gordura</span>
-              <span id="rw-fat-val" style="font-family:var(--mono);font-size:12px;color:var(--accent)">0</span>
-            </div>
-            <input type="range" id="rw-fat" min="-2" max="2" step="0.5" value="0"
-              oninput="updateRankerWeight('fat', this.value)">
-          </label>
-          <label>
-            <div style="display:flex;justify-content:space-between">
-              <span class="lt">Gord. Sat.</span>
-              <span id="rw-satfat-val" style="font-family:var(--mono);font-size:12px;color:var(--accent)">0</span>
-            </div>
-            <input type="range" id="rw-satfat" min="-2" max="2" step="0.5" value="0"
-              oninput="updateRankerWeight('satfat', this.value)">
-          </label>
-          <label>
-            <div style="display:flex;justify-content:space-between">
-              <span class="lt">Fibra</span>
-              <span id="rw-fiber-val" style="font-family:var(--mono);font-size:12px;color:var(--accent)">0</span>
-            </div>
-            <input type="range" id="rw-fiber" min="-2" max="2" step="0.5" value="0"
-              oninput="updateRankerWeight('fiber', this.value)">
-          </label>
-          <div style="display:flex;gap:10px">
-            <button class="btn btn-secondary" style="flex:1" onclick="resetRanker()">Limpar</button>
-            <button class="btn btn-primary" style="flex:2" id="ranker-apply-btn">Aplicar</button>
+          <button class="btn btn-secondary" onclick="applyAutoSmart()">Auto ✨</button>
+          <div class="section-label">QUERO MAIS</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <button class="sort-chip smart-chip-btn" data-type="more" data-key="protein" onclick="toggleSmartChip('more','protein')">Proteína</button>
+            <button class="sort-chip smart-chip-btn" data-type="more" data-key="carbs"   onclick="toggleSmartChip('more','carbs')">Hidratos</button>
+            <button class="sort-chip smart-chip-btn" data-type="more" data-key="fat"     onclick="toggleSmartChip('more','fat')">Gordura</button>
+            <button class="sort-chip smart-chip-btn" data-type="more" data-key="fiber"   onclick="toggleSmartChip('more','fiber')">Fibra</button>
+          </div>
+          <div class="section-label">QUERO EVITAR</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <button class="sort-chip smart-chip-btn" data-type="avoid" data-key="satfat" onclick="toggleSmartChip('avoid','satfat')">Gord. Sat.</button>
+            <button class="sort-chip smart-chip-btn" data-type="avoid" data-key="fat"    onclick="toggleSmartChip('avoid','fat')">Gordura</button>
+            <button class="sort-chip smart-chip-btn" data-type="avoid" data-key="sugar"  onclick="toggleSmartChip('avoid','sugar')">Açúcar</button>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:4px">
+            <button class="btn btn-secondary" style="flex:1" onclick="resetSmart()">Limpar</button>
+            <button class="btn btn-primary" style="flex:2" id="smart-apply-btn">Aplicar</button>
           </div>
         </div>
       </div>`;
     document.body.appendChild(overlay);
     overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('open'); };
-    document.getElementById('ranker-close').onclick = () => overlay.classList.remove('open');
+    document.getElementById('smart-close').onclick = () => overlay.classList.remove('open');
   }
-  ['protein','carbs','calories','fat','satfat','fiber'].forEach(k => {
-    const el = document.getElementById('rw-' + k);
-    if (el) el.value = rankerWeights[k];
-    const val = document.getElementById('rw-' + k + '-val');
-    if (val) {
-      const v = rankerWeights[k];
-      val.textContent = v > 0 ? '+' + v : String(v);
-    }
-  });
-  document.getElementById('ranker-apply-btn').onclick = () => overlay.classList.remove('open');
+  document.getElementById('smart-apply-btn').onclick = () => overlay.classList.remove('open');
+  updateSmartChipVisuals();
   overlay.classList.add('open');
 }
 
-function updateRankerWeight(key, value) {
-  rankerWeights[key] = parseFloat(value);
-  const val = document.getElementById('rw-' + key + '-val');
-  if (val) val.textContent = parseFloat(value) > 0 ? '+' + value : value;
-  rankerActive = true;
-  filterFoods();
-}
+async function applyAutoSmart() {
+  const [targets, { data }] = await Promise.all([
+    getTargetsForDate(currentDate),
+    db.from('diary').select('calories,protein,carbs,fat,saturated_fat,sugar,fiber').eq('date', currentDate),
+  ]);
 
-function resetRanker() {
-  Object.keys(rankerWeights).forEach(k => rankerWeights[k] = 0);
-  ['protein','carbs','calories','fat','satfat','fiber'].forEach(k => {
-    const el = document.getElementById('rw-' + k);
-    if (el) el.value = 0;
-    const val = document.getElementById('rw-' + k + '-val');
-    if (val) val.textContent = '0';
-  });
-  rankerActive = false;
-  filterFoods();
-}
+  const tot = { calories: 0, protein: 0, carbs: 0, fat: 0, saturated_fat: 0, sugar: 0, fiber: 0 };
+  (data || []).forEach(e => { Object.keys(tot).forEach(k => { tot[k] += +(e[k] || 0); }); });
 
-async function applyAutoRanker() {
-  const targets = await getTargetsForDate(currentDate);
-  const { data } = await db.from('diary')
-    .select('calories,protein,carbs,fat,saturated_fat,fiber')
-    .eq('date', currentDate);
+  const progress = Math.max(0.20, tot.calories / (targets.calories || 1));
 
-  const totals = { calories: 0, protein: 0, carbs: 0, fat: 0, saturated_fat: 0, fiber: 0 };
-  (data || []).forEach(e => {
-    Object.keys(totals).forEach(k => { totals[k] += +(e[k] || 0); });
-  });
+  const pct = (actual, target) => actual / ((target || 1) * progress) * 100;
 
-  // progress com floor 20%
-  const progress = Math.max(0.20, totals.calories / targets.calories);
+  smartMore.clear(); smartAvoid.clear();
 
-  // helper: clamp e arredondar a 0.5
-  const snap = v => Math.round(Math.max(-2, Math.min(2, v)) * 2) / 2;
+  if (pct(tot.protein,       targets.protein)            < 100) smartMore.add('protein');
+  if (pct(tot.carbs,         targets.carbs)              < 80)  smartMore.add('carbs');
+  if (pct(tot.fat,           targets.fat)                < 80)  smartMore.add('fat');
+  else if (pct(tot.fat,      targets.fat)                > 120) smartAvoid.add('fat');
+  if (pct(tot.fiber,         targets.fiber || 30)        < 100) smartMore.add('fiber');
+  if (pct(tot.saturated_fat, targets.saturated_fat || 20) > 100) smartAvoid.add('satfat');
+  if (pct(tot.sugar,         targets.sugar || 50)        > 100) smartAvoid.add('sugar');
 
-  // Calorias — bidirecional
-  const pctK = (totals.calories / (targets.calories * progress)) * 100;
-  rankerWeights.calories = snap(-(pctK - 100) / 50);
-
-  // Proteína — só positivo (nunca negativo)
-  const pctP = (totals.protein / (targets.protein * progress)) * 100;
-  rankerWeights.protein = pctP >= 100 ? 0 : snap(-(pctP - 100) / 50);
-
-  // Hidratos — zona indiferença 80-120%
-  const pctC = (totals.carbs / (targets.carbs * progress)) * 100;
-  if (pctC >= 80 && pctC <= 120) {
-    rankerWeights.carbs = 0;
-  } else {
-    rankerWeights.carbs = snap(-(pctC - 100) / 50);
-  }
-
-  // Gordura — zona indiferença 80-120%
-  const pctG = (totals.fat / (targets.fat * progress)) * 100;
-  if (pctG >= 80 && pctG <= 120) {
-    rankerWeights.fat = 0;
-  } else {
-    rankerWeights.fat = snap(-(pctG - 100) / 50);
-  }
-
-  // Gord. Sat. — sempre -1 fixo
-  rankerWeights.satfat = -1;
-
-  // Fibra — só positivo (nunca negativo)
-  const pctF = (totals.fiber / ((targets.fiber || 30) * progress)) * 100;
-  rankerWeights.fiber = pctF >= 100 ? 0 : snap(-(pctF - 100) / 50);
-
-  // Açúcar — neutro
-  rankerWeights.sugar = 0;
-
-  ['protein','carbs','calories','fat','satfat','fiber'].forEach(k => {
-    const el = document.getElementById('rw-' + k);
-    if (el) el.value = rankerWeights[k];
-    const val = document.getElementById('rw-' + k + '-val');
-    if (val) {
-      const v = rankerWeights[k];
-      val.textContent = v > 0 ? '+' + v : String(v);
-    }
-  });
-
-  rankerActive = true;
+  smartActive = smartMore.size > 0 || smartAvoid.size > 0;
+  updateSmartChipVisuals();
   filterFoods();
 }
 

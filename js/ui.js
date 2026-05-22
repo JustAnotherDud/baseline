@@ -111,7 +111,10 @@ async function openEditEntry(id) {
     document.getElementById('edit-grams').value = data.grams || '';
     updateEditPreview();
     document.getElementById('sheet-edit').classList.add('open');
-    setTimeout(() => document.getElementById('edit-grams').focus(), 300);
+    setTimeout(() => {
+      const input = document.getElementById('edit-grams');
+      if (input) { input.focus(); input.select(); }
+    }, 300);
   }
 }
 

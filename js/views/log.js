@@ -56,8 +56,6 @@ async function pickFood(id) {
       document.getElementById('log-grams').value = total;
       updatePreview();
       doseBtn.textContent = `+ porção (${serving}g)`;
-      const infoEl = document.getElementById('dose-info');
-      if (infoEl) infoEl.textContent = doseCount > 0 ? `${doseCount}× · ${total}g` : '';
     });
   }
 
@@ -78,6 +76,11 @@ function updatePreview() {
   document.getElementById('prev-sugar').textContent  = c(selectedFood.sugar_per_100g);
   document.getElementById('prev-fiber').textContent  = c(selectedFood.fiber_per_100g);
   document.getElementById('prev-prot').textContent   = c(selectedFood.protein_per_100g);
+  if (selectedFood && selectedFood.serving_size_g) {
+    const doses = g > 0 ? (g / selectedFood.serving_size_g).toFixed(1) : '';
+    const infoEl = document.getElementById('dose-info');
+    if (infoEl) infoEl.textContent = doses ? `${doses}×` : '';
+  }
 }
 
 function backToSearch() {

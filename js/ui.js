@@ -747,7 +747,7 @@ function renderMealTemplateList(containerEl, templates, countMap, opts) {
 function parseGramsExpr(raw) {
   if (!raw || !raw.toString().trim()) return null;
   const str = raw.toString().trim();
-  if (!/^[\d\s\+\-\*\/\(\)\.]+$/.test(str)) {
+  if (!/^[\d\s\+\*\/\(\)\.\-]+$/.test(str)) {
     return parseFloat(str) || null;
   }
   try {

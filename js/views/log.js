@@ -31,7 +31,6 @@ async function searchDB() {
 }
 
 async function pickFood(id) {
-  let doseCount = 0;
   const {data} = await db.from('foods').select('*').eq('id',id).single();
   if (!data) return;
   selectedFood=data;
@@ -51,11 +50,9 @@ async function pickFood(id) {
   const doseBtn = document.getElementById('dose-btn');
   if (doseBtn) {
     doseBtn.addEventListener('click', () => {
-      doseCount++;
-      const total = serving * doseCount;
-      document.getElementById('log-grams').value = total;
+      const current = parseFloat(document.getElementById('log-grams').value) || 0;
+      document.getElementById('log-grams').value = current + serving;
       updatePreview();
-      doseBtn.textContent = `+ porção (${serving}g)`;
     });
   }
 

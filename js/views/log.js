@@ -305,6 +305,10 @@ async function loadRecentFoods() {
 // ── SAVE DIARY HANDLER (DOM side of saveDiary) ───────────────────────────────
 
 async function handleSaveDiary() {
+  const rawGrams = document.getElementById('log-grams').value;
+  const parsed = parseGramsExpr(rawGrams);
+  if (!parsed || parsed <= 0) { toast('Quantidade inválida'); return; }
+  document.getElementById('log-grams').value = parsed;
   const ok = await saveDiary();
   if (!ok) return;
   // Reset UI — voltar ao stage de pesquisa sem fechar o sheet

@@ -76,7 +76,8 @@ async function saveEditEntry() {
     return;
   }
 
-  const g = parseFloat(document.getElementById('edit-grams').value);
+  const rawEdit = document.getElementById('edit-grams').value;
+  const g = parseGramsExpr(rawEdit);
   if (!g || g <= 0) { toast('Indica a quantidade'); return; }
 
   const orig = editingEntry.grams || g;

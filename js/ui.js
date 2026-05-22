@@ -514,7 +514,7 @@ function openMealBreakdown(mealKey, allEntries) {
 
 function updateEditPreview() {
   if (!editingEntry) return;
-  const g = parseFloat(document.getElementById('edit-grams').value) || 0;
+  const g = parseGramsExpr(document.getElementById('edit-grams').value) || 0;
   const orig = editingEntry.grams || 1;
   const factor = g / orig;
   const c = (v) => Math.round((parseFloat(v) || 0) * factor);
@@ -742,4 +742,21 @@ function renderMealTemplateList(containerEl, templates, countMap, opts) {
     }
     containerEl.appendChild(row);
   });
+}
+
+function parseGramsExpr(raw) {
+  if (!raw || !raw.toString().trim()) return null;
+  const str = raw.toString().trim();
+  if (!/^[\d\s\+\-\*\/\(\)\.]+$/.test(str)) {
+    return parseFloat(str) || null;
+  }
+  try {
+    const result = Function('"use strict"; return (' + str + ')')();
+    if (typeof result !== 'number' || !isFinite(result) || result < 0) {
+      return null;
+    }
+    return Math.round(result * 10) / 10;
+  } catch {
+    return null;
+  }
 }

@@ -581,6 +581,7 @@ function highlightFoodKeywords(name) {
     { word: 'Light',    color: 'var(--text3)'  },
     { word: 'Integral', color: '#a3845a'        },
     { word: 'Proteico', color: 'var(--blue)'    },
+    { word: 'Proteica', color: 'var(--blue)'    },
     { word: 'Zero',     color: 'var(--text3)'   },
   ];
   const escaped = name.replace(/[<>&"]/g, c =>

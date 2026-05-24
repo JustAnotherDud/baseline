@@ -1,7 +1,7 @@
 # NutriTrack — Handoff Document
 
-> Estado actual: **16 Mai 2026** — Fase 3.5 activa  
-> Última actualização automática gerada por Claude Code.
+> Estado actual: **24 Mai 2026** — Fase 3.5 activa  
+> Versão da app: **v1.2.0**
 
 ---
 
@@ -14,6 +14,13 @@ PWA de registo nutricional pessoal, mobile-first, com tema escuro. Funciona inte
 - [Supabase JS v2](https://supabase.com/docs/reference/javascript) — CDN (`@supabase/supabase-js@2`)
 - Fontes: IBM Plex Mono + DM Sans (Google Fonts)
 - PWA: `manifest.json` + `<meta apple-mobile-web-app-capable>`
+
+**URLs:**
+| Campo | Valor |
+|---|---|
+| GitHub | `https://github.com/JustAnotherDud/nutrition-tracker` |
+| App (produção) | `https://justanotherdud.github.io/nutrition-tracker` |
+| Supabase dashboard | `https://supabase.com/dashboard/project/yvsjchzvoikqlpbqsphs` |
 
 **Supabase:**
 | Campo | Valor |
@@ -35,20 +42,25 @@ nutrition-tracker/
 ├── css/
 │   └── styles.css              — todos os estilos; sem preprocessor
 ├── js/
-│   ├── config.js               — MEALS (dict), cachedTargets (fallback)
+│   ├── config.js               — MEALS (dict), cachedTargets (fallback Fase 3.5)
 │   ├── nutrition.js            — getNutrientColor(), getTargets()
-│   ├── db.js                   — Supabase queries: getTargetsForDate (daily_targets → fallback cache),
-│   │                             loadToday, saveDiary, saveEditEntry, delEntryFromEdit,
-│   │                             getDayScores, getActivePhase
+│   ├── db.js                   — Supabase queries: getTargetsForDate, loadToday,
+│   │                             saveDiary, saveEditEntry, delEntryFromEdit,
+│   │                             getDayScores, getActivePhase, moveEntryToMeal
 │   ├── ui.js                   — Componentes de UI reutilizáveis:
 │   │                             toast, overlayClose,
 │   │                             openLog, closeLog, openAddFood, closeAddFood,
 │   │                             openEditEntry, closeEditEntry,
-│   │                             openDatePicker (opts.showScores), openNutrientSheet,
-│   │                             openMealBreakdown, updateEditPreview,
-│   │                             renderMealTemplateList
-│   ├── app.js                  — init(), go(view), switchFoodsTab(), saveSetup(), resetSetup(),
-│   │                             loadSettingsView(), clearCacheAndReload()
+│   │                             openDatePicker (opts.showScores),
+│   │                             openNutrientSheet, openMealBreakdown,
+│   │                             openMoveMealSheet, updateEditPreview,
+│   │                             renderMealTemplateList,
+│   │                             buildSegmentedBar,
+│   │                             openSmartSheet, applyAutoSmart,
+│   │                             parseGramsExpr, insertOperator,
+│   │                             highlightFoodKeywords
+│   ├── app.js                  — init(), go(view), switchFoodsTab(), saveSetup(),
+│   │                             resetSetup(), loadSettingsView(), clearCacheAndReload()
 │   └── views/
 │       ├── diary.js            — renderToday(), setDateLabel(), changeDay(), pickDate()
 │       │                         NUTRIENT_MAP, tap handlers nas barras de macros
@@ -58,19 +70,22 @@ nutrition-tracker/
 │       │                         getMealByHour(), updateMealSelectorLabel(),
 │       │                         toggleMealSelector(), selectMealFromSelector(),
 │       │                         updateSheetMealTabs(), selectSheetMeal(),
+│       │                         selectSheetMealFromDropdown(),
 │       │                         openLogMeals(), pickLogDate(), updateLogDateLabel(),
 │       │                         loadLogTotalsStrip(), loadRecentFoods()
 │       ├── foods.js            — loadFoods(), filterFoods(), renderFoods(), editFood(),
 │       │                         saveFood(), deleteFood(), sortFoods(), setSortFoods(),
-│       │                         toggleMoreMenu(), closeMoreMenu(), selectMoreSort()
-│       ├── meals.js            — loadMeals(), deleteMeal(), openCreateMeal(), closeMealCreate(),
-│       │                         saveMeal(), openApplyMeal(), applyMealToDiary(),
-│       │                         mcAddItem(), mcRemoveItem(), renderMcItems(),
-│       │                         mcSearchFood(), mcPickFood(), mcGramsChange()
+│       │                         calcSmartScore(), toggleSmartChip(),
+│       │                         updateSmartChipVisuals(), resetSmart(), toggleSmart()
+│       ├── meals.js            — loadMeals(), deleteMeal(), openCreateMeal(),
+│       │                         closeMealCreate(), saveMeal(), openApplyMeal(),
+│       │                         applyMealToDiary(), mcAddItem(), mcRemoveItem(),
+│       │                         renderMcItems(), mcSearchFood(), mcPickFood(),
+│       │                         mcGramsChange()
 │       ├── targets.js          — loadTargetsForm(), refreshPhaseAndTargets(),
 │       │                         updatePhaseBadge(), onTargetsDateChange(),
 │       │                         updateTargetsDateLabel()
-│       └── stats.js            — loadStats() — 3 queries paralelas, 3 secções renderizadas
+│       └── stats.js            — loadStats(), setStatsPeriod()
 └── nutritrack-handoff.md       — este ficheiro
 ```
 
@@ -104,7 +119,7 @@ Base de dados de alimentos. Valores por 100g.
 | `id` | `int8` PK | Auto-increment |
 | `name` | `text` | Obrigatório |
 | `brand` | `text` | Opcional |
-| `serving_size_g` | `numeric` | Opcional — activa botão "1 porção" no log |
+| `serving_size_g` | `numeric` | Opcional — activa botão "+ porção" no log |
 | `calories_per_100g` | `numeric` | Obrigatório |
 | `protein_per_100g` | `numeric` | Obrigatório |
 | `carbs_per_100g` | `numeric` | Obrigatório |
@@ -134,26 +149,11 @@ Registo diário de refeições. Cada linha = 1 item registado.
 | `fiber` | `numeric` | Snapshot calculado |
 | `logged_at` | `timestamptz` | Default: `now()` |
 
-### `targets` *(deprecated — manter como cache)*
-Targets por `day_type` — sistema anterior à Fase 3.5. A PWA já não escreve para esta tabela. `sync_hub_push_targets` ainda pode fazer upsert aqui para compatibilidade, mas `daily_targets` é a fonte de verdade.
-
-| Coluna | Tipo | Notas |
-|---|---|---|
-| `day_type` | `text` UNIQUE | ex: `rest_pure`, `work_only`, `training_only`… |
-| `calories` | `numeric` | |
-| `fat` | `numeric` | |
-| `saturated_fat` | `numeric` | |
-| `carbs` | `numeric` | |
-| `sugar` | `numeric` | |
-| `fiber` | `numeric` | |
-| `protein` | `numeric` | |
-| `updated_at` | `text` | |
-
 ### `daily_targets` *(principal — fonte de verdade)*
 Snapshot diário calculado pelo DCB via `sync_hub_push_daily_target`. Um registo por data.
 
 | Coluna | Tipo | Notas |
-| --- | --- | --- |
+|---|---|---|
 | `date` | `date` UNIQUE PK | YYYY-MM-DD |
 | `day_type` | `text` | `"modular"` em Fase 3.5 |
 | `calories` | `numeric` | Target calórico calculado pelos blocos |
@@ -168,48 +168,23 @@ Snapshot diário calculado pelo DCB via `sync_hub_push_daily_target`. Um registo
 | `phase_id` | `int8` | FK opcional para `phases` |
 | `updated_at` | `timestamptz` | Timestamp do push |
 
+### `targets` *(deprecated — não lida pela PWA)*
+Sistema anterior à Fase 3.5 por `day_type`. A PWA lê exclusivamente de `daily_targets`.  
+Não escrever novos dados aqui.
+
 ### `phases`
 Fases de treino/nutrição. Usado para badge informativo na vista Targets.
 
 | Coluna | Tipo | Notas |
 |---|---|---|
 | `id` | `int8` PK | |
-| `label` | `text` | Ex: `"Fase 3"`, `"Fase 3.5"` |
+| `label` | `text` | Ex: `"Fase 3.5"` |
 | `objetivo` | `text` | Ex: `"surplus +150kcal"` |
 | `start_date` | `date` | Início da fase |
 | `end_date` | `date` | Null = fase activa |
 
-Query usada: `lte('start_date', date).or('end_date.is.null,end_date.gte.'+date).maybeSingle()`
-
-### `phase_targets` *(deprecated em Fase 3.5)*
-Targets por fase + day_type — substituídos pelo sistema de blocos. A função `getPhaseTargets(phaseId, dayType)` ainda existe em `db.js` mas já não é chamada pela UI.
-
-### `meal_templates`
-Refeições guardadas como template reutilizável.
-
-| Coluna | Tipo |
-|---|---|
-| `id` | `int8` PK |
-| `name` | `text` |
-| `created_at` | `timestamptz` |
-
-### `meal_template_items`
-Itens de cada template. Valores são snapshots (gramas × food).
-
-| Coluna | Tipo |
-|---|---|
-| `id` | `int8` PK |
-| `template_id` | `int8` FK → `meal_templates.id` |
-| `food_id` | `int8` FK → `foods.id` |
-| `food_name` | `text` |
-| `grams` | `numeric` |
-| `calories` | `numeric` |
-| `protein` | `numeric` |
-| `carbs` | `numeric` |
-| `fat` | `numeric` |
-| `saturated_fat` | `numeric` |
-| `sugar` | `numeric` |
-| `fiber` | `numeric` |
+### `meal_templates` + `meal_template_items`
+Templates de refeições reutilizáveis. Cada template tem N itens com snapshots de macros.
 
 ---
 
@@ -229,57 +204,57 @@ const MEALS = {
 };
 ```
 
-### Auto-selecção de refeição por hora (log.js — `getMealByHour`)
+### cachedTargets — fallback Fase 3.5 (config.js)
 
-| Horas | Refeição |
-|---|---|
-| 06:00–09:59 | `breakfast` |
-| 10:00–11:59 | `morning` |
-| 12:00–14:59 | `lunch` |
-| 15:00–17:59 | `afternoon1` |
-| 18:00–19:59 | `afternoon2` |
-| 20:00–22:59 | `dinner` |
-| Resto | `supper` |
+```js
+let cachedTargets = {
+  calories: 2300, fat: 65, saturated_fat: 25,
+  carbs: 254, sugar: 150, fiber: 30, protein: 175
+};
+```
 
-A selecção automática só actua se `mealManuallySelected === false`. Uma vez escolhida manualmente, persiste até fechar o sheet de log ou navegar para outra vista.
+Usado quando não há row em `daily_targets` para a data pedida.
 
-### Indicadores de cor por nutriente (nutrition.js — `getNutrientColor(nutrient, pct)`)
+### Indicadores de cor por nutriente (nutrition.js — `getNutrientColor`)
 
 | Nutriente | Verde | Amarelo | Vermelho |
 |---|---|---|---|
-| `calories`, `carbs` | 90–110% | 80–90% ou 110–120% | resto |
-| `protein` | 90–130% | 80–90% ou 130–150% | resto |
-| `fat` | 50–120% | 30–50% ou 120–140% | resto |
+| `calories` | 95–105% | 90–95% / 105–110% | resto |
+| `carbs` | 85–135% | 70–85% / 135–150% | resto |
+| `protein` | 86–130% | 63–86% / 130–150% | resto |
+| `fat` | 85–160% | 54–85% / 160–200% | resto |
 | `satfat`, `sugar` | ≤85% | 85–100% | >100% |
 | `fiber` | ≥90% | 70–89% | <70% |
 
-Cores CSS: `var(--accent)` = verde, `var(--yellow)` = amarelo, `var(--red)` = vermelho.
+### Keywords coloridas (ui.js — `highlightFoodKeywords`)
 
-### Score de dia (date picker — db.js — `getDayScores`)
+| Keyword | Cor |
+|---|---|
+| `Light` | `var(--text3)` — cinzento |
+| `Zero` | `var(--text3)` — cinzento |
+| `Integral` | `#a3845a` — castanho |
+| `Proteico` / `Proteica` | `var(--blue)` — azul |
 
-Para cada dia que tem registos no diário **e** target em `daily_targets`:
-- Verifica os 4 macros principais (calories, protein, carbs, fat)
-- `green` se ≥3 estão na zona verde
+Aplicado em: nomes de alimentos no diário, lista de alimentos, resultados de pesquisa.
+
+### Score de dia (date picker — `getDayScores`)
+
+Para cada dia com registo e target:
+- `green` se ≥3 dos 4 macros principais estão na zona verde
 - `yellow` se exactamente 2
 - `red` se ≤1
-- `neutral` se há registo mas sem target para esse dia
-
-Os dots coloridos aparecem por baixo de cada número no date picker.
+- `neutral` se há registo mas sem target
 
 ---
 
 ## 5. Sistema de targets modulares (Fase 3.5)
 
-Activo desde **14 Mai 2026**. Substitui o sistema de day_types fixos.
+Activo desde **14 Mai 2026**.
 
-### Fórmula de cálculo (sync_hub_mcp.py — `sync_hub_push_daily_target`)
+### Fórmula de cálculo (`sync_hub_push_daily_target`)
 
 ```
-TDEE = base
-     + work_hours × work_per_hour
-     + gym (se sessão de ginásio)
-     + run_{run_type} (se corrida)
-
+TDEE = base + work_hours × work_per_hour + gym + run_{type}
 target_kcal = round(TDEE + surplus_kcal)
 ```
 
@@ -296,45 +271,20 @@ target_kcal = round(TDEE + surplus_kcal)
 | `run_race` | 600 |
 | `surplus_kcal` | +150 (excepção: run_race → 0) |
 
-**Exemplos práticos:**
-- Dia de descanso puro: `2150 + 150 = 2300 kcal`
-- Turno Lidl 6h: `2150 + 6×80 + 150 = 2780 kcal`
-- Ginásio + turno 6h: `2150 + 250 + 480 + 150 = 3030 kcal`
-- Z2 curto + turno 6h: `2150 + 300 + 480 + 150 = 3080 kcal`
-
-### Macros — P e F locked, C residual (Fase 3.5)
+### Macros locked (Fase 3.5)
 
 ```
 protein_g  = 175   (sempre)
 fat_g      = 65    (sempre)
-fixed_kcal = 175×4 + 65×9 = 700 + 585 = 1285
-
-carbs_g = round((target_kcal - 1285) / 4)
-```
-
-Verificação automática: `|P×4 + C×4 + F×9 - target_kcal| ≤ 15 kcal`. Se falhar, o push não avança.
-
-**Secundários fixos:** sat_fat cap 25g, sugar referência 150g, fibra target 30g.
-
-### `blocks_active` (jsonb em daily_targets)
-
-Guardado para auditoria — a PWA exibe-o como chips na vista Targets:
-
-```json
-{
-  "base":    2150,
-  "work":    480,
-  "gym":     0,
-  "run":     0,
-  "surplus": 150
-}
+fixed_kcal = 175×4 + 65×9 = 1285
+carbs_g    = round((target_kcal - 1285) / 4)
 ```
 
 ---
 
 ## 6. Integração sync_hub / DCB
 
-O DCB (Daily Coaching Brief) corre no Claude Desktop com acesso ao MCP server `sync_hub` definido em `sync_hub_mcp.py` (transporte stdio).
+O DCB corre no Claude Desktop com acesso ao MCP server `sync_hub_mcp.py` (transporte stdio).
 
 **Configuração** (`claude_desktop_config.json`):
 ```json
@@ -348,166 +298,199 @@ O DCB (Daily Coaching Brief) corre no Claude Desktop com acesso ao MCP server `s
 }
 ```
 
-As credenciais Supabase são lidas de `D:\sync_hub\data\athlete.json` → `nutrition_tracker.url` / `.secret_key`.
+Credenciais em `D:\sync_hub\data\athlete.json` → `nutrition_tracker.url` / `.secret_key`.
 
-### Ferramentas MCP disponíveis
+### 10 Ferramentas MCP disponíveis
 
-#### `sync_hub_nutrition_fetch` — leitura do diário
-Busca entradas do diário de uma data (default: hoje). Retorna totais + breakdown por refeição. Salva também em `D:\sync_hub\output\nutrition_today.json`.
+| Ferramenta | O que faz |
+|---|---|
+| `sync_hub_nutrition_fetch(target_date)` | Lê diário de uma data, retorna totais + breakdown |
+| `sync_hub_push_daily_target(date, work_hours, gym, run_type, notes)` | Calcula TDEE por blocos, upsert em `daily_targets` |
+| `sync_hub_foods_search(query)` | Pesquisa `foods` por nome/marca, retorna até 10 resultados |
+| `sync_hub_log_food(food_id, grams, meal, date)` | Regista alimento no diário com nutrientes calculados |
+| `sync_hub_log_quick(name, calories, protein, carbs, fat, meal, date, ...)` | Entrada rápida sem alimento na DB |
+| `sync_hub_diary_delete(entry_id)` | Apaga entrada do diário |
+| `sync_hub_diary_update(entry_id, grams)` | Actualiza gramas e recalcula nutrientes |
+| `sync_hub_foods_create(name, calories, protein, carbs, fat, ...)` | Cria alimento novo |
+| `sync_hub_foods_update(food_id, ...)` | Actualiza campos de um alimento (parcial) |
+| `sync_hub_nutrition_summary(days)` | Médias, aderência, streak dos últimos N dias (hoje excluído) |
 
-**Uso típico no DCB:** verificar o que já foi comido antes de calcular o target do dia.
-
-#### `sync_hub_push_daily_target` — **ferramenta principal** (Fase 3.5)
-Calcula TDEE por blocos e faz upsert em `daily_targets`. Parâmetros:
-
-| Parâmetro | Tipo | Descrição |
-|---|---|---|
-| `date` | `string` | YYYY-MM-DD |
-| `work_hours` | `float` | Horas de trabalho Lidl (net) |
-| `gym` | `bool` | Sessão de ginásio? |
-| `run_type` | `string?` | `z2_curto` \| `z2_longo` \| `threshold` \| `race` \| null |
-| `notes` | `string?` | Contexto opcional |
-
-Retorna `target_kcal`, macros calculados e `blocks_active` para confirmação.
-
-#### `sync_hub_push_targets` — *deprecated*
-Faz upsert na tabela `targets` por `day_type` (sistema antigo). Também cria snapshot em `daily_targets` como efeito secundário. **Não usar em Fase 3.5** — prefira `sync_hub_push_daily_target`.
-
-#### `sync_hub_update_targets` — JSONBin / MFP Tampermonkey
-Envia targets para o JSONBin (lido pelo script Tampermonkey no MyFitnessPal). Não afecta o NutriTrack directamente. Inclui campos opcionais de display (`context_label`, `subtitle`, `calories_type`).
+**Notas:**
+- `meal` aceita PT ou EN (`pequeno-almoço` ou `breakfast`)
+- `sync_hub_log_food` e `sync_hub_log_quick` sempre requerem confirmação do utilizador antes de executar
+- `sync_hub_push_targets` e `sync_hub_update_targets` foram removidos (deprecated)
 
 ### Fluxo DCB → NutriTrack
 
 ```
-DCB corre:
+DCB:
   1. sync_hub_nutrition_fetch     → ver o que está comido
-  2. (analisa turnos, treino, recuperação)
-  3. sync_hub_push_daily_target   → calcula blocos e faz upsert
+  2. sync_hub_push_daily_target   → calcula blocos e faz upsert
         ↓
   daily_targets (Supabase)
         ↓
-  NutriTrack PWA (lê via db.js → getTargetsForDate)
+  NutriTrack PWA (lê via getTargetsForDate)
         ↓
-  Vista Diário → barras de progresso coloridas
-  Vista Targets → valores + chips dos blocos activos
+  Diário → barras segmentadas coloridas
+  Targets → valores + chips dos blocos activos
 ```
 
-A PWA nunca escreve em `daily_targets` — é **read-only** do lado do NutriTrack. O DCB é a única fonte de escrita.
+A PWA nunca escreve em `daily_targets` — read-only.
 
 ---
 
 ## 7. Navegação e vistas
 
-A navegação é gerida por `go(view)` em `app.js`. Remove `.active` de todas as `.view` e `.nav-btn`, depois adiciona `.active` à view e nav-btn alvo.
-
-### Bottom nav (4 botões)
+### Bottom nav
 `#nav-today` · `#nav-log` · `#nav-foods` · `#nav-mais`
 
 ### `#view-today` — Diário
-Vista principal. Carrega via `loadToday()` → `db.js`:
-- Barra de calorias + restantes/excesso
-- Barras primárias: Proteína, Hidratos, Gordura (tap → nutrient ranking sheet)
-- Chips secundários: Gord. Saturada, Fibra, Açúcar (tap → nutrient ranking sheet)
-- Cabeçalho de calorias também clicável → ranking de calorias
-- Secções por refeição (`MEALS`) com lista de entradas
-  - Tap no nome da refeição (esquerda): se tem entradas → `openMealBreakdown`; se vazia → `openLogForMeal`
-  - Tap no `+` (direita): sempre `openLogForMeal`
-  - Tap numa entrada → `openEditEntry` (sheet de edição)
-- Navegação temporal: `←` / `→` por dia, tap na data → date picker
+
+- **Calorias:** número (34px) + `/target kcal` + `restantes/excesso` numa linha
+- **Barras segmentadas** (P/H/G + calorias): zonas coloridas vermelho/amarelo/verde/amarelo/vermelho, começam em 20% do target, indicador de posição com triângulo ▼, labels numéricas nos limites da zona verde
+- **Chips secundários:** Gord. Sat. · Fibra · Açúcar (barras simples)
+- **Header de cada macro:** `71g /175g · 104g rest.` (rest. só quando abaixo do target)
+- **Tap em barra primária** → nutrient ranking sheet
+- **Tap em chip secundário** → nutrient ranking sheet
+- **Tap no nome da refeição** (esquerda): se tem entradas → meal breakdown; se vazia → log
+- **Tap no +** (direita): sempre abre log para essa refeição
+- **Tap numa entrada** → sheet de edição (long press removido — substituído por botão no sheet)
+- **Navegação temporal:** ← → por dia, 📅 → date picker
 
 ### `#view-log` — Registar
-Vista de log. Contém:
-- Date label + selector de data
-- Meal selector colapsável (botão com label da refeição actual + grid de 7 botões)
-- Acesso ao log sheet via botão central (`+` FAB circular na nav)
-  - `openLog('db')` → pesquisa na tabela `foods`
-  - `openLog('quick')` → entrada rápida com campos manuais
-  - Chip "Refeição" → `openLogMeals` (aplicar template)
-- Totals strip no topo do sheet (kcal actual / target + P H G)
+
+- Selector de data + botão 📅
+- Meal selector colapsável (7 botões em grid)
+- 3 chips: Alimento · Entrada rápida · Refeição template
 
 ### `#view-foods` — Comida
-Duas sub-tabs:
-- **Alimentos** (`#foods-panel`): lista com pesquisa + ordenação (Nome, Proteína, Kcal + menu "Mais" com 9 opções). FAB `+` → criar alimento. Tap num item → editar.
-- **Refeições** (`#meals-panel`): lista de templates. Tap num template → `openApplyMeal`. Botão "Criar refeição" → `openCreateMeal` (pode pré-popular a partir de `openMealBreakdown` via "Guardar como refeição").
 
-### `#view-mais` — Mais
-Menu de navegação secundária com 3 items:
-- **Targets** → `go('targets')`
-- **Estatísticas** → `go('stats')`
-- **Settings** → `go('settings')`
+**Sub-tab Alimentos:**
+- Pesquisa multi-termo com vírgula: `quei,leit` → união dos resultados
+- Pesquisa por marca funciona directamente
+- Sort chips: Nome A→Z · Proteína ↑ · Kcal ↑ · **Smart**
+- **Smart:** chips toggle "Quero mais" (Proteína/Hidratos/Gordura/Fibra) + "Quero evitar" (Gord. Sat./Gordura/Açúcar). Botão "Auto ✨" calcula pesos com base no estado do diário. Score normalizado visível na coluna direita.
+- FAB `+` → criar alimento
 
-### `#view-targets` — Targets
-Vista read-only. Acede-se via `go('targets')` → `loadTargetsForm()`.
-- Date picker para navegar entre datas
-- Badge de fase activa (de `phases`)
-- Calorias em destaque (42px mono, cor accent)
-- Display rows: Proteína, Hidratos, Gordura (primários) + Gord. Saturada, Fibra, Açúcar (secundários)
-- Chips de blocos activos (`blocks_active` do row daily_targets)
-- Timestamp do push
-- Mensagem de hint se não houver target para a data
+**Sub-tab Refeições:**
+- Lista de templates. Tap → apply. Botão criar.
+
+### `#sheet-log` — Sheet de pesquisa
+
+```
+[dropdown de refeição ▾]
+[Pesquisar na base de dados...]
+[+ Criar novo alimento        ]
+[Entrada rápida] [Refeição template]
+```
+
+- Sem secção de Recentes
+- Stage de gramas: input text + botão `=` + linha de operadores `+ − × ÷`
+- Botão `+ porção` acumula doses (soma ao valor actual)
+- Display de doses dinâmico: `1.4×` calculado automaticamente
+
+### `#sheet-edit` — Editar entrada
+
+- Para entradas normais: input de gramas (pré-seleccionado) + botão `=` + operadores + preview de macros
+- Para quick entries: 7 campos editáveis directamente
+- Botão "Alterar Refeição" → picker de refeição
+- Botões: Eliminar · Guardar
 
 ### `#view-stats` — Estatísticas
-Vista de estatísticas dos últimos 7 dias. Carrega via `loadStats()` → `stats.js`:
-- **Médias diárias:** para os dias com ambos diário + target, calcula médias de Kcal/P/H/G com barras coloridas e percentagem
-- **Aderência calórica 7 dias:** 7 dots coloridos (DD/MM) usando `getNutrientColor('calories', pct)`; cinzento = sem dados
-- **Top 5 alimentos:** ordenados por frequência (contagem de registos), desempate por kcal total
+
+- Selector de período: 7 / 14 / 30 dias (chips)
+- Hoje sempre excluído dos cálculos
+- **Secção 1:** Médias diárias (Kcal/P/H/G vs targets)
+- **Secção 2:** Streak de registo (dias consecutivos)
+- **Secção 3:** Aderência calórica — dots coloridos (7d: linha; 14d: 2 linhas; 30d: grid)
+- **Secção 4:** Top 5 alimentos mais frequentes
+
+### `#view-targets` — Targets (read-only)
+
+- Date picker (sem dots de score — `opts.showScores: false`)
+- Badge de fase activa
+- Calorias em destaque (34px)
+- Macros P/H/G + secundários
+- Chips de blocos activos (`blocks_active`)
+- Timestamp do push (com data se não for hoje)
 
 ### `#view-settings` — Settings
-Vista informativa (read-only). Mostra nome (hardcoded "dud"), fase activa e objectivo (de `phases`), versão da app. Botões: "Limpar cache e recarregar", "Redefinir ligação Supabase".
+
+- Nome: "dud" (hardcoded)
+- Fase activa + objectivo (de `phases` no Supabase)
+- Versão: v1.2.0
+- Botões: Limpar cache · Redefinir ligação
 
 ### Sheets (overlays)
-Criados dinamicamente uma vez e reutilizados (`.open` class toggle):
 
 | ID | Conteúdo |
 |---|---|
-| `#sheet-log` | Log de alimento — 2 stages: search / grams |
+| `#sheet-log` | Log de alimento |
 | `#sheet-food` | Criar/editar alimento |
 | `#sheet-edit` | Editar/eliminar entrada do diário |
 | `#dp-overlay` | Date picker com dots de score |
-| `#nutri-overlay` | Nutrient ranking sheet (agrupado por alimento) |
-| `#meal-bd-overlay` | Meal breakdown — donut SVG + lista |
-| `#log-meals-overlay` | Aplicar template de refeição (picker) |
-| `#meal-create-overlay` | Criar novo template de refeição |
-| `#apply-meal-overlay` | Preview + confirmação de aplicação de template |
+| `#nutri-overlay` | Nutrient ranking sheet |
+| `#meal-bd-overlay` | Meal breakdown — donut SVG |
+| `#log-meals-overlay` | Aplicar template de refeição |
+| `#meal-create-overlay` | Criar novo template |
+| `#apply-meal-overlay` | Preview + confirmação de template |
+| `#move-meal-overlay` | Mover entrada para outra refeição |
+| `#smart-overlay` | Smart ranker — chips + Auto ✨ |
 
 ---
 
 ## 8. Decisões de arquitectura
 
 ### Script tags em vez de ES modules
-Todos os ficheiros partilham o escopo global (`window`). Funções chamadas inline via `onclick=` em HTML. Permite hot-reload simples e evita tooling (não há `import`/`export`, bundler ou transpiler).
-
-**Consequência:** a ordem de carregamento é a ordem correcta de dependências. `app.js` carrega sempre por último (chama `init()` no final do ficheiro).
+Escopo global partilhado. Funções chamadas inline via `onclick=`. Sem build step, sem bundler.  
+**Consequência:** a ordem de carregamento = ordem de dependências. `app.js` sempre por último.
 
 ### Snapshot no diary
-Quando um alimento é registado, os valores nutricionais são copiados para o `diary` na altura (`calories = food.calories_per_100g / 100 * grams`). Se o alimento for depois editado em `foods`, os registos históricos não mudam. Garante integridade histórica.
+Nutrientes copiados no momento do registo. Editar `foods` não altera histórico. Integridade histórica garantida.
 
 ### `daily_targets` como fonte de verdade
-A PWA nunca calcula targets — apenas lê de `daily_targets`. Se não houver row para a data pedida, cai para `cachedTargets` (fallback em `localStorage`, definido em `config.js` como defaults). O cálculo fica inteiramente no DCB via `sync_hub_push_daily_target`.
+PWA nunca calcula targets — só lê. Fallback para `cachedTargets` se não houver row. DCB é a única fonte de escrita via `sync_hub_push_daily_target`.
 
-### Targets read-only na PWA
-A vista Targets mostra apenas o que o DCB empurrou. Não há formulário de edição — a única fonte de escrita é o DCB. Simplifica a UI e evita conflitos entre valores calculados e valores manuais.
+### Barras segmentadas
+`buildSegmentedBar(actual, target, macro)` em `ui.js`. Zonas por macro:
 
-### `daily_targets` upsert por `date` (unique)
-Permite re-push sem duplicados. O DCB pode correr várias vezes no mesmo dia sem problemas — a última chamada vence.
+```js
+const ZONES = {
+  protein:  { bounds: [63, 86, 130, 150],  maxPct: 155 },
+  carbs:    { bounds: [70, 85, 135, 150],  maxPct: 155 },
+  fat:      { bounds: [54, 85, 160, 200],  maxPct: 205 },
+  calories: { bounds: [90, 95, 105, 110],  maxPct: 115 },
+};
+```
 
-### Sem RLS
-Projecto pessoal, acesso único. A `secret_key` está em `athlete.json` (local) e em `localStorage` da PWA. Aceitável — não há dados de terceiros.
+Barra começa em 20% do target (`minPct = 20`). Labels nos limites da zona verde em valor absoluto.
 
-### Date picker com scores de cor
-O calendário faz 2 queries em `Promise.all` para o mês visível: diary e daily_targets. Agrega client-side e calcula score por dia (verde/amarelo/vermelho/neutro). Feedback visual imediato do histórico de aderência.
+### Smart ranker (foods.js)
+Estado: `smartMore` (Set) + `smartAvoid` (Set) + `smartActive` (bool).  
+Score normalizado: cada nutriente dividido pelo máximo da lista visível — garante que P (0-76g) e gord.sat (0-10g) têm peso comparável.  
+Auto ✨: calcula pesos com base no estado do diário + targets do dia, com `progress = max(0.20, kcal_actual/kcal_target)`.
 
-`openDatePicker` aceita terceiro argumento `opts = {}`. Quando `opts.showScores === false`, o fetch de scores é omitido e não são desenhados dots — usado no date picker da vista Targets onde os scores são irrelevantes.
+### parseGramsExpr
+`parseGramsExpr(raw)` em `ui.js`. Aceita expressões matemáticas (`1000-400`, `100*6`, `150+50`). Usa whitelist de caracteres + `Function()` em strict mode (mais seguro que `eval`). Aplicado em `log-grams`, `edit-grams`.
 
-### `renderMealTemplateList` como função partilhada (ui.js)
-`openLogMeals()` (log.js) e `loadMeals()` (meals.js) partilhavam código de renderização de listas de templates quase idêntico. Extraído para `renderMealTemplateList(containerEl, templates, countMap, opts)` em `ui.js`.
+### `renderMealTemplateList` partilhada
+`openLogMeals()` e `loadMeals()` partilham a função `renderMealTemplateList(containerEl, templates, countMap, opts)`.  
+`opts.showDelete`: true → botão ✕; false → chevron, row inteiro clicável.
 
-`opts`:
-- `showDelete: bool` — `true` mostra botão ✕ com listener; `false` mostra chevron `→` e o row inteiro é clicável
-- `onItemClick: fn(t)` — chamado com o objecto template ao clicar (no row inteiro ou só no `.meal-tpl-info` quando `showDelete`)
-- `onDeleteClick: fn(id)` — só obrigatório se `showDelete: true`; recebe `t.id`, com `stopPropagation`
+### Guard de concorrência por geração
+```js
+let loadXGen = 0;
+async function loadX() {
+  const gen = ++loadXGen;
+  await query();
+  if (gen !== loadXGen) return; // stale
+  element.innerHTML = '...';
+}
+```
+Aplicado em: `loadStats` (loadStatsGen), `loadLogTotalsStrip` (loadTotalsGen), `openApplyMeal` (openApplyMealGen).
 
-O nome do template é sempre escrito via `.textContent` (XSS-safe). A sub-linha ("N alimentos") é construída com dados numéricos, safe para `innerHTML`.
+### `openDatePicker` com opts
+Terceiro argumento `opts = {}`. `opts.showScores === false` → omite fetch de `getDayScores` e não desenha dots. Usado na vista Targets.
 
 ---
 
@@ -517,54 +500,33 @@ O nome do template é sempre escrito via `.textContent` (XSS-safe). A sub-linha 
 ```bash
 node --check js/views/ficheiro_alterado.js
 ```
-Detecta erros de sintaxe sem executar. Obrigatório para todos os ficheiros JS editados.
 
 ### Cache-busting
-Cada `<script src="...?v=AAAAMMDD">` tem versão por data. Actualizar o `?v=` sempre que o ficheiro é modificado para garantir que o browser carrega a versão mais recente (especialmente em mobile, que faz cache agressivo).
+`?v=AAAAMMDD` em cada `<script>`. Actualizar sempre que o ficheiro é modificado.
 
-### Supabase MCP (Claude Code)
-Para alterações ao schema (criar tabelas, adicionar colunas, migrations), usar o MCP do Supabase directamente em Claude Code:
-- `list_tables` — ver schema actual
-- `apply_migration` — executar SQL
-- `get_logs` — debug de erros
-- Sempre fazer `list_tables` antes de criar tabelas novas para evitar duplicados.
+### Claude Code
+```bash
+cd C:\Users\josef\nutrition-tracker
+claude
+```
+Trabalhar sempre em `main`. Push no final de cada sessão.
 
 ### Hard refresh após deploy
-Em mobile, após push para `main` com alterações ao CSS ou JS:
-1. Ir às definições do browser
-2. Limpar cache do site
-3. Ou usar o botão "Limpar cache e recarregar" em Settings (chama `caches.delete()` + `location.reload(true)`)
+Mobile: Settings → "Limpar cache e recarregar" (chama `caches.delete()` + `location.reload(true)`).
 
-### Adicionar uma nova view
-1. Adicionar `<div id="view-X" class="view">` ao `index.html`
-2. Adicionar botão ou item no `#view-mais` (ou nav) com `onclick="go('X')"`
-3. Adicionar `if (view==='X') loadX();` no `go()` de `app.js`
-4. Criar `js/views/X.js` com `function loadX() { ... }`
-5. Adicionar `<script src="js/views/X.js?v=…">` antes de `app.js` em `index.html`
+### Supabase MCP (Claude Code)
+- `list_tables` — ver schema
+- `apply_migration` — executar SQL
+- `get_logs` — debug
 
-### Guard de concorrência por geração (funções async)
-Funções assíncronas que escrevem no DOM usam um counter de geração para evitar race conditions quando são invocadas rapidamente em sequência (ex: navegação rápida entre datas):
+### Adicionar nova view
+1. `<div id="view-X" class="view">` em `index.html`
+2. Item em `#view-mais` com `onclick="go('X')"`
+3. `if (view==='X') loadX();` em `go()` de `app.js`
+4. Criar `js/views/X.js`
+5. `<script src="js/views/X.js?v=…">` antes de `app.js`
 
-```js
-let loadXGen = 0;
-
-async function loadX() {
-  const gen = ++loadXGen;
-  // ... um ou mais awaits ...
-  if (gen !== loadXGen) return; // chamada mais recente já está a correr — abandonar
-  // só chega aqui a invocação mais recente
-  element.innerHTML = '...';
-}
-```
-
-Aplicado actualmente em:
-- `loadStats()` em `stats.js` — counter `loadStatsGen`
-- `loadLogTotalsStrip()` em `log.js` — counter `loadTotalsGen`
-
-Usar sempre que uma função async faz ≥1 await antes de escrever no DOM e pode ser invocada por eventos rápidos (navegação de datas, mudança de tab, etc.). O counter é declarado a nível de módulo (escopo global do ficheiro), não dentro da função.
-
-### Adicionar um sheet (overlay)
-Os sheets são criados uma vez via `document.createElement` dentro da função `openXxx()` com o padrão:
+### Adicionar sheet (overlay)
 ```js
 let overlay = document.getElementById('x-overlay');
 if (!overlay) {
@@ -575,55 +537,61 @@ if (!overlay) {
   document.body.appendChild(overlay);
   overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('open'); };
 }
-// populate content
 overlay.classList.add('open');
 ```
 
 ---
 
-## 10. Roadmap actual
+## 10. Roadmap
 
 ### Concluído
 - [x] Base de dados de alimentos (CRUD)
 - [x] Diário com refeições + edição inline
-- [x] Log com pesquisa, entrada rápida, recentes
+- [x] Log com pesquisa, entrada rápida, templates
 - [x] Templates de refeições reutilizáveis
 - [x] Sistema de targets modulares (DCB → daily_targets → PWA)
 - [x] Vista Targets read-only com blocos como chips
-- [x] Barras de macros clicáveis → nutrient ranking
-- [x] Meal breakdown com donut SVG (P/H/G em espaço kcal)
+- [x] Barras segmentadas com zonas de cor (P/H/G + calorias)
+- [x] Nutrient ranking sheet (tap nas barras)
+- [x] Meal breakdown com donut SVG
 - [x] Date picker com score de cor por dia
-- [x] Estatísticas 7 dias (médias + aderência + top alimentos)
-- [x] Navbar reorganizada: Mais → Targets, Stats, Settings
+- [x] Estatísticas: médias + streak + aderência + top alimentos (7/14/30 dias)
+- [x] Smart ranker com Auto ✨
+- [x] Keywords coloridas (Light, Zero, Integral, Proteico/a)
+- [x] Mover entrada entre refeições
+- [x] Expressões matemáticas nos campos de gramas
+- [x] Botões de operadores (+−×÷) no log e edit
+- [x] Contador de doses acumulativo
+- [x] Multi-pesquisa com vírgula + pesquisa por marca
+- [x] sync_hub: 10 ferramentas MCP
 
-### Pendente / Ideias
-- [ ] **Stats — alargar período**: selector de 7/14/30 dias em `#view-stats`
-- [ ] **Stats — tendência de peso**: integrar dados ICU wellness (se MCP disponível)
-- [ ] **Notificações PWA**: lembrete de registo no diário (Service Worker)
-- [ ] **Export**: CSV ou JSON do diário para análise externa
-- [ ] **Múltiplos utilizadores**: actualmente hardcoded para José; RLS necessária
+### Pendente
+- [ ] Botão de dose no sheet de editar entrada existente
+- [ ] Export CSV/JSON do diário
+- [ ] Proteína em g/kg nas Stats
+- [ ] Notificações PWA (Service Worker)
+- [ ] Perfis/arquétipos de alimentos na lista
+- [ ] Partilhar app com outro utilizador (requer RLS)
 
 ---
 
 ## 11. Contexto do utilizador
 
-**José (Dud)**, 26 anos, 184cm, Rio Maior, Portugal.
+**José (Dud)**, 26 anos, 184cm, ~69kg, Rio Maior, Portugal.
 
-**Trabalho:** Lidl, turnos variáveis (manhã / tarde / duplo). Horas reais determinam o bloco `work` do target. O DCB lê o calendário Google "trabalho" automaticamente antes de fazer push.
+**Trabalho:** Lidl, turnos variáveis (manhã / tarde / duplo). Horas reais determinam o bloco `work` do target. DCB lê Google Calendar "trabalho" automaticamente.
 
-**Treino:** Corredor de endurance (foco maratona Porto, 8 Nov 2026). Ginásio full body A/B/C/D, foco hypertrophy upper body. Turnos Lidl + corrida + ginásio integrados no mesmo sistema de blocos calóricos.
+**Treino:** Corredor de endurance (foco maratona Porto, 8 Nov 2026). Ginásio full body A/B/C/D, foco hypertrophy upper body.
 
 **Fase nutricional actual:** **3.5** (desde 14 Mai 2026)
-- Objectivo: **surplus +150 kcal** sobre TDEE
-- Excepção: dias de corrida com `run_race` → sem surplus (0)
-- Macros locked: **P 175g, F 65g**, C residual
-- Revisão prevista em Fase 4
+- Objectivo: surplus +150 kcal sobre TDEE
+- Excepção: `run_race` → surplus 0
+- Macros locked: P 175g, F 65g, C residual
 
-**Padrão de sono:** estruturalmente tardio (01h–02h). O DCB nunca sugere treino cedo.
+**PRs:**
+- 5K: 20:15 | 10K: 42:34 (Scalabis Night Race, 18 Abr 2026)
+- Maratona: estreia Porto, 8 Nov 2026
 
-**PRs relevantes:**
-- 5K: 20:15 (target: sub-20 — suspenso até pós-Porto)
-- 10K: 42:34 (Scalabis Night Race, 18 Abr 2026)
-- Maratona: estreia em Porto, 8 Nov 2026
+**Métricas dinâmicas** (peso, HRV, VO2Max, ACWR): Intervals.icu — não duplicar no NutriTrack.
 
-**Métricas dinâmicas** (peso, BF%, HRV, RHR, VO2Max, ACWR): vivem no Intervals.icu wellness — não duplicar no NutriTrack. Consultar via MCP `intervals-icu` no DCB.
+**Padrão de sono:** estruturalmente tardio (01h–02h). DCB nunca sugere treino cedo.

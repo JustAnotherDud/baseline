@@ -126,15 +126,20 @@ function openAddFoodFromLog(prefillName) {
 }
 
 function updateSheetMealTabs() {
-  document.querySelectorAll('#sheet-meal-tabs .meal-tab').forEach(t => {
-    t.classList.toggle('active', t.dataset.meal === selectedMeal);
-  });
+  const sel = document.getElementById('sheet-meal-select');
+  if (sel) sel.value = selectedMeal;
 }
 
 function selectSheetMeal(mealKey) {
   selectedMeal = mealKey;
   mealManuallySelected = true;
   updateSheetMealTabs();
+}
+
+function selectSheetMealFromDropdown(mealKey) {
+  selectedMeal = mealKey;
+  mealManuallySelected = true;
+  updateMealSelectorLabel(mealKey);
 }
 
 function getMealByHour() {

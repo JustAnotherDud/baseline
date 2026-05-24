@@ -745,6 +745,14 @@ function renderMealTemplateList(containerEl, templates, countMap, opts) {
   });
 }
 
+function insertOperator(inputId, op) {
+  const el = document.getElementById(inputId);
+  if (!el) return;
+  el.value = (el.value || '').toString().trimEnd() + op;
+  el.focus();
+  el.dispatchEvent(new Event('input'));
+}
+
 function evalGramsInput(inputId, previewFn) {
   const input = document.getElementById(inputId);
   if (!input) return;

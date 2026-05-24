@@ -399,29 +399,30 @@
     </div>
 
     <!-- Meal selector inside sheet -->
-    <div id="sheet-meal-tabs" class="sheet-meal-tabs">
-      <button class="meal-tab" data-meal="breakfast"  onclick="selectSheetMeal('breakfast')">Pequeno-almoço</button>
-      <button class="meal-tab" data-meal="morning"    onclick="selectSheetMeal('morning')">Lanche manhã</button>
-      <button class="meal-tab" data-meal="lunch"      onclick="selectSheetMeal('lunch')">Almoço</button>
-      <button class="meal-tab" data-meal="afternoon1" onclick="selectSheetMeal('afternoon1')">Lanche tarde 1</button>
-      <button class="meal-tab" data-meal="afternoon2" onclick="selectSheetMeal('afternoon2')">Lanche tarde 2</button>
-      <button class="meal-tab" data-meal="dinner"     onclick="selectSheetMeal('dinner')">Jantar</button>
-      <button class="meal-tab" data-meal="supper"     onclick="selectSheetMeal('supper')">Ceia</button>
+    <div style="padding:10px 16px;border-bottom:1px solid var(--border)">
+      <select id="sheet-meal-select"
+        style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--sans);font-size:14px;padding:10px 14px;width:100%;outline:none;-webkit-appearance:none;appearance:none"
+        onchange="selectSheetMealFromDropdown(this.value)">
+        <option value="breakfast">Pequeno-almoço</option>
+        <option value="morning">Lanche manhã</option>
+        <option value="lunch">Almoço</option>
+        <option value="afternoon1">Lanche tarde 1</option>
+        <option value="afternoon2">Lanche tarde 2</option>
+        <option value="dinner">Jantar</option>
+        <option value="supper">Ceia</option>
+      </select>
     </div>
 
     <!-- DB MODE -->
     <div id="log-db">
       <div id="log-stage-search" class="active">
-        <div style="padding:12px 20px 0">
-          <div class="section-label" style="margin-bottom:8px">Recentes</div>
-          <div id="recent-foods" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
-            <div style="font-size:12px;color:var(--text3);font-family:var(--mono)">A carregar...</div>
-          </div>
-          <div class="divider" style="margin-bottom:12px"></div>
-        </div>
-        <div class="form-body" style="padding-top:0;padding-bottom:8px;gap:8px">
+        <div class="form-body" style="padding-top:12px;padding-bottom:8px;gap:8px">
           <input type="search" id="log-q" placeholder="Pesquisar na base de dados..." oninput="searchDB()" autocomplete="off">
           <button class="btn btn-secondary" style="padding:10px;font-size:13px" onclick="openAddFoodFromLog('')">+ Criar novo alimento</button>
+        </div>
+        <div style="display:flex;gap:8px;padding:0 20px 12px">
+          <button class="btn btn-secondary" style="flex:1;font-size:13px;padding:10px" onclick="openLog('quick')">Entrada rápida</button>
+          <button class="btn btn-secondary" style="flex:1;font-size:13px;padding:10px" onclick="openLogMeals()">Refeição template</button>
         </div>
         <div class="search-results" id="log-results">
           <div class="loading">Começa a escrever para pesquisar</div>

@@ -21,7 +21,6 @@ function openLog(mode) {
     document.getElementById('log-stage-grams').classList.remove('active');
     document.getElementById('log-q').value='';
     document.getElementById('log-results').innerHTML='<div class="loading">Começa a escrever para pesquisar</div>';
-    loadRecentFoods();
     setTimeout(()=>document.getElementById('log-q').focus(),300);
   } else {
     clearQuick();

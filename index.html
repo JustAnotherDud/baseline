@@ -440,6 +440,12 @@
               <input type="text" id="log-grams" inputmode="decimal" placeholder="0" oninput="updatePreview()" style="flex:1">
               <button class="btn btn-secondary" style="width:auto;padding:8px 14px;font-size:15px" onclick="evalGramsInput('log-grams', updatePreview)">=</button>
             </div>
+            <div style="display:flex;gap:4px;margin-top:4px">
+              <button type="button" class="btn btn-secondary" style="flex:1;padding:8px 0;font-size:16px" onclick="insertOperator('log-grams','+')">+</button>
+              <button type="button" class="btn btn-secondary" style="flex:1;padding:8px 0;font-size:16px" onclick="insertOperator('log-grams','-')">−</button>
+              <button type="button" class="btn btn-secondary" style="flex:1;padding:8px 0;font-size:16px" onclick="insertOperator('log-grams','*')">×</button>
+              <button type="button" class="btn btn-secondary" style="flex:1;padding:8px 0;font-size:16px" onclick="insertOperator('log-grams','/')">÷</button>
+            </div>
           </label>
           <div class="macro-preview" style="flex-wrap:wrap;gap:6px">
             <div class="mp-chip"><div class="mp-val kcal" id="prev-kcal">0</div><div class="mp-lbl">kcal</div></div>
@@ -530,6 +536,12 @@
         <div style="display:flex;gap:6px">
           <input type="text" id="edit-grams" inputmode="decimal" placeholder="0" oninput="updateEditPreview()" style="flex:1">
           <button class="btn btn-secondary" style="width:auto;padding:8px 14px;font-size:15px" onclick="evalGramsInput('edit-grams', updateEditPreview)">=</button>
+        </div>
+        <div style="display:flex;gap:4px;margin-top:4px">
+          <button type="button" class="btn btn-secondary" style="flex:1;padding:8px 0;font-size:16px" onclick="insertOperator('edit-grams','+')">+</button>
+          <button type="button" class="btn btn-secondary" style="flex:1;padding:8px 0;font-size:16px" onclick="insertOperator('edit-grams','-')">−</button>
+          <button type="button" class="btn btn-secondary" style="flex:1;padding:8px 0;font-size:16px" onclick="insertOperator('edit-grams','*')">×</button>
+          <button type="button" class="btn btn-secondary" style="flex:1;padding:8px 0;font-size:16px" onclick="insertOperator('edit-grams','/')">÷</button>
         </div>
       </label>
       <div class="macro-preview" style="flex-wrap:wrap;gap:6px" id="edit-preview">

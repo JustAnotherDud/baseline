@@ -1,5 +1,6 @@
 let currentTargetsDate  = new Date().toISOString().split('T')[0];
 let currentPhase        = null;
+let refreshPhaseGen     = 0;
 
 const TARGET_FIELD_IDS = ['t-kcal','t-fat','t-carb','t-fiber','t-prot'];
 
@@ -19,6 +20,7 @@ function updateTargetsDateLabel() {
 }
 
 async function refreshPhaseAndTargets() {
+  const gen = ++refreshPhaseGen;
   document.getElementById('targets-loading').style.display = 'block';
   document.getElementById('targets-display').style.opacity = '0.4';
 
@@ -29,6 +31,9 @@ async function refreshPhaseAndTargets() {
       ? db.from('daily_targets').select('*').eq('date', currentTargetsDate).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
+
+  if (gen !== refreshPhaseGen) return;
+
   currentPhase = phase;
   updatePhaseBadge();
   const row = (targetsResult && targetsResult.data) || null;

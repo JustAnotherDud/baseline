@@ -66,13 +66,11 @@ function updatePreview() {
   if (!selectedFood) return;
   const g = parseFloat(document.getElementById('log-grams').value)||0;
   const c = v=>Math.round((parseFloat(v)||0)/100*g);
-  document.getElementById('prev-kcal').textContent   = c(selectedFood.calories_per_100g);
-  document.getElementById('prev-fat').textContent    = c(selectedFood.fat_per_100g);
-  document.getElementById('prev-satfat').textContent = c(selectedFood.saturated_fat_per_100g);
-  document.getElementById('prev-carb').textContent   = c(selectedFood.carbs_per_100g);
-  document.getElementById('prev-sugar').textContent  = c(selectedFood.sugar_per_100g);
-  document.getElementById('prev-fiber').textContent  = c(selectedFood.fiber_per_100g);
-  document.getElementById('prev-prot').textContent   = c(selectedFood.protein_per_100g);
+  document.getElementById('prev-kcal').textContent  = c(selectedFood.calories_per_100g);
+  document.getElementById('prev-fat').textContent   = c(selectedFood.fat_per_100g);
+  document.getElementById('prev-carb').textContent  = c(selectedFood.carbs_per_100g);
+  document.getElementById('prev-fiber').textContent = c(selectedFood.fiber_per_100g);
+  document.getElementById('prev-prot').textContent  = c(selectedFood.protein_per_100g);
   if (selectedFood && selectedFood.serving_size_g) {
     const doses = g > 0 ? (g / selectedFood.serving_size_g).toFixed(1) : '';
     const infoEl = document.getElementById('dose-info');
@@ -93,20 +91,18 @@ async function saveQuick() {
   if (!name) { toast('Indica o nome'); return; }
   const {error} = await db.from('diary').insert({
     date:currentDate, meal:selectedMeal, food_name:name, grams:null,
-    calories:      parseFloat(document.getElementById('q-kcal').value)||0,
-    fat:           parseFloat(document.getElementById('q-fat').value)||0,
-    saturated_fat: parseFloat(document.getElementById('q-satfat').value)||0,
-    carbs:         parseFloat(document.getElementById('q-carb').value)||0,
-    sugar:         parseFloat(document.getElementById('q-sugar').value)||0,
-    fiber:         parseFloat(document.getElementById('q-fiber').value)||0,
-    protein:       parseFloat(document.getElementById('q-prot').value)||0
+    calories: parseFloat(document.getElementById('q-kcal').value)||0,
+    fat:      parseFloat(document.getElementById('q-fat').value)||0,
+    carbs:    parseFloat(document.getElementById('q-carb').value)||0,
+    fiber:    parseFloat(document.getElementById('q-fiber').value)||0,
+    protein:  parseFloat(document.getElementById('q-prot').value)||0
   });
   if (error) { toast('Erro ao guardar'); return; }
   toast('Registado'); closeLog(); clearQuick(); loadToday(); go('today');
 }
 
 function clearQuick() {
-  ['q-name','q-kcal','q-fat','q-satfat','q-carb','q-sugar','q-fiber','q-prot'].forEach(id=>document.getElementById(id).value='');
+  ['q-name','q-kcal','q-fat','q-carb','q-fiber','q-prot'].forEach(id=>document.getElementById(id).value='');
 }
 
 function openLogForMeal(mealKey) {

@@ -533,7 +533,10 @@
     <div class="form-body">
       <div class="food-card" id="edit-food-card"></div>
       <label>
-        <span class="lt">Quantidade (gramas)</span>
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <span class="lt">Quantidade (gramas)</span>
+          <span id="edit-dose-info" style="font-family:var(--mono);font-size:11px;color:var(--text3)"></span>
+        </div>
         <div style="display:flex;gap:6px">
           <input type="text" id="edit-grams" inputmode="decimal" placeholder="0" oninput="updateEditPreview()" style="flex:1">
           <button class="btn btn-secondary" style="width:auto;padding:8px 14px;font-size:15px" onclick="evalGramsInput('edit-grams', updateEditPreview)">=</button>
@@ -544,6 +547,7 @@
           <button type="button" class="btn btn-secondary" style="flex:1;padding:8px 0;font-size:16px" onclick="insertOperator('edit-grams','*')">×</button>
           <button type="button" class="btn btn-secondary" style="flex:1;padding:8px 0;font-size:16px" onclick="insertOperator('edit-grams','/')">÷</button>
         </div>
+        <button type="button" id="edit-portion-btn" class="btn btn-secondary" style="display:none;margin-top:8px;padding:8px 14px;font-size:13px;width:auto"></button>
       </label>
       <div class="macro-preview" style="flex-wrap:wrap;gap:6px" id="edit-preview">
         <div class="mp-chip"><div class="mp-val kcal" id="ep-kcal">0</div><div class="mp-lbl">kcal</div></div>
@@ -573,7 +577,7 @@
 <script src="js/config.js?v=20260515"></script>
 <script src="js/nutrition.js?v=20260517"></script>
 <script src="js/db.js?v=20260522"></script>
-<script src="js/ui.js?v=20260524"></script>
+<script src="js/ui.js?v=20260526"></script>
 <script src="js/views/diary.js?v=20260520"></script>
 <script src="js/views/log.js?v=20260522"></script>
 <script src="js/views/foods.js?v=20260521"></script>

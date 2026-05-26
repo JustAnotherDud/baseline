@@ -32,7 +32,7 @@ async function loadStats() {
   // ── 4 parallel queries ─────────────────────────────────────────────────
   const [diaryRes, targetsRes, foodsRes, streakRes] = await Promise.all([
     db.from('diary')
-      .select('date,calories,protein,carbs,fat,saturated_fat,fiber,sugar')
+      .select('date,calories,protein,carbs,fat,fiber')
       .gte('date', from).lte('date', to),
     db.from('daily_targets')
       .select('date,calories,protein,carbs,fat')
@@ -55,14 +55,12 @@ async function loadStats() {
   // ── Aggregate diary by date ────────────────────────────────────────────
   const diaryMap = new Map();
   diaryRows.forEach(e => {
-    const d = diaryMap.get(e.date) || { calories:0, protein:0, carbs:0, fat:0, saturated_fat:0, fiber:0, sugar:0 };
-    d.calories      += +(e.calories      || 0);
-    d.protein       += +(e.protein       || 0);
-    d.carbs         += +(e.carbs         || 0);
-    d.fat           += +(e.fat           || 0);
-    d.saturated_fat += +(e.saturated_fat || 0);
-    d.fiber         += +(e.fiber         || 0);
-    d.sugar         += +(e.sugar         || 0);
+    const d = diaryMap.get(e.date) || { calories:0, protein:0, carbs:0, fat:0, fiber:0 };
+    d.calories += +(e.calories || 0);
+    d.protein  += +(e.protein  || 0);
+    d.carbs    += +(e.carbs    || 0);
+    d.fat      += +(e.fat      || 0);
+    d.fiber    += +(e.fiber    || 0);
     diaryMap.set(e.date, d);
   });
 

@@ -541,13 +541,11 @@ function updateEditPreview() {
   const orig = editingEntry.grams || 1;
   const factor = g / orig;
   const c = (v) => Math.round((parseFloat(v) || 0) * factor);
-  document.getElementById('ep-kcal').textContent   = c(editingEntry.calories);
-  document.getElementById('ep-fat').textContent    = c(editingEntry.fat);
-  document.getElementById('ep-satfat').textContent = c(editingEntry.saturated_fat);
-  document.getElementById('ep-carb').textContent   = c(editingEntry.carbs);
-  document.getElementById('ep-sugar').textContent  = c(editingEntry.sugar);
-  document.getElementById('ep-fiber').textContent  = c(editingEntry.fiber);
-  document.getElementById('ep-prot').textContent   = c(editingEntry.protein);
+  document.getElementById('ep-kcal').textContent  = c(editingEntry.calories);
+  document.getElementById('ep-fat').textContent   = c(editingEntry.fat);
+  document.getElementById('ep-carb').textContent  = c(editingEntry.carbs);
+  document.getElementById('ep-fiber').textContent = c(editingEntry.fiber);
+  document.getElementById('ep-prot').textContent  = c(editingEntry.protein);
   const serving = editingEntry._serving_size_g;
   if (serving) {
     const infoEl = document.getElementById('edit-dose-info');

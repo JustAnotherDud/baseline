@@ -101,22 +101,12 @@
       <!-- Separator -->
       <div class="macro-sep"></div>
 
-      <!-- Secondary chips: Gord. Sat. · Fibra · Açúcar -->
+      <!-- Secondary chips: Fibra -->
       <div class="macro-secondary">
-        <div class="msc">
-          <span class="msc-name">Gord. Sat.</span>
-          <span class="msc-val" id="val-gs">0/0g</span>
-          <div class="mbt mbt-sec"><div class="mbf gs" id="bar-gs" style="width:0%"></div></div>
-        </div>
         <div class="msc">
           <span class="msc-name">Fibra</span>
           <span class="msc-val" id="val-f">0/0g</span>
           <div class="mbt mbt-sec"><div class="mbf f" id="bar-f" style="width:0%"></div></div>
-        </div>
-        <div class="msc">
-          <span class="msc-name">Açúcar</span>
-          <span class="msc-val" id="val-a">0/0g</span>
-          <div class="mbt mbt-sec"><div class="mbf a" id="bar-a" style="width:0%"></div></div>
         </div>
       </div>
     </div>
@@ -245,18 +235,8 @@
       <div class="target-section">
         <div class="target-section-title">Secundários</div>
         <div class="t-row">
-          <span class="t-row-label">Gord. Saturada</span>
-          <span class="t-row-value" id="t-satfat">—</span>
-          <span class="t-row-unit">g</span>
-        </div>
-        <div class="t-row">
           <span class="t-row-label">Fibra</span>
           <span class="t-row-value" id="t-fiber">—</span>
-          <span class="t-row-unit">g</span>
-        </div>
-        <div class="t-row">
-          <span class="t-row-label">Açúcar</span>
-          <span class="t-row-value" id="t-sugar">—</span>
           <span class="t-row-unit">g</span>
         </div>
       </div>
@@ -451,9 +431,7 @@
           <div class="macro-preview" style="flex-wrap:wrap;gap:6px">
             <div class="mp-chip"><div class="mp-val kcal" id="prev-kcal">0</div><div class="mp-lbl">kcal</div></div>
             <div class="mp-chip"><div class="mp-val g" id="prev-fat">0</div><div class="mp-lbl">gord</div></div>
-            <div class="mp-chip"><div class="mp-val gs" id="prev-satfat">0</div><div class="mp-lbl">g.sat</div></div>
             <div class="mp-chip"><div class="mp-val carb" id="prev-carb">0</div><div class="mp-lbl">hidr</div></div>
-            <div class="mp-chip"><div class="mp-val a" id="prev-sugar">0</div><div class="mp-lbl">açúcar</div></div>
             <div class="mp-chip"><div class="mp-val f" id="prev-fiber">0</div><div class="mp-lbl">fibra</div></div>
             <div class="mp-chip"><div class="mp-val prot" id="prev-prot">0</div><div class="mp-lbl">prot</div></div>
           </div>
@@ -471,11 +449,7 @@
         <label><span class="lt">Calorias</span><input type="number" id="q-kcal" inputmode="decimal" placeholder="0"></label>
         <div class="r2">
           <label><span class="lt">Gordura (g)</span><input type="number" id="q-fat" inputmode="decimal" placeholder="0"></label>
-          <label><span class="lt">Gord. Sat. (g)</span><input type="number" id="q-satfat" inputmode="decimal" placeholder="0"></label>
-        </div>
-        <div class="r2">
           <label><span class="lt">Hidratos (g)</span><input type="number" id="q-carb" inputmode="decimal" placeholder="0"></label>
-          <label><span class="lt">Açúcar (g)</span><input type="number" id="q-sugar" inputmode="decimal" placeholder="0"></label>
         </div>
         <div class="r2">
           <label><span class="lt">Fibra (g)</span><input type="number" id="q-fiber" inputmode="decimal" placeholder="0"></label>
@@ -552,9 +526,7 @@
       <div class="macro-preview" style="flex-wrap:wrap;gap:6px" id="edit-preview">
         <div class="mp-chip"><div class="mp-val kcal" id="ep-kcal">0</div><div class="mp-lbl">kcal</div></div>
         <div class="mp-chip"><div class="mp-val g"    id="ep-fat">0</div><div class="mp-lbl">gord</div></div>
-        <div class="mp-chip"><div class="mp-val gs"   id="ep-satfat">0</div><div class="mp-lbl">g.sat</div></div>
         <div class="mp-chip"><div class="mp-val carb" id="ep-carb">0</div><div class="mp-lbl">hidr</div></div>
-        <div class="mp-chip"><div class="mp-val a"    id="ep-sugar">0</div><div class="mp-lbl">açúcar</div></div>
         <div class="mp-chip"><div class="mp-val f"    id="ep-fiber">0</div><div class="mp-lbl">fibra</div></div>
         <div class="mp-chip"><div class="mp-val prot" id="ep-prot">0</div><div class="mp-lbl">prot</div></div>
       </div>
@@ -574,16 +546,16 @@
 
 <div id="toast"></div>
 
-<script src="js/config.js?v=20260515"></script>
-<script src="js/nutrition.js?v=20260517"></script>
+<script src="js/config.js?v=20260526"></script>
+<script src="js/nutrition.js?v=20260526"></script>
 <script src="js/db.js?v=20260522"></script>
 <script src="js/ui.js?v=20260526"></script>
-<script src="js/views/diary.js?v=20260520"></script>
+<script src="js/views/diary.js?v=20260526"></script>
 <script src="js/views/log.js?v=20260522"></script>
 <script src="js/views/foods.js?v=20260521"></script>
 <script src="js/views/meals.js?v=20260516"></script>
-<script src="js/views/targets.js?v=20260515"></script>
-<script src="js/views/stats.js?v=20260516"></script>
+<script src="js/views/targets.js?v=20260526"></script>
+<script src="js/views/stats.js?v=20260526"></script>
 <script src="js/app.js?v=20260514"></script>
 </body>
 </html>

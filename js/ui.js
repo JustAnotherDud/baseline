@@ -107,6 +107,30 @@ async function openEditEntry(id) {
     const qf = document.getElementById('edit-quick-fields');
     if (qf) qf.style.display = 'none';
 
+    const portionBtn = document.getElementById('edit-portion-btn');
+    portionBtn.style.display = 'none';
+    portionBtn.onclick = null;
+    document.getElementById('edit-dose-info').textContent = '';
+
+    if (data.food_id) {
+      const { data: food } = await db.from('foods').select('serving_size_g').eq('id', data.food_id).single();
+      if (food && food.serving_size_g) {
+        editingEntry._serving_size_g = food.serving_size_g;
+        portionBtn.textContent = `+ porção (${food.serving_size_g}g)`;
+        portionBtn.style.display = '';
+        portionBtn.onclick = () => {
+          const input = document.getElementById('edit-grams');
+          const current = parseFloat(input.value) || 0;
+          input.value = current + food.serving_size_g;
+          updateEditPreview();
+        };
+      } else {
+        editingEntry._serving_size_g = null;
+      }
+    } else {
+      editingEntry._serving_size_g = null;
+    }
+
     document.getElementById('edit-grams').value = data.grams || '';
     updateEditPreview();
     document.getElementById('sheet-edit').classList.add('open');
@@ -524,6 +548,11 @@ function updateEditPreview() {
   document.getElementById('ep-sugar').textContent  = c(editingEntry.sugar);
   document.getElementById('ep-fiber').textContent  = c(editingEntry.fiber);
   document.getElementById('ep-prot').textContent   = c(editingEntry.protein);
+  const serving = editingEntry._serving_size_g;
+  if (serving) {
+    const infoEl = document.getElementById('edit-dose-info');
+    if (infoEl) infoEl.textContent = g > 0 ? `${(g / serving).toFixed(1)}×` : '';
+  }
 }
 
 function openMoveMealSheet(entryId, currentMeal) {

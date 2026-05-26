@@ -28,7 +28,6 @@ function renderToday(entries, t) {
   remEl.style.color = rem>=0 ? 'var(--text2)' : 'var(--red)';
 
   const rawPct = (v, m) => m > 0 ? v / m * 100 : 0;
-  const pct    = (v, m) => Math.min(100, rawPct(v, m)) + '%';
 
   // Primary macros: num/tgt labels + segmented bars
   [

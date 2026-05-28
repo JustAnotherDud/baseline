@@ -115,18 +115,21 @@ function renderToday(entries, t) {
     const mfat  = mes.reduce((s,e)=>s+ +e.fat,0);
     const div = document.createElement('div');
     div.className = 'meal-section';
+    const kcalLine = mes.length > 0
+      ? `<div class="meal-kcal" style="font-family:var(--mono);font-size:12px;color:var(--text3);margin-top:2px">${r(mkcal)} kcal</div>`
+      : '';
     const macroStr = mes.length > 0
       ? `<div class="meal-macros">G ${r(mfat)}g · C ${r(mcarb)}g · P ${r(mprot)}g</div>`
       : '';
     div.innerHTML = `
       <div class="meal-header">
-        <div class="meal-header-left" style="cursor:pointer;flex:1;min-width:0">
+        <div class="meal-header-left">
           <div class="meal-name">${label}</div>
+          ${kcalLine}
           ${macroStr}
         </div>
-        <div class="meal-header-right" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:12px 0 12px 12px;flex-shrink:0">
-          <div class="meal-kcal">${r(mkcal)} kcal</div>
-          <div style="color:var(--text3);font-size:18px;line-height:1">+</div>
+        <div class="meal-header-right">
+          <span style="color:var(--accent);font-size:18px;line-height:1">+</span><span style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.06em">REGISTAR</span>
         </div>
       </div>`;
     const leftEl  = div.querySelector('.meal-header-left');

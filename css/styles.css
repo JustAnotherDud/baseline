@@ -103,9 +103,10 @@ body {
 
 /* ── MEAL SECTIONS ── */
 .meal-section { border-bottom: 1px solid var(--border); }
-.meal-header { display: flex; align-items: center; background: var(--surface2); border-top: 1px solid var(--surface3); }
-.meal-header-left { padding: 10px 0 8px 20px; }
-.meal-header-right { padding: 10px 20px 8px 12px; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.meal-header { display: flex; align-items: stretch; border-top: 1px solid var(--surface3); }
+.meal-header-left { flex: 1; padding: 12px 0 12px 20px; background: var(--surface2); min-height: 52px; cursor: pointer; }
+.meal-header-right { flex: 1; padding: 12px 20px 12px 12px; display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(74,222,128,0.06); border-left: 1px solid var(--border); min-height: 52px; cursor: pointer; }
+.meal-header-right:active { background: rgba(74,222,128,0.12); }
 .meal-name { font-size: 13px; font-family: var(--mono); color: var(--text2); text-transform: uppercase; letter-spacing: .12em; }
 .meal-kcal { font-family: var(--mono); font-size: 13px; color: var(--text); font-weight: 600; }
 .meal-macros { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-top: 3px; }
@@ -411,8 +412,8 @@ input[type="number"] { font-family: var(--mono); }
   .setup-logo { font-size: 13px; }
   .macro-summary { padding: 20px 24px; }
   .view-header { padding: 22px 24px 14px; }
-  .meal-header-left { padding: 14px 0 10px 24px; }
-  .meal-header-right { padding: 14px 24px 10px 12px; }
+  .meal-header-left { padding: 14px 0 12px 24px; }
+  .meal-header-right { padding: 14px 24px 12px 12px; }
   .diary-entry { padding: 12px 24px; }
   .food-item { padding: 16px 24px; }
   .search-wrap { padding: 14px 24px; }

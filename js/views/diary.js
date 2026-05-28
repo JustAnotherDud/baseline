@@ -129,7 +129,7 @@ function renderToday(entries, t) {
           ${macroStr}
         </div>
         <div class="meal-header-right">
-          <span style="color:var(--accent);font-size:18px;line-height:1">+</span><span style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.06em">REGISTAR</span>
+          <span style="color:var(--accent);font-size:18px;line-height:1">+</span><span style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.06em">LOG</span>
         </div>
       </div>`;
     const leftEl  = div.querySelector('.meal-header-left');

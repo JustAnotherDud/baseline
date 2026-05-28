@@ -664,7 +664,7 @@ function buildSegmentedBar(actual, target, macro) {
     protein:  { bounds: [63, 86, 130, 150],   maxPct: 155 },
     carbs:    { bounds: [70, 85, 135, 150],   maxPct: 155 },
     fat:      { bounds: [54, 85, 160, 200],   maxPct: 205 },
-    calories: { bounds: [90, 95, 105, 110],   maxPct: 115 },
+    calories: { bounds: [80, 90, 110, 120],   maxPct: 125 },
   };
   const { bounds, maxPct } = ZONES[macro];
   const [b1, b2, b3, b4] = bounds;

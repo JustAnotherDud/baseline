@@ -1,7 +1,8 @@
 let loadBodyGen = 0;
 let bodyChartInstance = null;
-let bodyChartData = null;
-let bodyActiveDatasets = { weight: true, fat: false };
+let bodyAllData = [];
+let bodyPeriod = 'month';
+let bodyActiveDatasets = { weight: true, fat: false, lbm: false };
 
 async function loadBody() {
   const gen = ++loadBodyGen;
@@ -11,8 +12,7 @@ async function loadBody() {
   const { data, error } = await db
     .from('body_comp')
     .select('*')
-    .order('date', { ascending: false })
-    .limit(30);
+    .order('date', { ascending: true });
 
   if (gen !== loadBodyGen) return;
 
@@ -24,11 +24,10 @@ async function loadBody() {
     return;
   }
 
-  const latest = data[0];
-  const prev   = data[1] || null;
-  const sorted = [...data].sort((a, b) => a.date.localeCompare(b.date));
+  bodyAllData = data;
+  const latest = data[data.length - 1];
+  const prev   = data.length >= 2 ? data[data.length - 2] : null;
 
-  // Weight delta vs previous entry
   let deltaHtml = '';
   if (latest.weight_kg != null && prev?.weight_kg != null) {
     const delta = parseFloat((latest.weight_kg - prev.weight_kg).toFixed(1));
@@ -45,8 +44,8 @@ async function loadBody() {
     ? new Date(latest.date + 'T12:00:00').toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })
     : '';
 
-  // Reset chart state on each load
-  bodyActiveDatasets = { weight: true, fat: false };
+  bodyPeriod = 'month';
+  bodyActiveDatasets = { weight: true, fat: false, lbm: false };
   if (bodyChartInstance) { bodyChartInstance.destroy(); bodyChartInstance = null; }
 
   container.innerHTML = `
@@ -68,11 +67,20 @@ async function loadBody() {
       </div>
     </div>
 
-    <div style="padding:16px 20px 0">
-      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Tendência 30 dias</div>
-      <div style="display:flex;gap:6px;margin-bottom:12px" id="body-chart-chips">
+    <div style="padding:16px 20px 24px">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Tendência</div>
+      <div id="body-period-chips" style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch">
+        <button class="sort-chip" data-period="week"  onclick="setBodyPeriod('week')">Semana</button>
+        <button class="sort-chip active" data-period="month" onclick="setBodyPeriod('month')">Mês</button>
+        <button class="sort-chip" data-period="3m"    onclick="setBodyPeriod('3m')">3M</button>
+        <button class="sort-chip" data-period="6m"    onclick="setBodyPeriod('6m')">6M</button>
+        <button class="sort-chip" data-period="1y"    onclick="setBodyPeriod('1y')">1A</button>
+        <button class="sort-chip" data-period="all"   onclick="setBodyPeriod('all')">Total</button>
+      </div>
+      <div id="body-chart-chips" style="display:flex;gap:6px;margin-bottom:12px">
         <button class="sort-chip active" data-dataset="weight" onclick="toggleBodyDataset('weight')">Peso</button>
-        <button class="sort-chip" data-dataset="fat" onclick="toggleBodyDataset('fat')">Body Fat</button>
+        <button class="sort-chip" data-dataset="fat"    onclick="toggleBodyDataset('fat')">Body Fat</button>
+        <button class="sort-chip" data-dataset="lbm"    onclick="toggleBodyDataset('lbm')">LBM</button>
       </div>
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px">
         <div style="position:relative;height:180px">
@@ -80,15 +88,9 @@ async function loadBody() {
         </div>
       </div>
     </div>
-
-    <div style="padding:16px 20px 24px">
-      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Insights</div>
-      <button class="btn btn-primary" onclick="analyseBodyComp()" id="body-analyse-btn">✦ Analisar</button>
-      <div id="body-insight-card" style="display:none;margin-top:12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;font-size:14px;line-height:1.6;color:var(--text)"></div>
-    </div>
   `;
 
-  buildBodyChart(sorted);
+  buildBodyChart(bodyFilterByPeriod(bodyAllData, bodyPeriod));
 }
 
 function bodyMetricCard(label, value, unit, color) {
@@ -99,21 +101,44 @@ function bodyMetricCard(label, value, unit, color) {
   </div>`;
 }
 
+function bodyFilterByPeriod(rows, period) {
+  if (period === 'all') return rows;
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+  const cutoff = new Date(today);
+  if      (period === 'week')  cutoff.setDate(today.getDate() - 7);
+  else if (period === 'month') cutoff.setMonth(today.getMonth() - 1);
+  else if (period === '3m')    cutoff.setMonth(today.getMonth() - 3);
+  else if (period === '6m')    cutoff.setMonth(today.getMonth() - 6);
+  else if (period === '1y')    cutoff.setFullYear(today.getFullYear() - 1);
+  const cutoffStr = cutoff.toISOString().split('T')[0];
+  return rows.filter(r => r.date >= cutoffStr);
+}
+
+function setBodyPeriod(p) {
+  bodyPeriod = p;
+  document.querySelectorAll('#body-period-chips .sort-chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.period === p);
+  });
+  if (bodyChartInstance) { bodyChartInstance.destroy(); bodyChartInstance = null; }
+  buildBodyChart(bodyFilterByPeriod(bodyAllData, p));
+}
+
 function buildBodyChart(rows) {
   const ctx = document.getElementById('body-chart');
   if (!ctx) return;
 
-  const accentColor = '#4ade80';
-  const blueColor   = '#60a5fa';
+  const dense = rows.length > 60;
 
   const labels  = rows.map(r => {
     const d = new Date(r.date + 'T12:00:00');
     return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
   });
-  const weights = rows.map(r => r.weight_kg != null ? parseFloat(r.weight_kg) : null);
-  const fats    = rows.map(r => r.body_fat_pct != null ? parseFloat(r.body_fat_pct) : null);
+  const weights = rows.map(r => r.weight_kg     != null ? parseFloat(r.weight_kg)     : null);
+  const fats    = rows.map(r => r.body_fat_pct   != null ? parseFloat(r.body_fat_pct)  : null);
+  const lbms    = rows.map(r => r.muscle_mass_kg != null ? parseFloat(r.muscle_mass_kg): null);
 
-  bodyChartData = { labels, weights, fats };
+  const ptRadius = dense ? 0 : 3;
 
   bodyChartInstance = new Chart(ctx, {
     type: 'line',
@@ -123,26 +148,39 @@ function buildBodyChart(rows) {
         {
           label: 'Peso (kg)',
           data: weights,
-          borderColor: accentColor,
+          borderColor: '#4ade80',
           backgroundColor: 'transparent',
           borderWidth: 2,
-          pointRadius: 3,
-          pointBackgroundColor: accentColor,
+          pointRadius: ptRadius,
+          pointBackgroundColor: '#4ade80',
           tension: 0.3,
-          hidden: false,
+          hidden: !bodyActiveDatasets.weight,
           yAxisID: 'y',
           spanGaps: true,
         },
         {
           label: 'Body Fat (%)',
           data: fats,
-          borderColor: blueColor,
+          borderColor: '#60a5fa',
           backgroundColor: 'transparent',
           borderWidth: 2,
-          pointRadius: 3,
-          pointBackgroundColor: blueColor,
+          pointRadius: ptRadius,
+          pointBackgroundColor: '#60a5fa',
           tension: 0.3,
-          hidden: true,
+          hidden: !bodyActiveDatasets.fat,
+          yAxisID: 'y3',
+          spanGaps: true,
+        },
+        {
+          label: 'LBM (kg)',
+          data: lbms,
+          borderColor: '#fb923c',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: ptRadius,
+          pointBackgroundColor: '#fb923c',
+          tension: 0.3,
+          hidden: !bodyActiveDatasets.lbm,
           yAxisID: 'y2',
           spanGaps: true,
         },
@@ -175,13 +213,21 @@ function buildBodyChart(rows) {
         },
         y: {
           position: 'left',
+          display: bodyActiveDatasets.weight,
           grid: { color: '#1e1e1e' },
           ticks: { color: '#888', font: { family: 'IBM Plex Mono', size: 10 } },
           border: { color: '#2e2e2e' },
         },
         y2: {
           position: 'right',
-          display: false,
+          display: bodyActiveDatasets.lbm,
+          grid: { drawOnChartArea: false },
+          ticks: { color: '#888', font: { family: 'IBM Plex Mono', size: 10 } },
+          border: { color: '#2e2e2e' },
+        },
+        y3: {
+          position: 'right',
+          display: bodyActiveDatasets.fat,
           grid: { drawOnChartArea: false },
           ticks: { color: '#888', font: { family: 'IBM Plex Mono', size: 10 } },
           border: { color: '#2e2e2e' },
@@ -199,75 +245,13 @@ function toggleBodyDataset(key) {
     c.classList.toggle('active', bodyActiveDatasets[c.dataset.dataset]);
   });
 
-  bodyChartInstance.data.datasets[0].hidden = !bodyActiveDatasets.weight;
-  bodyChartInstance.data.datasets[1].hidden = !bodyActiveDatasets.fat;
+  const [weightDs, fatDs, lbmDs] = bodyChartInstance.data.datasets;
+  weightDs.hidden = !bodyActiveDatasets.weight;
+  fatDs.hidden    = !bodyActiveDatasets.fat;
+  lbmDs.hidden    = !bodyActiveDatasets.lbm;
+
   bodyChartInstance.options.scales.y.display  = bodyActiveDatasets.weight;
-  bodyChartInstance.options.scales.y2.display = bodyActiveDatasets.fat;
+  bodyChartInstance.options.scales.y2.display = bodyActiveDatasets.lbm;
+  bodyChartInstance.options.scales.y3.display = bodyActiveDatasets.fat;
   bodyChartInstance.update();
-}
-
-async function analyseBodyComp() {
-  const btn  = document.getElementById('body-analyse-btn');
-  const card = document.getElementById('body-insight-card');
-  if (!btn || !card) return;
-
-  let apiKey = localStorage.getItem('anthropic_key');
-  if (!apiKey) {
-    apiKey = prompt('Anthropic API key (guardada localmente):');
-    if (!apiKey) return;
-    apiKey = apiKey.trim();
-    localStorage.setItem('anthropic_key', apiKey);
-  }
-
-  btn.disabled = true;
-  btn.textContent = 'A analisar...';
-  card.style.display   = 'block';
-  card.style.color     = 'var(--text3)';
-  card.style.fontFamily = 'var(--mono)';
-  card.style.fontSize  = '12px';
-  card.textContent     = 'A analisar...';
-
-  let dataSummary = '(sem dados)';
-  if (bodyChartData) {
-    dataSummary = bodyChartData.labels
-      .map((l, i) => `${l}: ${bodyChartData.weights[i] ?? '?'} kg, ${bodyChartData.fats[i] ?? '?'} %`)
-      .join('\n');
-  }
-
-  const userPrompt = `Dados de composição corporal dos últimos 30 dias (data: peso, body fat%):\n${dataSummary}\n\nContexto do atleta:\n- Fase 3.5, surplus +150kcal, P 175g F 65g C residual\n- Objetivo: maratona Porto 8 Nov 2026, hipertrofia upper body\n- Atleta: 26 anos, 184cm, corredor de endurance\n\nAnalisa a evolução da composição corporal das últimas 4 semanas. Identifica tendências de peso, gordura e massa muscular. Avalia se o progresso é consistente com os objectivos (recomp em surplus ligeiro + preparação maratona). Aponta flags se os houver. Responde em português, de forma directa, máximo 200 palavras.`;
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: userPrompt }],
-      }),
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error?.message || `HTTP ${res.status}`);
-    }
-
-    const json = await res.json();
-    const text = json.content?.[0]?.text || '(sem resposta)';
-    card.style.color      = 'var(--text)';
-    card.style.fontFamily = 'var(--sans)';
-    card.style.fontSize   = '14px';
-    card.textContent      = text;
-  } catch (e) {
-    card.style.color = 'var(--red)';
-    card.textContent = `Erro: ${e.message}`;
-  } finally {
-    btn.disabled    = false;
-    btn.textContent = '✦ Analisar';
-  }
 }

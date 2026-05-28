@@ -517,19 +517,14 @@ function openMealBreakdown(mealKey, allEntries) {
   function renderFoodList() {
     const foodListEl = document.getElementById('meal-bd-food-list');
     if (!foodListEl) return;
-    const sorted = [...mes].sort((a, b) => +(b.calories || 0) - +(a.calories || 0));
+    const cfg = selectedMacro && MACRO_CONFIG[selectedMacro] ? MACRO_CONFIG[selectedMacro] : null;
+    const MACRO_COLORS = { protein: 'var(--blue)', carbs: 'var(--yellow)', fat: 'var(--orange)' };
+    const sorted = [...mes].sort((a, b) => {
+      if (cfg) return +(b[cfg.field] || 0) - +(a[cfg.field] || 0);
+      return +(b.calories || 0) - +(a.calories || 0);
+    });
     foodListEl.innerHTML = '';
     sorted.forEach(e => {
-      let metaText;
-      if (selectedMacro && MACRO_CONFIG[selectedMacro]) {
-        const cfg = MACRO_CONFIG[selectedMacro];
-        const val = e[cfg.field];
-        const valStr = val != null ? `${Math.round(+val * 10) / 10}${cfg.unit}` : '—';
-        metaText = `${valStr}   ${Math.round(+(e.calories || 0))} kcal`;
-      } else {
-        const gramsStr = (e.grams != null && +e.grams > 0) ? `${Math.round(+e.grams)}g` : '—';
-        metaText = `${gramsStr}   ${Math.round(+(e.calories || 0))} kcal`;
-      }
       const row = document.createElement('div');
       row.className = 'meal-bd-food-row';
       row.dataset.id = e.id;
@@ -538,7 +533,15 @@ function openMealBreakdown(mealKey, allEntries) {
       nameEl.textContent = e.food_name;
       const metaEl = document.createElement('div');
       metaEl.className = 'meal-bd-food-meta';
-      metaEl.textContent = metaText;
+      if (cfg) {
+        const val = e[cfg.field];
+        const valStr = val != null ? `${(Math.round(+val * 10) / 10).toFixed(1)}${cfg.unit}` : '—';
+        const kcal = Math.round(+(e.calories || 0));
+        metaEl.innerHTML = `<span style="color:${MACRO_COLORS[selectedMacro]}">${valStr}</span><span style="color:var(--text3)"> · ${kcal} kcal</span>`;
+      } else {
+        const gramsStr = (e.grams != null && +e.grams > 0) ? `${Math.round(+e.grams)}g` : '—';
+        metaEl.textContent = `${gramsStr}   ${Math.round(+(e.calories || 0))} kcal`;
+      }
       row.appendChild(nameEl);
       row.appendChild(metaEl);
       row.addEventListener('click', () => { overlay.classList.remove('open'); openEditEntry(+e.id); });

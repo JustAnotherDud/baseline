@@ -1,6 +1,6 @@
 {
-  "name": "NutriTrack",
-  "short_name": "NutriTrack",
+  "name": "Baseline",
+  "short_name": "Baseline",
   "description": "Personal nutrition tracker",
   "start_url": "/nutrition-tracker/",
   "scope": "/nutrition-tracker/",

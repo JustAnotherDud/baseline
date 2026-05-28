@@ -102,9 +102,9 @@ body {
 .mbt-sec { margin-top: 2px; }
 
 /* ── MEAL SECTIONS ── */
-.meal-section { border-bottom: 1px solid var(--border); }
+.meal-section { border-radius: 12px; overflow: hidden; margin: 8px 12px; border: 1px solid var(--border); }
 .meal-header { display: flex; align-items: stretch; border-top: 1px solid var(--surface3); }
-.meal-header-left { flex: 2; padding: 12px 0 12px 20px; background: var(--surface2); min-height: 52px; cursor: pointer; }
+.meal-header-left { flex: 3; padding: 12px 0 12px 20px; background: var(--surface2); min-height: 52px; cursor: pointer; }
 .meal-header-right { flex: 1; padding: 12px 20px 12px 12px; display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(74,222,128,0.06); border-left: 1px solid var(--border); min-height: 52px; cursor: pointer; }
 .meal-header-right:active { background: rgba(74,222,128,0.12); }
 .meal-name { font-size: 13px; font-family: var(--mono); color: var(--text2); text-transform: uppercase; letter-spacing: .12em; }
@@ -122,7 +122,7 @@ body {
 .meal-donut-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
 
 .diary-entry {
-  padding: 10px 20px; display: flex; align-items: center;
+  padding: 10px 16px; display: flex; align-items: center;
   justify-content: space-between; border-top: 1px solid var(--border); gap: 12px;
 }
 .diary-entry:active { background: var(--surface); }

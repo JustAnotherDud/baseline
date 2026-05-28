@@ -115,17 +115,13 @@ function renderToday(entries, t) {
     const mfat  = mes.reduce((s,e)=>s+ +e.fat,0);
     const div = document.createElement('div');
     div.className = 'meal-section';
-    const kcalLine = mes.length > 0
-      ? `<div class="meal-kcal" style="font-family:var(--mono);font-size:12px;color:var(--text3);margin-top:2px">${r(mkcal)} kcal</div>`
-      : '';
     const macroStr = mes.length > 0
-      ? `<div class="meal-macros">G ${r(mfat)}g · C ${r(mcarb)}g · P ${r(mprot)}g</div>`
+      ? `<div class="meal-macros">G ${r(mfat)}g · C ${r(mcarb)}g · P ${r(mprot)}g · <span style="color:var(--text)">${r(mkcal)} kcal</span></div>`
       : '';
     div.innerHTML = `
       <div class="meal-header">
         <div class="meal-header-left">
           <div class="meal-name">${label}</div>
-          ${kcalLine}
           ${macroStr}
         </div>
         <div class="meal-header-right">

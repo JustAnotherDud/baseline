@@ -53,7 +53,7 @@ function go(view) {
     if (currentFoodsTab === 'foods') loadFoods();
     else loadMeals();
   }
-  if (view==='body') {}
+  if (view==='body') loadBody();
   if (view==='settings') loadSettingsView();
   if (view==='stats')    loadStats();
 }

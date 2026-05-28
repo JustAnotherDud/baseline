@@ -343,7 +343,15 @@
     <div class="view-header">
       <div class="view-title">Body Comp</div>
     </div>
-    <div id="body-container"></div>
+
+    <!-- Sub-tabs -->
+    <div class="foods-subtabs" id="body-subtabs">
+      <button class="foods-subtab active" id="body-subtab-dia"       onclick="switchBodyTab('dia')">Dia</button>
+      <button class="foods-subtab"        id="body-subtab-historico" onclick="switchBodyTab('historico')">Histórico</button>
+    </div>
+
+    <div id="body-dia-panel"></div>
+    <div id="body-historico-panel" style="display:none"></div>
   </div>
 
   <!-- ─── NAV ─── -->

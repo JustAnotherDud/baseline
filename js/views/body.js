@@ -3,11 +3,13 @@ let bodyChartInstance = null;
 let bodyAllData = [];
 let bodyPeriod = 'month';
 let bodyActiveDatasets = { weight: true, fat: false, lbm: false };
+let bodyDate = new Date().toISOString().split('T')[0];
+let bodyTab = 'dia';
 
 async function loadBody() {
   const gen = ++loadBodyGen;
-  const container = document.getElementById('body-container');
-  container.innerHTML = '<div class="loading">A carregar...</div>';
+  const diaPanel = document.getElementById('body-dia-panel');
+  if (diaPanel) diaPanel.innerHTML = '<div class="loading">A carregar...</div>';
 
   const { data, error } = await db
     .from('body_comp')
@@ -16,7 +18,170 @@ async function loadBody() {
 
   if (gen !== loadBodyGen) return;
 
-  if (error || !data || data.length === 0) {
+  bodyAllData = (!error && data) ? data : [];
+  bodyPeriod = 'month';
+  bodyActiveDatasets = { weight: true, fat: false, lbm: false };
+  if (bodyChartInstance) { bodyChartInstance.destroy(); bodyChartInstance = null; }
+
+  renderBodyHistorico();
+  await renderBodyDia();
+  if (gen !== loadBodyGen) return;
+  applyBodyTab();
+}
+
+// ── Tab switching ────────────────────────────────────────────────────────────
+
+function applyBodyTab() {
+  const dia  = document.getElementById('body-dia-panel');
+  const hist = document.getElementById('body-historico-panel');
+  if (dia)  dia.style.display  = bodyTab === 'dia' ? '' : 'none';
+  if (hist) hist.style.display = bodyTab === 'historico' ? '' : 'none';
+  const dTab = document.getElementById('body-subtab-dia');
+  const hTab = document.getElementById('body-subtab-historico');
+  if (dTab) dTab.classList.toggle('active', bodyTab === 'dia');
+  if (hTab) hTab.classList.toggle('active', bodyTab === 'historico');
+  // Chart must be (re)built while its panel is visible, else it sizes to 0px.
+  if (bodyTab === 'historico') showBodyHistoricoChart();
+}
+
+function switchBodyTab(tab) {
+  bodyTab = tab;
+  applyBodyTab();
+}
+
+// ── Tab: Dia ───────────────────────────────────────────────────────────────
+
+function changeBodyDay(delta) {
+  const d = new Date(bodyDate + 'T12:00:00');
+  d.setDate(d.getDate() + delta);
+  bodyDate = d.toISOString().split('T')[0];
+  renderBodyDia();
+}
+
+function pickBodyDate() {
+  openDatePicker(bodyDate, date => {
+    bodyDate = date;
+    renderBodyDia();
+  });
+}
+
+function bodyPrevWeighIn(dateStr) {
+  const prior = bodyAllData.filter(r => r.date < dateStr && r.weight_kg != null);
+  return prior.length ? prior[prior.length - 1] : null;
+}
+
+function bodyDiaHeaderHtml() {
+  const d = new Date(bodyDate + 'T12:00:00');
+  const label = d.toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' });
+  return `<div style="display:flex;align-items:center;gap:6px;padding:16px 20px 4px">
+    <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:16px;line-height:1" onclick="changeBodyDay(-1)">←</button>
+    <div style="flex:1;text-align:center;font-family:var(--mono);font-size:13px;color:var(--text2);text-transform:capitalize">${label}</div>
+    <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:13px" onclick="pickBodyDate()">📅</button>
+    <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:16px;line-height:1" onclick="changeBodyDay(1)">→</button>
+  </div>`;
+}
+
+function bodyDayCardHtml(bc) {
+  const wrap = inner => `<div style="padding:16px 20px 0">
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Pesagem</div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px">${inner}</div>
+  </div>`;
+
+  if (!bc || bc.weight_kg == null) {
+    return wrap(`<div style="text-align:center;color:var(--text3);font-family:var(--mono);font-size:13px">Sem pesagem registada</div>`);
+  }
+
+  const prev = bodyPrevWeighIn(bc.date);
+  let deltaHtml = '';
+  if (prev?.weight_kg != null) {
+    const delta = parseFloat((bc.weight_kg - prev.weight_kg).toFixed(1));
+    if (delta > 0) {
+      deltaHtml = `<span style="color:var(--red);font-family:var(--mono);font-size:13px">↑ ${delta.toFixed(1)} kg</span>`;
+    } else if (delta < 0) {
+      deltaHtml = `<span style="color:var(--accent);font-family:var(--mono);font-size:13px">↓ ${Math.abs(delta).toFixed(1)} kg</span>`;
+    } else {
+      deltaHtml = `<span style="color:var(--text3);font-family:var(--mono);font-size:13px">= 0.0 kg</span>`;
+    }
+  }
+
+  return wrap(`
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px">
+      <span style="font-family:var(--mono);font-size:32px;font-weight:600;color:var(--accent);line-height:1">${parseFloat(bc.weight_kg).toFixed(1)}</span>
+      <span style="font-family:var(--mono);font-size:13px;color:var(--text3)">kg</span>
+      ${deltaHtml}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      ${bodyMetricCard('Body Fat', bc.body_fat_pct, '%', 'var(--orange)')}
+      ${bodyMetricCard('Músculo', bc.muscle_mass_kg, 'kg', 'var(--blue)')}
+      ${bodyMetricCard('Osso', bc.bone_mass_kg, 'kg', 'var(--text2)')}
+      ${bodyMetricCard('Água', bc.water_pct, '%', 'var(--blue)')}
+    </div>
+  `);
+}
+
+function bodyNutritionCardHtml(entries, t) {
+  const wrap = inner => `<div style="padding:16px 20px 24px">
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Nutrição</div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px">${inner}</div>
+  </div>`;
+
+  if (!entries || entries.length === 0) {
+    return wrap(`<div style="text-align:center;color:var(--text3);font-family:var(--mono);font-size:13px">Sem registos nutricionais</div>`);
+  }
+
+  const tot = { kcal: 0, prot: 0, carb: 0, fat: 0, fiber: 0 };
+  entries.forEach(e => {
+    tot.kcal  += +e.calories;
+    tot.prot  += +e.protein;
+    tot.carb  += +e.carbs;
+    tot.fat   += +e.fat;
+    tot.fiber += +(e.fiber || 0);
+  });
+
+  const r = n => Math.round(n);
+  const kcalPct   = t.calories > 0 ? tot.kcal / t.calories * 100 : 0;
+  const kcalColor = getNutrientColor('calories', kcalPct);
+
+  return wrap(`
+    <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:12px">
+      <span style="font-family:var(--mono);font-size:24px;font-weight:600;color:${kcalColor};line-height:1">${r(tot.kcal)}</span>
+      <span style="font-family:var(--mono);font-size:13px;color:var(--text3)">/ ${t.calories} kcal</span>
+    </div>
+    <div style="font-family:var(--mono);font-size:13px;display:flex;flex-wrap:wrap;gap:4px 8px">
+      <span style="color:var(--blue)">P ${r(tot.prot)}g</span>
+      <span style="color:var(--text3)">·</span>
+      <span style="color:var(--yellow)">H ${r(tot.carb)}g</span>
+      <span style="color:var(--text3)">·</span>
+      <span style="color:var(--orange)">G ${r(tot.fat)}g</span>
+      <span style="color:var(--text3)">·</span>
+      <span style="color:var(--accent)">Fibra ${r(tot.fiber)}g</span>
+    </div>
+  `);
+}
+
+async function renderBodyDia() {
+  const panel = document.getElementById('body-dia-panel');
+  if (!panel) return;
+  const gen = loadBodyGen;
+
+  const { data: bc }    = await db.from('body_comp').select('*').eq('date', bodyDate).maybeSingle();
+  const { data: diary } = await db.from('diary').select('*').eq('date', bodyDate);
+  const targets         = await getTargetsForDate(bodyDate);
+
+  if (gen !== loadBodyGen) return;
+
+  panel.innerHTML = bodyDiaHeaderHtml()
+    + bodyDayCardHtml(bc)
+    + bodyNutritionCardHtml(diary || [], targets);
+}
+
+// ── Tab: Histórico ───────────────────────────────────────────────────────────
+
+function renderBodyHistorico() {
+  const container = document.getElementById('body-historico-panel');
+  if (!container) return;
+
+  if (bodyAllData.length === 0) {
     container.innerHTML = `<div class="empty">
       <div class="empty-icon">⚖️</div>
       <div class="empty-text">Sem dados de composição corporal.<br>Sincroniza primeiro com o Garmin.</div>
@@ -24,9 +189,8 @@ async function loadBody() {
     return;
   }
 
-  bodyAllData = data;
-  const latest = data[data.length - 1];
-  const prev   = data.length >= 2 ? data[data.length - 2] : null;
+  const latest = bodyAllData[bodyAllData.length - 1];
+  const prev   = bodyAllData.length >= 2 ? bodyAllData[bodyAllData.length - 2] : null;
 
   let deltaHtml = '';
   if (latest.weight_kg != null && prev?.weight_kg != null) {
@@ -43,10 +207,6 @@ async function loadBody() {
   const dateFormatted = latest.date
     ? new Date(latest.date + 'T12:00:00').toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })
     : '';
-
-  bodyPeriod = 'month';
-  bodyActiveDatasets = { weight: true, fat: false, lbm: false };
-  if (bodyChartInstance) { bodyChartInstance.destroy(); bodyChartInstance = null; }
 
   container.innerHTML = `
     <div style="padding:16px 20px 0">
@@ -89,7 +249,11 @@ async function loadBody() {
       </div>
     </div>
   `;
+}
 
+function showBodyHistoricoChart() {
+  if (!document.getElementById('body-chart')) return;
+  if (bodyChartInstance) { bodyChartInstance.destroy(); bodyChartInstance = null; }
   buildBodyChart(bodyFilterByPeriod(bodyAllData, bodyPeriod));
 }
 

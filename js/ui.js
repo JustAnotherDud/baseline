@@ -351,6 +351,7 @@ function openNutrientSheet(entries, nutrient) {
 function openMealBreakdown(mealKey, allEntries) {
   const mealLabel = (typeof MEALS !== 'undefined' && MEALS[mealKey]) || mealKey;
   const mes = allEntries.filter(e => e.meal === mealKey);
+  let selectedMacro = null;
 
   // Macro totals
   const totalKcal  = mes.reduce((s, e) => s + +(e.calories || 0), 0);
@@ -429,15 +430,15 @@ function openMealBreakdown(mealKey, allEntries) {
     const h_kcal = carbs   * 4;
     const g_kcal = fat     * 9;
     const total  = p_kcal + h_kcal + g_kcal || 1;
-    const cx = 80, cy = 80, R = 70, r = 42;
+    const cx = 80, cy = 80, R = 70, r = 42, labelR = 56;
 
     const centerText = `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="central"
       font-family="var(--mono)" font-size="16" font-weight="600" fill="var(--text)">${Math.round(kcal)}</text>`;
 
     const slices = [
-      { kcal: p_kcal, color: 'var(--blue)'   },
-      { kcal: h_kcal, color: 'var(--yellow)' },
-      { kcal: g_kcal, color: 'var(--orange)' },
+      { kcal: p_kcal, color: 'var(--blue)',   macro: 'protein', label: 'P' },
+      { kcal: h_kcal, color: 'var(--yellow)', macro: 'carbs',   label: 'H' },
+      { kcal: g_kcal, color: 'var(--orange)', macro: 'fat',     label: 'G' },
     ].filter(s => s.kcal > 0);
 
     if (slices.length === 0) {
@@ -449,13 +450,14 @@ function openMealBreakdown(mealKey, allEntries) {
 
     if (slices.length === 1) {
       return `<svg width="160" height="160" viewBox="0 0 160 160">
-        <circle cx="${cx}" cy="${cy}" r="${R}" fill="${slices[0].color}"/>
+        <circle cx="${cx}" cy="${cy}" r="${R}" fill="${slices[0].color}" data-macro="${slices[0].macro}"/>
         <circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--surface)"/>
+        <text x="${cx}" y="${cy - labelR}" text-anchor="middle" dominant-baseline="central" font-family="var(--mono)" font-size="12" font-weight="600" fill="#0a0a0a">${slices[0].label}</text>
         ${centerText}</svg>`;
     }
 
     let angle = -Math.PI / 2;
-    let paths = '';
+    let paths = '', labels = '';
     slices.forEach(s => {
       const a   = (s.kcal / total) * 2 * Math.PI;
       const end = angle + a;
@@ -464,11 +466,17 @@ function openMealBreakdown(mealKey, allEntries) {
       const ix1 = cx + r * Math.cos(angle),  iy1 = cy + r * Math.sin(angle);
       const ix2 = cx + r * Math.cos(end),    iy2 = cy + r * Math.sin(end);
       const lg  = a > Math.PI ? 1 : 0;
-      paths += `<path d="M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${R} ${R} 0 ${lg} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} L ${ix2.toFixed(2)} ${iy2.toFixed(2)} A ${r} ${r} 0 ${lg} 0 ${ix1.toFixed(2)} ${iy1.toFixed(2)} Z" fill="${s.color}"/>`;
+      paths += `<path d="M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${R} ${R} 0 ${lg} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} L ${ix2.toFixed(2)} ${iy2.toFixed(2)} A ${r} ${r} 0 ${lg} 0 ${ix1.toFixed(2)} ${iy1.toFixed(2)} Z" fill="${s.color}" data-macro="${s.macro}"/>`;
+      if (s.kcal / total > 0.15) {
+        const mid = angle + a / 2;
+        const lx  = cx + labelR * Math.cos(mid);
+        const ly  = cy + labelR * Math.sin(mid);
+        labels += `<text x="${lx.toFixed(2)}" y="${ly.toFixed(2)}" text-anchor="middle" dominant-baseline="central" font-family="var(--mono)" font-size="12" font-weight="600" fill="#0a0a0a">${s.label}</text>`;
+      }
       angle = end;
     });
 
-    return `<svg width="160" height="160" viewBox="0 0 160 160">${paths}${centerText}</svg>`;
+    return `<svg width="160" height="160" viewBox="0 0 160 160">${paths}${labels}${centerText}</svg>`;
   }
 
   // ── Legend ───────────────────────────────────────────────────────────────
@@ -494,9 +502,50 @@ function openMealBreakdown(mealKey, allEntries) {
   </div>`;
 
   // ── Food list (sorted by calories DESC) ──────────────────────────────────
-  const sorted = [...mes].sort((a, b) => +(b.calories || 0) - +(a.calories || 0));
+  const MACRO_CONFIG = {
+    protein: { field: 'protein', unit: 'g' },
+    carbs:   { field: 'carbs',   unit: 'g' },
+    fat:     { field: 'fat',     unit: 'g' },
+  };
 
-  // ── Render ───────────────────────────────────────────────────────────────
+  function updateDonutSelection() {
+    document.querySelectorAll('#meal-bd-content svg [data-macro]').forEach(el => {
+      el.style.opacity = selectedMacro === null || el.dataset.macro === selectedMacro ? '1' : '0.3';
+    });
+  }
+
+  function renderFoodList() {
+    const foodListEl = document.getElementById('meal-bd-food-list');
+    if (!foodListEl) return;
+    const sorted = [...mes].sort((a, b) => +(b.calories || 0) - +(a.calories || 0));
+    foodListEl.innerHTML = '';
+    sorted.forEach(e => {
+      let metaText;
+      if (selectedMacro && MACRO_CONFIG[selectedMacro]) {
+        const cfg = MACRO_CONFIG[selectedMacro];
+        const val = e[cfg.field];
+        const valStr = val != null ? `${Math.round(+val * 10) / 10}${cfg.unit}` : '—';
+        metaText = `${valStr}   ${Math.round(+(e.calories || 0))} kcal`;
+      } else {
+        const gramsStr = (e.grams != null && +e.grams > 0) ? `${Math.round(+e.grams)}g` : '—';
+        metaText = `${gramsStr}   ${Math.round(+(e.calories || 0))} kcal`;
+      }
+      const row = document.createElement('div');
+      row.className = 'meal-bd-food-row';
+      row.dataset.id = e.id;
+      const nameEl = document.createElement('div');
+      nameEl.className = 'meal-bd-food-name';
+      nameEl.textContent = e.food_name;
+      const metaEl = document.createElement('div');
+      metaEl.className = 'meal-bd-food-meta';
+      metaEl.textContent = metaText;
+      row.appendChild(nameEl);
+      row.appendChild(metaEl);
+      row.addEventListener('click', () => { overlay.classList.remove('open'); openEditEntry(+e.id); });
+      foodListEl.appendChild(row);
+    });
+  }
+
   const contentEl = document.getElementById('meal-bd-content');
   contentEl.innerHTML = `
     <div style="display:flex;justify-content:center;padding:16px 0 0">
@@ -506,28 +555,14 @@ function openMealBreakdown(mealKey, allEntries) {
     <div style="height:1px;background:var(--border);margin:0 0 4px"></div>
     <div id="meal-bd-food-list"></div>`;
 
-  const foodListEl = document.getElementById('meal-bd-food-list');
-  sorted.forEach(e => {
-    const gramsStr = (e.grams != null && +e.grams > 0) ? `${Math.round(+e.grams)}g` : '—';
-    const row = document.createElement('div');
-    row.className = 'meal-bd-food-row';
-    row.dataset.id = e.id;
-    const nameEl = document.createElement('div');
-    nameEl.className = 'meal-bd-food-name';
-    nameEl.textContent = e.food_name;
-    const metaEl = document.createElement('div');
-    metaEl.className = 'meal-bd-food-meta';
-    metaEl.textContent = `${gramsStr}   ${Math.round(+(e.calories || 0))} kcal`;
-    row.appendChild(nameEl);
-    row.appendChild(metaEl);
-    foodListEl.appendChild(row);
+  contentEl.querySelector('svg').addEventListener('click', ev => {
+    const path = ev.target.closest('[data-macro]');
+    selectedMacro = path ? (selectedMacro === path.dataset.macro ? null : path.dataset.macro) : null;
+    updateDonutSelection();
+    renderFoodList();
   });
 
-  document.querySelectorAll('#meal-bd-overlay .meal-bd-food-row').forEach(row => {
-    const id = +row.dataset.id;
-    row.addEventListener('click', () => { overlay.classList.remove('open'); openEditEntry(id); });
-  });
-
+  renderFoodList();
   overlay.classList.add('open');
 }
 

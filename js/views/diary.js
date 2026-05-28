@@ -20,12 +20,17 @@ function renderToday(entries, t) {
   });
 
   const r = n => Math.round(n);
+  const hasTargets = t.calories > 0;
   document.getElementById('tot-kcal').textContent = r(tot.kcal);
-  document.getElementById('tot-kcal-label').textContent = `/ ${t.calories} kcal`;
-  const rem = t.calories - r(tot.kcal);
+  document.getElementById('tot-kcal-label').textContent = hasTargets ? `/ ${t.calories} kcal` : 'kcal';
   const remEl = document.getElementById('kcal-rem');
-  remEl.textContent = rem>=0 ? `${rem} restantes` : `${Math.abs(rem)} excesso`;
-  remEl.style.color = rem>=0 ? 'var(--text2)' : 'var(--red)';
+  if (hasTargets) {
+    const rem = t.calories - r(tot.kcal);
+    remEl.textContent = rem>=0 ? `${rem} restantes` : `${Math.abs(rem)} excesso`;
+    remEl.style.color = rem>=0 ? 'var(--text2)' : 'var(--red)';
+  } else {
+    remEl.textContent = '';
+  }
 
   const rawPct = (v, m) => m > 0 ? v / m * 100 : 0;
 
@@ -36,37 +41,37 @@ function renderToday(entries, t) {
     { numEl: 'val-g-num', tgtEl: 'val-g-tgt', wrapId: 'bar-g-wrap', nutrient: 'fat',     actual: tot.fat,  target: t.fat    },
   ].forEach(({ numEl, tgtEl, wrapId, nutrient, actual, target }) => {
     const p     = rawPct(actual, target);
-    const color = entries.length > 0 ? getNutrientColor(nutrient, p) : 'var(--text2)';
+    const color = (hasTargets && entries.length > 0) ? getNutrientColor(nutrient, p) : 'var(--text2)';
     const numElem = document.getElementById(numEl);
     if (numElem) { numElem.textContent = r(actual); numElem.style.color = color; }
     const tgtElem = document.getElementById(tgtEl);
-    if (tgtElem) tgtElem.textContent = `/${target}g`;
+    if (tgtElem) tgtElem.textContent = hasTargets ? `/${target}g` : '';
     const wrapEl = document.getElementById(wrapId);
-    if (wrapEl) wrapEl.innerHTML = buildSegmentedBar(actual, target, nutrient);
+    if (wrapEl) wrapEl.innerHTML = hasTargets ? buildSegmentedBar(actual, target, nutrient) : '';
   });
 
   // Restantes por macro primária
   const remP = Math.round(t.protein - tot.prot);
   const elPR = document.getElementById('val-p-rem');
-  if (elPR) elPR.textContent = remP > 0 ? `· ${remP}g rest.` : '';
+  if (elPR) elPR.textContent = (hasTargets && remP > 0) ? `· ${remP}g rest.` : '';
   const remC = Math.round(t.carbs - tot.carb);
   const elCR = document.getElementById('val-c-rem');
-  if (elCR) elCR.textContent = remC > 0 ? `· ${remC}g rest.` : '';
+  if (elCR) elCR.textContent = (hasTargets && remC > 0) ? `· ${remC}g rest.` : '';
   const remG = Math.round(t.fat - tot.fat);
   const elGR = document.getElementById('val-g-rem');
-  if (elGR) elGR.textContent = remG > 0 ? `· ${remG}g rest.` : '';
+  if (elGR) elGR.textContent = (hasTargets && remG > 0) ? `· ${remG}g rest.` : '';
 
   // Secondary bars
   [
     { bar: 'bar-f', val: 'val-f', nutrient: 'fiber', actual: tot.fiber, target: t.fiber },
   ].forEach(({ bar, val, nutrient, actual, target }) => {
     const p     = rawPct(actual, target);
-    const color = entries.length > 0 ? getNutrientColor(nutrient, p) : 'var(--surface3)';
+    const color = (hasTargets && entries.length > 0) ? getNutrientColor(nutrient, p) : 'var(--surface3)';
     const barEl = document.getElementById(bar);
-    if (barEl) { barEl.style.width = Math.min(100, p) + '%'; barEl.style.background = color; }
+    if (barEl) { barEl.style.width = (hasTargets ? Math.min(100, p) : 0) + '%'; barEl.style.background = color; }
     if (val) {
       const el = document.getElementById(val);
-      if (el) { el.textContent = `${r(actual)}/${target}g`; el.style.color = entries.length > 0 ? color : 'var(--text2)'; }
+      if (el) { el.textContent = hasTargets ? `${r(actual)}/${target}g` : `${r(actual)}g`; el.style.color = (hasTargets && entries.length > 0) ? color : 'var(--text2)'; }
     }
   });
 
@@ -98,12 +103,12 @@ function renderToday(entries, t) {
   });
 
   const kcalPct = rawPct(tot.kcal, t.calories);
-  const kcalColor = entries.length > 0 ? getNutrientColor('calories', kcalPct) : 'var(--accent)';
+  const kcalColor = (hasTargets && entries.length > 0) ? getNutrientColor('calories', kcalPct) : 'var(--accent)';
   const kcalEl = document.getElementById('tot-kcal');
   kcalEl.style.color = kcalColor;
   kcalEl.style.cursor = 'pointer';
   kcalEl.onclick = () => openNutrientSheet(diaryEntries, NUTRIENT_MAP.calories);
-  document.getElementById('bar-kcal-wrap').innerHTML = buildSegmentedBar(tot.kcal, t.calories, 'calories');
+  document.getElementById('bar-kcal-wrap').innerHTML = hasTargets ? buildSegmentedBar(tot.kcal, t.calories, 'calories') : '';
 
   const container = document.getElementById('diary-container');
   container.innerHTML = '';

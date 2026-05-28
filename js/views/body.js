@@ -139,13 +139,15 @@ function bodyNutritionCardHtml(entries, t) {
   });
 
   const r = n => Math.round(n);
-  const kcalPct   = t.calories > 0 ? tot.kcal / t.calories * 100 : 0;
-  const kcalColor = getNutrientColor('calories', kcalPct);
+  const hasTargets = t && t.calories > 0;
+  const kcalPct   = hasTargets ? tot.kcal / t.calories * 100 : 0;
+  const kcalColor = hasTargets ? getNutrientColor('calories', kcalPct) : 'var(--accent)';
+  const kcalTgt   = hasTargets ? `/ ${t.calories} kcal` : 'kcal';
 
   return wrap(`
     <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:12px">
       <span style="font-family:var(--mono);font-size:24px;font-weight:600;color:${kcalColor};line-height:1">${r(tot.kcal)}</span>
-      <span style="font-family:var(--mono);font-size:13px;color:var(--text3)">/ ${t.calories} kcal</span>
+      <span style="font-family:var(--mono);font-size:13px;color:var(--text3)">${kcalTgt}</span>
     </div>
     <div style="font-family:var(--mono);font-size:13px;display:flex;flex-wrap:wrap;gap:4px 8px">
       <span style="color:var(--blue)">P ${r(tot.prot)}g</span>

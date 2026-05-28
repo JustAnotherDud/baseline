@@ -1,5 +1,7 @@
+let loadTodayGen = 0;
+
 async function getTargetsForDate(dateStr) {
-  if (!db) return getTargets();
+  if (!db) return null;
 
   // 1. Tenta daily_targets para esta data específica
   const { data: daily } = await db
@@ -20,15 +22,18 @@ async function getTargetsForDate(dateStr) {
     };
   }
 
-  // 2. Sem entrada específica → usa targets em cache (último push do DCB)
-  return getTargets();
+  // 2. Sem entrada específica → sem target para esta data
+  return null;
 }
 
 async function loadToday() {
   if (!db) return;
+  const gen = ++loadTodayGen;
   const { data, error } = await db.from('diary').select('*').eq('date', currentDate).order('logged_at');
   if (error) { toast('Erro ao carregar diário'); return; }
-  const targets = await getTargetsForDate(currentDate);
+  const targets = await getTargetsForDate(currentDate)
+    || { calories: 0, fat: 0, saturated_fat: 0, carbs: 0, sugar: 0, fiber: 0, protein: 0 };
+  if (gen !== loadTodayGen) return;
   renderToday(data || [], targets);
 }
 

@@ -98,7 +98,7 @@ async function saveQuick() {
     protein:  parseFloat(document.getElementById('q-prot').value)||0
   });
   if (error) { toast('Erro ao guardar'); return; }
-  toast('Registado'); closeLog(); clearQuick(); loadToday(); go('today');
+  toast('Registado'); closeLog(); clearQuick(); go('today');
 }
 
 function clearQuick() {
@@ -124,12 +124,6 @@ function openAddFoodFromLog(prefillName) {
 function updateSheetMealTabs() {
   const sel = document.getElementById('sheet-meal-select');
   if (sel) sel.value = selectedMeal;
-}
-
-function selectSheetMeal(mealKey) {
-  selectedMeal = mealKey;
-  mealManuallySelected = true;
-  updateSheetMealTabs();
 }
 
 function selectSheetMealFromDropdown(mealKey) {
@@ -261,46 +255,22 @@ async function loadLogTotalsStrip() {
   const r = n => Math.round(n);
   const tot = { kcal:0, prot:0, carb:0, fat:0 };
   data.forEach(e => { tot.kcal+=+e.calories; tot.prot+=+e.protein; tot.carb+=+e.carbs; tot.fat+=+e.fat; });
-  const rem = t.calories - r(tot.kcal);
-  const remColor = rem >= 0 ? 'var(--text2)' : 'var(--red)';
-  strip.innerHTML = `
+  const hasTargets = t && t.calories > 0;
+  let kcalHtml = `
     <div style="font-family:var(--mono);font-size:12px">
-      <span style="color:var(--accent);font-weight:600">${r(tot.kcal)}</span>
-      <span style="color:var(--text3)">/${t.calories}</span>
-    </div>
-    <div style="font-family:var(--mono);font-size:11px;color:${remColor}">${rem>=0?rem+'↓':Math.abs(rem)+'↑'} kcal</div>
+      <span style="color:var(--accent);font-weight:600">${r(tot.kcal)}</span>`;
+  if (hasTargets) kcalHtml += `<span style="color:var(--text3)">/${t.calories}</span>`;
+  kcalHtml += `</div>`;
+  let remHtml = '';
+  if (hasTargets) {
+    const rem = t.calories - r(tot.kcal);
+    const remColor = rem >= 0 ? 'var(--text2)' : 'var(--red)';
+    remHtml = `<div style="font-family:var(--mono);font-size:11px;color:${remColor}">${rem>=0?rem+'↓':Math.abs(rem)+'↑'} kcal</div>`;
+  }
+  strip.innerHTML = kcalHtml + remHtml + `
     <div style="font-family:var(--mono);font-size:11px;color:var(--blue)">P ${r(tot.prot)}g</div>
     <div style="font-family:var(--mono);font-size:11px;color:var(--yellow)">H ${r(tot.carb)}g</div>
     <div style="font-family:var(--mono);font-size:11px;color:var(--orange)">G ${r(tot.fat)}g</div>`;
-}
-
-async function loadRecentFoods() {
-  const el = document.getElementById('recent-foods');
-  if (!db || !el) return;
-  const { data } = await db.from('diary')
-    .select('food_id, food_name')
-    .not('food_id', 'is', null)
-    .order('logged_at', { ascending: false })
-    .limit(50);
-
-  if (!data || !data.length) {
-    el.innerHTML = '<div style="font-size:12px;color:var(--text3);font-family:var(--mono)">Sem histórico ainda</div>';
-    return;
-  }
-
-  const seen = new Set();
-  const recents = [];
-  for (const e of data) {
-    if (!seen.has(e.food_id)) {
-      seen.add(e.food_id);
-      recents.push(e);
-      if (recents.length >= 8) break;
-    }
-  }
-
-  el.innerHTML = recents.map(e =>
-    `<button class="recent-chip" onclick="pickFood(${e.food_id})">${highlightFoodKeywords(e.food_name)}</button>`
-  ).join('');
 }
 
 // ── SAVE DIARY HANDLER (DOM side of saveDiary) ───────────────────────────────

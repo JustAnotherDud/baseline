@@ -1,7 +1,4 @@
 let allFoods = [];
-let smartMore   = new Set();
-let smartAvoid  = new Set();
-let smartActive = false;
 
 const SORT_CONFIG = {
   name:     { asc: 'Nome A→Z',   desc: 'Nome Z→A',  default: 'asc'  },
@@ -49,35 +46,7 @@ async function loadFoods() {
   filterFoods();
 }
 
-function calcSmartScore(f, foods) {
-  const maxPK = Math.max(...foods.map(x =>
-    x.calories_per_100g > 0 ? x.protein_per_100g / x.calories_per_100g : 0)) || 1;
-  const maxC  = Math.max(...foods.map(x => x.carbs_per_100g  || 0)) || 1;
-  const maxG  = Math.max(...foods.map(x => x.fat_per_100g    || 0)) || 1;
-  const maxF  = Math.max(...foods.map(x => x.fiber_per_100g  || 0)) || 1;
-  const maxGS = Math.max(...foods.map(x => x.saturated_fat_per_100g || 0)) || 1;
-  const maxA  = Math.max(...foods.map(x => x.sugar_per_100g  || 0)) || 1;
-
-  let score = 0;
-  const pK = f.calories_per_100g > 0 ? f.protein_per_100g / f.calories_per_100g : 0;
-
-  if (smartMore.has('protein')) score += pK / maxPK;
-  if (smartMore.has('carbs'))   score += (f.carbs_per_100g  || 0) / maxC;
-  if (smartMore.has('fat'))     score += (f.fat_per_100g    || 0) / maxG;
-  if (smartMore.has('fiber'))   score += (f.fiber_per_100g  || 0) / maxF;
-
-  if (smartAvoid.has('satfat')) score -= (f.saturated_fat_per_100g || 0) / maxGS;
-  if (smartAvoid.has('fat'))    score -= (f.fat_per_100g    || 0) / maxG;
-  if (smartAvoid.has('sugar'))  score -= (f.sugar_per_100g  || 0) / maxA;
-
-  return score;
-}
-
 function sortFoods(foods) {
-  if (smartActive) {
-    return [...foods].sort((a, b) =>
-      calcSmartScore(b, foods) - calcSmartScore(a, foods));
-  }
   if (currentMoreSort) {
     const s   = MORE_SORT_MAP.get(currentMoreSort);
     const mul = currentMoreDir === 'asc' ? 1 : -1;
@@ -93,38 +62,6 @@ function sortFoods(foods) {
   }
 }
 
-function toggleSmartChip(type, key) {
-  if (type === 'more') {
-    smartAvoid.delete(key);
-    smartMore.has(key) ? smartMore.delete(key) : smartMore.add(key);
-  } else {
-    smartMore.delete(key);
-    smartAvoid.has(key) ? smartAvoid.delete(key) : smartAvoid.add(key);
-  }
-  smartActive = smartMore.size > 0 || smartAvoid.size > 0;
-  updateSmartChipVisuals();
-  filterFoods();
-}
-
-function updateSmartChipVisuals() {
-  document.querySelectorAll('.smart-chip-btn').forEach(btn => {
-    const type = btn.dataset.type;
-    const key  = btn.dataset.key;
-    const set  = type === 'more' ? smartMore : smartAvoid;
-    btn.classList.toggle('active', set.has(key));
-  });
-  const chip = document.getElementById('sort-chip-smart');
-  if (chip) chip.classList.toggle('active', smartActive);
-}
-
-function resetSmart() {
-  smartMore.clear(); smartAvoid.clear(); smartActive = false;
-  updateSmartChipVisuals(); filterFoods();
-}
-
-function toggleSmart() {
-  openSmartSheet();
-}
 
 function setSortFoods(sort) {
   currentMoreSort = null;
@@ -261,10 +198,7 @@ function renderFoods(foods) {
     // Right column: kcal default, swapped for hidden fields + ratios
     // All values are numeric — safe for innerHTML
     let rightCol;
-    if (smartActive) {
-      const score = calcSmartScore(f, foods);
-      rightCol = `<div class="fi-kcal" style="color:var(--accent)">${score.toFixed(2)}<br><span style="font-size:9px;color:var(--text3)">smart</span></div>`;
-    } else if (RATIO_LABEL[ms]) {
+    if (RATIO_LABEL[ms]) {
       const kcal  = f.calories_per_100g || 0;
       const ratio = kcal ? MORE_SORT_MAP.get(ms).fn(f).toFixed(2) : '—';
       rightCol = `<div class="fi-kcal" style="${HL}">${ratio}<br><span style="font-size:9px;color:var(--text3)">${RATIO_LABEL[ms]}</span></div>`;

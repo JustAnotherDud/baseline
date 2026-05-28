@@ -1,7 +1,8 @@
 let currentTargetsDate  = new Date().toISOString().split('T')[0];
 let currentPhase        = null;
+let refreshPhaseGen     = 0;
 
-const TARGET_FIELD_IDS = ['t-kcal','t-fat','t-satfat','t-carb','t-sugar','t-fiber','t-prot'];
+const TARGET_FIELD_IDS = ['t-kcal','t-fat','t-carb','t-fiber','t-prot'];
 
 async function loadTargetsForm() {
   currentTargetsDate = new Date().toISOString().split('T')[0];
@@ -19,6 +20,7 @@ function updateTargetsDateLabel() {
 }
 
 async function refreshPhaseAndTargets() {
+  const gen = ++refreshPhaseGen;
   document.getElementById('targets-loading').style.display = 'block';
   document.getElementById('targets-display').style.opacity = '0.4';
 
@@ -29,6 +31,9 @@ async function refreshPhaseAndTargets() {
       ? db.from('daily_targets').select('*').eq('date', currentTargetsDate).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
+
+  if (gen !== refreshPhaseGen) return;
+
   currentPhase = phase;
   updatePhaseBadge();
   const row = (targetsResult && targetsResult.data) || null;
@@ -42,13 +47,11 @@ async function refreshPhaseAndTargets() {
 
   if (row) {
     // ── Com target ──────────────────────────────────────────────
-    document.getElementById('t-kcal').textContent   = row.calories      ?? '—';
-    document.getElementById('t-fat').textContent    = row.fat           ?? '—';
-    document.getElementById('t-satfat').textContent = row.saturated_fat ?? '—';
-    document.getElementById('t-carb').textContent   = row.carbs         ?? '—';
-    document.getElementById('t-sugar').textContent  = row.sugar         ?? '—';
-    document.getElementById('t-fiber').textContent  = row.fiber         ?? '—';
-    document.getElementById('t-prot').textContent   = row.protein       ?? '—';
+    document.getElementById('t-kcal').textContent  = row.calories ?? '—';
+    document.getElementById('t-fat').textContent   = row.fat      ?? '—';
+    document.getElementById('t-carb').textContent  = row.carbs    ?? '—';
+    document.getElementById('t-fiber').textContent = row.fiber    ?? '—';
+    document.getElementById('t-prot').textContent  = row.protein  ?? '—';
 
     // Blocos activos — chips
     const chipsEl = document.getElementById('targets-blocks-chips');

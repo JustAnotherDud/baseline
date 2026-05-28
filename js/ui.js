@@ -84,20 +84,16 @@ async function openEditEntry(id) {
         <label><span class="lt">Proteína (g)</span><input type="number" id="eq-protein" inputmode="decimal" placeholder="0"></label>
         <label><span class="lt">Hidratos (g)</span><input type="number" id="eq-carbs" inputmode="decimal" placeholder="0"></label>
         <label><span class="lt">Gordura (g)</span><input type="number" id="eq-fat" inputmode="decimal" placeholder="0"></label>
-        <label><span class="lt">Gord. Saturada (g)</span><input type="number" id="eq-satfat" inputmode="decimal" placeholder="0"></label>
-        <label><span class="lt">Açúcar (g)</span><input type="number" id="eq-sugar" inputmode="decimal" placeholder="0"></label>
         <label><span class="lt">Fibra (g)</span><input type="number" id="eq-fiber" inputmode="decimal" placeholder="0"></label>`;
       previewEl.after(qf);
     }
     qf.style.display = 'block';
 
-    document.getElementById('eq-calories').value = data.calories      ?? '';
-    document.getElementById('eq-protein').value  = data.protein       ?? '';
-    document.getElementById('eq-carbs').value    = data.carbs         ?? '';
-    document.getElementById('eq-fat').value      = data.fat           ?? '';
-    document.getElementById('eq-satfat').value   = data.saturated_fat ?? '';
-    document.getElementById('eq-sugar').value    = data.sugar         ?? '';
-    document.getElementById('eq-fiber').value    = data.fiber         ?? '';
+    document.getElementById('eq-calories').value = data.calories ?? '';
+    document.getElementById('eq-protein').value  = data.protein  ?? '';
+    document.getElementById('eq-carbs').value    = data.carbs    ?? '';
+    document.getElementById('eq-fat').value      = data.fat      ?? '';
+    document.getElementById('eq-fiber').value    = data.fiber    ?? '';
 
     document.getElementById('sheet-edit').classList.add('open');
     setTimeout(() => document.getElementById('eq-calories').focus(), 300);
@@ -106,6 +102,30 @@ async function openEditEntry(id) {
     previewEl.style.display  = '';
     const qf = document.getElementById('edit-quick-fields');
     if (qf) qf.style.display = 'none';
+
+    const portionBtn = document.getElementById('edit-portion-btn');
+    portionBtn.style.display = 'none';
+    portionBtn.onclick = null;
+    document.getElementById('edit-dose-info').textContent = '';
+
+    if (data.food_id) {
+      const { data: food } = await db.from('foods').select('serving_size_g').eq('id', data.food_id).single();
+      if (food && food.serving_size_g) {
+        editingEntry._serving_size_g = food.serving_size_g;
+        portionBtn.textContent = `+ porção (${food.serving_size_g}g)`;
+        portionBtn.style.display = '';
+        portionBtn.onclick = () => {
+          const input = document.getElementById('edit-grams');
+          const current = parseFloat(input.value) || 0;
+          input.value = current + food.serving_size_g;
+          updateEditPreview();
+        };
+      } else {
+        editingEntry._serving_size_g = null;
+      }
+    } else {
+      editingEntry._serving_size_g = null;
+    }
 
     document.getElementById('edit-grams').value = data.grams || '';
     updateEditPreview();
@@ -517,13 +537,16 @@ function updateEditPreview() {
   const orig = editingEntry.grams || 1;
   const factor = g / orig;
   const c = (v) => Math.round((parseFloat(v) || 0) * factor);
-  document.getElementById('ep-kcal').textContent   = c(editingEntry.calories);
-  document.getElementById('ep-fat').textContent    = c(editingEntry.fat);
-  document.getElementById('ep-satfat').textContent = c(editingEntry.saturated_fat);
-  document.getElementById('ep-carb').textContent   = c(editingEntry.carbs);
-  document.getElementById('ep-sugar').textContent  = c(editingEntry.sugar);
-  document.getElementById('ep-fiber').textContent  = c(editingEntry.fiber);
-  document.getElementById('ep-prot').textContent   = c(editingEntry.protein);
+  document.getElementById('ep-kcal').textContent  = c(editingEntry.calories);
+  document.getElementById('ep-fat').textContent   = c(editingEntry.fat);
+  document.getElementById('ep-carb').textContent  = c(editingEntry.carbs);
+  document.getElementById('ep-fiber').textContent = c(editingEntry.fiber);
+  document.getElementById('ep-prot').textContent  = c(editingEntry.protein);
+  const serving = editingEntry._serving_size_g;
+  if (serving) {
+    const infoEl = document.getElementById('edit-dose-info');
+    if (infoEl) infoEl.textContent = g > 0 ? `${(g / serving).toFixed(1)}×` : '';
+  }
 }
 
 function openMoveMealSheet(entryId, currentMeal) {
@@ -594,79 +617,6 @@ function highlightFoodKeywords(name) {
       ? `<span style="color:${kw.color};font-weight:600">${match}</span>`
       : match;
   });
-}
-
-// ── SMART ─────────────────────────────────────────────────────────────────────
-function openSmartSheet() {
-  let overlay = document.getElementById('smart-overlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.id = 'smart-overlay';
-    overlay.className = 'sheet-overlay';
-    overlay.style.zIndex = '210';
-    overlay.innerHTML = `
-      <div class="sheet">
-        <div class="sheet-handle"></div>
-        <div class="sheet-header">
-          <div class="sheet-title">Smart</div>
-          <div class="sheet-close" id="smart-close">×</div>
-        </div>
-        <div class="form-body">
-          <button class="btn btn-secondary" onclick="applyAutoSmart()">Auto ✨</button>
-          <div class="section-label">QUERO MAIS</div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px">
-            <button class="sort-chip smart-chip-btn" data-type="more" data-key="protein" onclick="toggleSmartChip('more','protein')">Proteína</button>
-            <button class="sort-chip smart-chip-btn" data-type="more" data-key="carbs"   onclick="toggleSmartChip('more','carbs')">Hidratos</button>
-            <button class="sort-chip smart-chip-btn" data-type="more" data-key="fat"     onclick="toggleSmartChip('more','fat')">Gordura</button>
-            <button class="sort-chip smart-chip-btn" data-type="more" data-key="fiber"   onclick="toggleSmartChip('more','fiber')">Fibra</button>
-          </div>
-          <div class="section-label">QUERO EVITAR</div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px">
-            <button class="sort-chip smart-chip-btn" data-type="avoid" data-key="satfat" onclick="toggleSmartChip('avoid','satfat')">Gord. Sat.</button>
-            <button class="sort-chip smart-chip-btn" data-type="avoid" data-key="fat"    onclick="toggleSmartChip('avoid','fat')">Gordura</button>
-            <button class="sort-chip smart-chip-btn" data-type="avoid" data-key="sugar"  onclick="toggleSmartChip('avoid','sugar')">Açúcar</button>
-          </div>
-          <div style="display:flex;gap:10px;margin-top:4px">
-            <button class="btn btn-secondary" style="flex:1" onclick="resetSmart()">Limpar</button>
-            <button class="btn btn-primary" style="flex:2" id="smart-apply-btn">Aplicar</button>
-          </div>
-        </div>
-      </div>`;
-    document.body.appendChild(overlay);
-    overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('open'); };
-    document.getElementById('smart-close').onclick = () => overlay.classList.remove('open');
-  }
-  document.getElementById('smart-apply-btn').onclick = () => overlay.classList.remove('open');
-  updateSmartChipVisuals();
-  overlay.classList.add('open');
-}
-
-async function applyAutoSmart() {
-  const [targets, { data }] = await Promise.all([
-    getTargetsForDate(currentDate),
-    db.from('diary').select('calories,protein,carbs,fat,saturated_fat,sugar,fiber').eq('date', currentDate),
-  ]);
-
-  const tot = { calories: 0, protein: 0, carbs: 0, fat: 0, saturated_fat: 0, sugar: 0, fiber: 0 };
-  (data || []).forEach(e => { Object.keys(tot).forEach(k => { tot[k] += +(e[k] || 0); }); });
-
-  const progress = Math.max(0.20, tot.calories / (targets.calories || 1));
-
-  const pct = (actual, target) => actual / ((target || 1) * progress) * 100;
-
-  smartMore.clear(); smartAvoid.clear();
-
-  if (pct(tot.protein,       targets.protein)            < 100) smartMore.add('protein');
-  if (pct(tot.carbs,         targets.carbs)              < 80)  smartMore.add('carbs');
-  if (pct(tot.fat,           targets.fat)                < 80)  smartMore.add('fat');
-  else if (pct(tot.fat,      targets.fat)                > 120) smartAvoid.add('fat');
-  if (pct(tot.fiber,         targets.fiber || 30)        < 100) smartMore.add('fiber');
-  if (pct(tot.saturated_fat, targets.saturated_fat || 20) > 100) smartAvoid.add('satfat');
-  if (pct(tot.sugar,         targets.sugar || 50)        > 100) smartAvoid.add('sugar');
-
-  smartActive = smartMore.size > 0 || smartAvoid.size > 0;
-  updateSmartChipVisuals();
-  filterFoods();
 }
 
 // ── SHARED: MEAL TEMPLATE LIST ───────────────────────────────────────────────

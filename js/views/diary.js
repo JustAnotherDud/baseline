@@ -1,24 +1,20 @@
 let diaryEntries = [];
 
 const NUTRIENT_MAP = {
-  calories: { key: 'calories',      label: 'Calorias',      unit: 'kcal', color: 'var(--accent)' },
-  protein:  { key: 'protein',       label: 'Proteína',      unit: 'g',    color: 'var(--blue)'   },
-  carbs:    { key: 'carbs',         label: 'Hidratos',       unit: 'g',    color: 'var(--yellow)' },
-  fat:      { key: 'fat',           label: 'Gordura',         unit: 'g',    color: 'var(--orange)' },
-  satfat:   { key: 'saturated_fat', label: 'Gord. Saturada',  unit: 'g',    color: '#f97316'       },
-  fiber:    { key: 'fiber',         label: 'Fibra',           unit: 'g',    color: 'var(--accent)' },
-  sugar:    { key: 'sugar',         label: 'Açúcar',          unit: 'g',    color: '#e879f9'       },
+  calories: { key: 'calories', label: 'Calorias', unit: 'kcal', color: 'var(--accent)' },
+  protein:  { key: 'protein',  label: 'Proteína', unit: 'g',    color: 'var(--blue)'   },
+  carbs:    { key: 'carbs',    label: 'Hidratos',  unit: 'g',    color: 'var(--yellow)' },
+  fat:      { key: 'fat',      label: 'Gordura',   unit: 'g',    color: 'var(--orange)' },
+  fiber:    { key: 'fiber',    label: 'Fibra',     unit: 'g',    color: 'var(--accent)' },
 };
 
 function renderToday(entries, t) {
   diaryEntries = entries;
-  const tot = {kcal:0, fat:0, satfat:0, carb:0, sugar:0, fiber:0, prot:0};
+  const tot = {kcal:0, fat:0, carb:0, fiber:0, prot:0};
   entries.forEach(e => {
     tot.kcal  += +e.calories;
     tot.fat   += +e.fat;
-    tot.satfat+= +(e.saturated_fat||0);
     tot.carb  += +e.carbs;
-    tot.sugar += +(e.sugar||0);
     tot.fiber += +(e.fiber||0);
     tot.prot  += +e.protein;
   });
@@ -32,7 +28,6 @@ function renderToday(entries, t) {
   remEl.style.color = rem>=0 ? 'var(--text2)' : 'var(--red)';
 
   const rawPct = (v, m) => m > 0 ? v / m * 100 : 0;
-  const pct    = (v, m) => Math.min(100, rawPct(v, m)) + '%';
 
   // Primary macros: num/tgt labels + segmented bars
   [
@@ -63,9 +58,7 @@ function renderToday(entries, t) {
 
   // Secondary bars
   [
-    { bar: 'bar-gs', val: 'val-gs', nutrient: 'satfat', actual: tot.satfat, target: t.saturated_fat },
-    { bar: 'bar-f',  val: 'val-f',  nutrient: 'fiber',  actual: tot.fiber,  target: t.fiber         },
-    { bar: 'bar-a',  val: 'val-a',  nutrient: 'sugar',  actual: tot.sugar,  target: t.sugar         },
+    { bar: 'bar-f', val: 'val-f', nutrient: 'fiber', actual: tot.fiber, target: t.fiber },
   ].forEach(({ bar, val, nutrient, actual, target }) => {
     const p     = rawPct(actual, target);
     const color = entries.length > 0 ? getNutrientColor(nutrient, p) : 'var(--surface3)';
@@ -92,9 +85,7 @@ function renderToday(entries, t) {
 
   // Tap on secondary chips (.msc) → open nutrient ranking
   [
-    { barId: 'bar-gs', nutrientKey: 'satfat' },
-    { barId: 'bar-f',  nutrientKey: 'fiber'  },
-    { barId: 'bar-a',  nutrientKey: 'sugar'  },
+    { barId: 'bar-f', nutrientKey: 'fiber' },
   ].forEach(({ barId, nutrientKey }) => {
     const n      = NUTRIENT_MAP[nutrientKey];
     const fillEl = document.getElementById(barId);

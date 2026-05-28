@@ -59,7 +59,7 @@ async function saveEditEntry() {
   const isQuick = !editingEntry.grams && editingEntry.grams !== 0;
 
   if (isQuick) {
-    const n = id => parseFloat(document.getElementById(id).value) || 0;
+    const n = id => { const el = document.getElementById(id); return el ? parseFloat(el.value) || 0 : 0; };
     const { error } = await db.from('diary').update({
       calories:      n('eq-calories'),
       protein:       n('eq-protein'),

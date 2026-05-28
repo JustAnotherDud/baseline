@@ -126,6 +126,8 @@ body {
   justify-content: space-between; border-top: 1px solid var(--border); gap: 12px;
 }
 .diary-entry:active { background: var(--surface); }
+.diary-entry:nth-child(odd) { background: var(--surface); }
+.diary-entry:nth-child(even) { background: transparent; }
 .entry-info { flex: 1; min-width: 0; }
 .entry-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .entry-detail { font-family: var(--mono); font-size: 13px; color: var(--text2); margin-top: 2px; }

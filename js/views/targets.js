@@ -62,6 +62,7 @@ async function refreshPhaseAndTargets() {
         gym:     'Ginásio',
         run:     'Corrida',
         surplus: 'Surplus',
+        activity: 'Actividade',
       };
       const entries = Object.entries(row.blocks_active).filter(([, v]) => +v > 0);
       if (entries.length) {

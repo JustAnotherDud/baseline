@@ -10,12 +10,11 @@ const NUTRIENT_MAP = {
 
 function renderToday(entries, t) {
   diaryEntries = entries;
-  const tot = {kcal:0, fat:0, carb:0, fiber:0, prot:0};
+  const tot = {kcal:0, fat:0, carb:0, prot:0};
   entries.forEach(e => {
     tot.kcal  += +e.calories;
     tot.fat   += +e.fat;
     tot.carb  += +e.carbs;
-    tot.fiber += +(e.fiber||0);
     tot.prot  += +e.protein;
   });
 
@@ -45,10 +44,7 @@ function renderToday(entries, t) {
   ];
   const cellsHTML = macros.map(m => {
     const tgtHTML = hasTargets ? `<span class="macro-cell-tgt">/${m.target}g</span>` : '';
-    // segmented bar: recolour the green (in-range) zone with the macro colour
-    const bar = hasTargets
-      ? buildSegmentedBar(m.actual, m.target, m.key).split('var(--accent)').join(m.color)
-      : '';
+    const bar = hasTargets ? buildSegmentedBar(m.actual, m.target, m.key) : '';
     const rem = r(m.target - m.actual);
     const remHTML = (hasTargets && rem > 0) ? `<div class="macro-cell-rem">▾ ${rem}g rest.</div>` : '';
     return `<div class="macro-cell" data-nutrient="${m.key}">
@@ -58,18 +54,6 @@ function renderToday(entries, t) {
       ${remHTML}
     </div>`;
   }).join('');
-
-  // ── FIBRE (inline) ──
-  const fibPct = rawPct(tot.fiber, t.fiber);
-  const fibColor = (hasTargets && hasData) ? getNutrientColor('fiber', fibPct) : 'var(--surface3)';
-  const fibFillW = hasTargets ? Math.min(100, fibPct) : 0;
-  const fibVal = hasTargets ? `${r(tot.fiber)}/${t.fiber}g` : `${r(tot.fiber)}g`;
-  const fibValColor = (hasTargets && hasData) ? fibColor : 'var(--text2)';
-  const fiberHTML = `<div class="diary-fiber" data-nutrient="fiber">
-    <span class="diary-fiber-label">FIBRA</span>
-    <div class="diary-fiber-track"><div class="diary-fiber-fill" style="width:${fibFillW}%;background:${fibColor}"></div></div>
-    <span class="diary-fiber-val" style="color:${fibValColor}">${fibVal}</span>
-  </div>`;
 
   const summary = document.querySelector('#view-today .macro-summary');
   summary.innerHTML = `
@@ -81,14 +65,13 @@ function renderToday(entries, t) {
       ${badgeHTML}
     </div>
     <div id="bar-kcal-wrap">${kcalBar}</div>
-    <div class="macro-grid">${cellsHTML}</div>
-    ${fiberHTML}`;
+    <div class="macro-grid">${cellsHTML}</div>`;
 
   // Tap handlers → open nutrient ranking
   const kcalEl = summary.querySelector('#tot-kcal');
   kcalEl.style.cursor = 'pointer';
   kcalEl.onclick = () => openNutrientSheet(diaryEntries, NUTRIENT_MAP.calories);
-  summary.querySelectorAll('.macro-cell, .diary-fiber').forEach(el => {
+  summary.querySelectorAll('.macro-cell').forEach(el => {
     const n = NUTRIENT_MAP[el.dataset.nutrient];
     if (!n) return;
     el.style.cursor = 'pointer';

@@ -48,7 +48,7 @@ body {
 .view {
   flex: 1; overflow-y: auto; overflow-x: hidden;
   display: none; flex-direction: column;
-  padding-bottom: calc(var(--nav-h) + var(--safe-b) + 16px);
+  padding-bottom: calc(var(--nav-h) + var(--safe-b) + 32px);
   -webkit-overflow-scrolling: touch;
 }
 .view.active { display: flex; }
@@ -114,13 +114,6 @@ body {
 .macro-cell .seg-bar-labels { display: none; }
 .macro-cell .seg-bar-tick { display: none; }
 .macro-cell .seg-bar-line { height: 8px; width: 2px; }
-
-/* ── DIARY FIBRE (inline) ── */
-.diary-fiber { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border); cursor: pointer; }
-.diary-fiber-label { font-family: var(--mono); font-size: 9px; color: var(--text3); text-transform: uppercase; width: 36px; }
-.diary-fiber-track { flex: 1; height: 3px; background: var(--surface3); border-radius: 2px; overflow: hidden; }
-.diary-fiber-fill { height: 100%; border-radius: 2px; transition: width .4s ease; }
-.diary-fiber-val { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--text2); }
 
 /* ── UNUSED (legacy diary macro rows — kept for safety) ──
 .kcal-row { display: flex; justify-content: space-between; align-items: flex-end; }
@@ -429,10 +422,13 @@ input[type="number"] { font-family: var(--mono); }
   .view-title { font-size: 18px; }
   .view-sub { font-size: 14px; }
   .mbt { height: 6px; }
-  .meal-name { font-size: 10px; }
+  .meal-name { font-size: 11px; }
+  .meal-macros { font-size: 12px; }
   .meal-kcal { font-size: 15px; }
+  .macro-cell-label { font-size: 11px; }
+  .macro-cell-val { font-size: 26px; }
   .entry-name { font-size: 16px; }
-  .entry-detail { font-size: 12px; }
+  .entry-detail { font-size: 13px; }
   .entry-kcal { font-size: 13px; }
   .fi-name { font-size: 16px; }
   .fi-detail { font-size: 14px; }

@@ -63,16 +63,23 @@ body {
 .view-title { font-family: var(--mono); font-size: 15px; letter-spacing: .12em; color: var(--text); text-transform: uppercase; }
 .view-sub { font-family: var(--mono); font-size: 12px; color: var(--text2); margin-top: 3px; }
 
+/* ── DIARY HEADER ── */
+.diary-header { align-items: flex-start; }
+.diary-head-eyebrow { font-family: var(--mono); font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: .2em; }
+.diary-head-date { font-family: var(--sans); font-size: 18px; font-weight: 600; color: var(--text); margin-top: 4px; line-height: 1.1; }
+.diary-head-weekday { font-family: var(--mono); font-size: 10px; color: var(--text3); margin-top: 2px; }
+.diary-date-pill { display: flex; align-items: center; border: 1px solid var(--border); background: var(--surface2); border-radius: 10px; padding: 3px; }
+.diary-date-nav { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: none; border: none; color: var(--text3); font-size: 16px; line-height: 1; cursor: pointer; font-family: var(--mono); }
+.diary-date-nav:active { color: var(--text); }
+.diary-date-pill-sep { width: 1px; height: 14px; background: var(--border); }
+.diary-date-month { font-family: var(--mono); font-size: 9px; color: var(--accent); letter-spacing: .06em; padding: 0 8px; cursor: pointer; }
+
 /* ── MACRO SUMMARY ── */
 .macro-summary { padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 0; border-bottom: 1px solid var(--border); }
-.kcal-row { display: flex; justify-content: space-between; align-items: flex-end; }
-.kcal-value { font-family: var(--mono); font-size: 42px; font-weight: 600; color: var(--accent); line-height: 1; }
-.kcal-label { font-family: var(--mono); font-size: 13px; color: var(--text3); margin-top: 3px; }
-.kcal-remaining { font-family: var(--mono); font-size: 13px; color: var(--text2); text-align: right; }
-/* bar fills (shared) */
+/* bar fills (shared, used by other views) */
 .mbt { background: var(--surface3); border-radius: 999px; overflow: hidden; }
 .mbt-primary { height: 8px; margin-top: 0; }
-.mbt-sec { height: 2px; }
+.mbt-sec { height: 2px; margin-top: 2px; }
 .mbf { height: 100%; border-radius: 999px; transition: width .4s ease; }
 .mbf.p { background: var(--blue); }
 .mbf.c { background: var(--yellow); }
@@ -80,7 +87,46 @@ body {
 .mbf.gs { background: #f97316; }
 .mbf.a { background: #e879f9; }
 .mbf.f { background: var(--accent); }
-/* primary macro rows */
+
+/* ── DIARY CALORIES ── */
+.diary-kcal-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.diary-kcal-main { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.diary-kcal-num { font-family: var(--mono); font-size: 48px; font-weight: 600; color: var(--accent); line-height: 1; cursor: pointer; }
+.diary-kcal-tgt { font-family: var(--mono); font-size: 11px; color: var(--text3); }
+.diary-kcal-badge { font-family: var(--mono); font-size: 10px; border-radius: 6px; padding: 4px 8px; white-space: nowrap; }
+.diary-kcal-badge.over { background: rgba(248,113,113,.08); border: 1px solid rgba(248,113,113,.2); color: var(--red); }
+.diary-kcal-badge.within { background: rgba(74,222,128,.1); color: var(--accent); }
+
+/* ── DIARY MACRO GRID ── */
+.macro-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; border-top: 1px solid var(--border); margin-top: 14px; }
+.macro-cell { padding: 12px 0 10px; border-right: 1px solid var(--border); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.macro-cell:last-child { border-right: none; }
+.macro-cell:nth-child(2), .macro-cell:nth-child(3) { padding-left: 12px; }
+.macro-cell:active { opacity: .8; }
+.macro-cell-label { font-family: var(--mono); font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: .1em; }
+.macro-cell-valrow { display: flex; align-items: baseline; gap: 2px; margin-top: 4px; }
+.macro-cell-val { font-family: var(--mono); font-size: 22px; font-weight: 600; line-height: 1; }
+.macro-cell-tgt { font-family: var(--mono); font-size: 9px; color: var(--text3); }
+.macro-cell-rem { font-family: var(--mono); font-size: 9px; color: var(--text3); margin-top: 4px; }
+/* compact segmented bars inside the macro grid */
+.macro-cell .seg-bar-wrap { padding-top: 4px; margin: 6px 0 0; }
+.macro-cell .seg-bar-bg { height: 4px; border-radius: 3px; }
+.macro-cell .seg-bar-labels { display: none; }
+.macro-cell .seg-bar-tick { display: none; }
+.macro-cell .seg-bar-line { height: 8px; width: 2px; }
+
+/* ── DIARY FIBRE (inline) ── */
+.diary-fiber { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border); cursor: pointer; }
+.diary-fiber-label { font-family: var(--mono); font-size: 9px; color: var(--text3); text-transform: uppercase; width: 36px; }
+.diary-fiber-track { flex: 1; height: 3px; background: var(--surface3); border-radius: 2px; overflow: hidden; }
+.diary-fiber-fill { height: 100%; border-radius: 2px; transition: width .4s ease; }
+.diary-fiber-val { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--text2); }
+
+/* ── UNUSED (legacy diary macro rows — kept for safety) ──
+.kcal-row { display: flex; justify-content: space-between; align-items: flex-end; }
+.kcal-value { font-family: var(--mono); font-size: 42px; font-weight: 600; color: var(--accent); line-height: 1; }
+.kcal-label { font-family: var(--mono); font-size: 13px; color: var(--text3); margin-top: 3px; }
+.kcal-remaining { font-family: var(--mono); font-size: 13px; color: var(--text2); text-align: right; }
 .macro-primary { margin-top: 6px; }
 .mpr { padding: 13px 0; border-bottom: 1px solid var(--border); cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .mpr:last-child { border-bottom: none; }
@@ -92,24 +138,25 @@ body {
 .mpr-num { font-size: 22px; font-weight: 600; transition: color .2s; }
 .mpr-unit { font-size: 11px; color: var(--text3); }
 .mpr-tgt { font-size: 11px; color: var(--text3); margin-left: 3px; }
-/* separator */
 .macro-sep { height: 1px; background: var(--border); margin: 18px 0 12px; }
-/* secondary chips */
 .macro-secondary { display: flex; gap: 8px; }
 .msc { flex: 1; padding: 10px 10px 11px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; display: flex; flex-direction: column; gap: 4px; }
 .msc-name { font-family: var(--sans); font-size: 11px; font-weight: 500; color: var(--text3); }
 .msc-val { font-family: var(--sans); font-size: 12px; font-weight: 600; color: var(--text2); }
-.mbt-sec { margin-top: 2px; }
+   ── end unused ── */
 
 /* ── MEAL SECTIONS ── */
 .meal-section { border-radius: 12px; overflow: hidden; margin: 8px 12px; border: 1px solid var(--border); }
 .meal-header { display: flex; align-items: stretch; border-top: 1px solid var(--surface3); }
-.meal-header-left { flex: 3; padding: 12px 0 12px 20px; background: var(--surface2); min-height: 52px; cursor: pointer; }
+.meal-header-left { flex: 3; padding: 8px 0 8px 14px; background: var(--surface2); min-height: 52px; cursor: pointer; display: flex; flex-direction: column; justify-content: center; }
 .meal-header-right { flex: 1; padding: 12px 20px 12px 12px; display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(74,222,128,0.06); border-left: 1px solid var(--border); min-height: 52px; cursor: pointer; }
 .meal-header-right:active { background: rgba(74,222,128,0.12); }
-.meal-name { font-size: 13px; font-family: var(--mono); color: var(--text2); text-transform: uppercase; letter-spacing: .12em; }
+.meal-head-line { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; overflow: hidden; }
+.meal-name { font-size: 9px; font-family: var(--mono); color: var(--text3); text-transform: uppercase; letter-spacing: .12em; }
+.meal-kcal-val { font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--text2); }
+.meal-kcal-unit { font-family: var(--mono); font-size: 9px; color: var(--text3); }
 .meal-kcal { font-family: var(--mono); font-size: 13px; color: var(--text); font-weight: 600; }
-.meal-macros { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-top: 3px; }
+.meal-macros { font-family: var(--mono); font-size: 10px; color: var(--text3); margin-top: 3px; }
 
 /* ── MEAL BREAKDOWN SHEET ── */
 .meal-bd-content { padding: 0 0 24px; }
@@ -122,7 +169,7 @@ body {
 .meal-donut-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
 
 .diary-entry {
-  padding: 10px 16px; display: flex; align-items: center;
+  padding: 8px 14px; display: flex; align-items: center;
   justify-content: space-between; border-top: 1px solid var(--border); gap: 12px;
 }
 .diary-entry:active { background: var(--surface); }
@@ -130,8 +177,8 @@ body {
 .diary-entry:nth-child(even) { background: rgba(255,255,255,0.03); }
 .entry-info { flex: 1; min-width: 0; }
 .entry-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.entry-detail { font-family: var(--mono); font-size: 13px; color: var(--text2); margin-top: 2px; }
-.entry-kcal { font-family: var(--mono); font-size: 14px; font-weight: 500; min-width: 40px; text-align: right; }
+.entry-detail { font-family: var(--mono); font-size: 11px; color: var(--text2); margin-top: 2px; }
+.entry-kcal { font-family: var(--mono); font-size: 12px; font-weight: 500; min-width: 40px; text-align: right; }
 .no-entries { padding: 10px 20px; font-size: 13px; color: var(--text3); border-top: 1px solid var(--border); font-style: italic; }
 
 /* ── BOTTOM NAV ── */
@@ -381,15 +428,12 @@ input[type="number"] { font-family: var(--mono); }
   body { font-size: 17px; }
   .view-title { font-size: 18px; }
   .view-sub { font-size: 14px; }
-  .kcal-value { font-size: 52px; }
-  .kcal-label { font-size: 15px; }
-  .kcal-remaining { font-size: 15px; }
   .mbt { height: 6px; }
-  .meal-name { font-size: 15px; }
+  .meal-name { font-size: 10px; }
   .meal-kcal { font-size: 15px; }
   .entry-name { font-size: 16px; }
-  .entry-detail { font-size: 14px; }
-  .entry-kcal { font-size: 16px; }
+  .entry-detail { font-size: 12px; }
+  .entry-kcal { font-size: 13px; }
   .fi-name { font-size: 16px; }
   .fi-detail { font-size: 14px; }
   .fi-kcal { font-size: 14px; }

@@ -668,21 +668,28 @@ function buildSegmentedBar(actual, target, macro) {
   const minPct = 20;
   const range  = maxPct - minPct;
 
+  // Scheme D: faint extremes, macro-tinted near-miss, solid green centre
   const CENTER = {
-    protein:  '#3b82f6',
-    carbs:    '#f59e0b',
+    protein:  '#60a5fa',
+    carbs:    '#fbbf24',
     fat:      '#f97316',
     calories: '#22c55e',
   };
-  const centerColor = CENTER[macro] || '#22c55e';
-  const RED    = 'rgba(239,68,68,0.35)';
-  const YELLOW = 'rgba(234,179,8,0.45)';
+  const NEARMISS = {
+    protein:  'rgba(96,165,250,0.35)',
+    carbs:    'rgba(251,191,36,0.35)',
+    fat:      'rgba(249,115,22,0.35)',
+    calories: 'rgba(74,222,128,0.35)',
+  };
+  const EXTREME     = 'rgba(255,255,255,0.06)';
+  const centerColor = CENTER[macro]   || '#22c55e';
+  const nearMiss    = NEARMISS[macro] || 'rgba(74,222,128,0.35)';
   const segs = [
-    { w: b1 - minPct,  color: RED         },
-    { w: b2 - b1,      color: YELLOW      },
+    { w: b1 - minPct,  color: EXTREME     },
+    { w: b2 - b1,      color: nearMiss    },
     { w: b3 - b2,      color: centerColor },
-    { w: b4 - b3,      color: YELLOW      },
-    { w: maxPct - b4,  color: RED         },
+    { w: b4 - b3,      color: nearMiss    },
+    { w: maxPct - b4,  color: EXTREME     },
   ];
   const segsHTML = segs.map(s =>
     `<div style="flex:0 0 ${(s.w / range * 100).toFixed(3)}%;background:${s.color}"></div>`

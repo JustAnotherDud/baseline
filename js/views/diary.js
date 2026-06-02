@@ -21,94 +21,79 @@ function renderToday(entries, t) {
 
   const r = n => Math.round(n);
   const hasTargets = t.calories > 0;
-  document.getElementById('tot-kcal').textContent = r(tot.kcal);
-  document.getElementById('tot-kcal-label').textContent = hasTargets ? `/ ${t.calories} kcal` : 'kcal';
-  const remEl = document.getElementById('kcal-rem');
-  if (hasTargets) {
-    const rem = t.calories - r(tot.kcal);
-    remEl.textContent = rem>=0 ? `${rem} restantes` : `${Math.abs(rem)} excesso`;
-    remEl.style.color = rem>=0 ? 'var(--text2)' : 'var(--red)';
-  } else {
-    remEl.textContent = '';
-  }
-
+  const hasData = entries.length > 0;
   const rawPct = (v, m) => m > 0 ? v / m * 100 : 0;
 
-  // Primary macros: num/tgt labels + segmented bars
-  [
-    { numEl: 'val-p-num', tgtEl: 'val-p-tgt', wrapId: 'bar-p-wrap', nutrient: 'protein', actual: tot.prot, target: t.protein },
-    { numEl: 'val-c-num', tgtEl: 'val-c-tgt', wrapId: 'bar-c-wrap', nutrient: 'carbs',   actual: tot.carb, target: t.carbs  },
-    { numEl: 'val-g-num', tgtEl: 'val-g-tgt', wrapId: 'bar-g-wrap', nutrient: 'fat',     actual: tot.fat,  target: t.fat    },
-  ].forEach(({ numEl, tgtEl, wrapId, nutrient, actual, target }) => {
-    const p     = rawPct(actual, target);
-    const color = (hasTargets && entries.length > 0) ? getNutrientColor(nutrient, p) : 'var(--text2)';
-    const numElem = document.getElementById(numEl);
-    if (numElem) { numElem.textContent = r(actual); numElem.style.color = color; }
-    const tgtElem = document.getElementById(tgtEl);
-    if (tgtElem) tgtElem.textContent = hasTargets ? `/${target}g` : '';
-    const wrapEl = document.getElementById(wrapId);
-    if (wrapEl) wrapEl.innerHTML = hasTargets ? buildSegmentedBar(actual, target, nutrient) : '';
-  });
-
-  // Restantes por macro primária
-  const remP = Math.round(t.protein - tot.prot);
-  const elPR = document.getElementById('val-p-rem');
-  if (elPR) elPR.textContent = (hasTargets && remP > 0) ? `· ${remP}g rest.` : '';
-  const remC = Math.round(t.carbs - tot.carb);
-  const elCR = document.getElementById('val-c-rem');
-  if (elCR) elCR.textContent = (hasTargets && remC > 0) ? `· ${remC}g rest.` : '';
-  const remG = Math.round(t.fat - tot.fat);
-  const elGR = document.getElementById('val-g-rem');
-  if (elGR) elGR.textContent = (hasTargets && remG > 0) ? `· ${remG}g rest.` : '';
-
-  // Secondary bars
-  [
-    { bar: 'bar-f', val: 'val-f', nutrient: 'fiber', actual: tot.fiber, target: t.fiber },
-  ].forEach(({ bar, val, nutrient, actual, target }) => {
-    const p     = rawPct(actual, target);
-    const color = (hasTargets && entries.length > 0) ? getNutrientColor(nutrient, p) : 'var(--surface3)';
-    const barEl = document.getElementById(bar);
-    if (barEl) { barEl.style.width = (hasTargets ? Math.min(100, p) : 0) + '%'; barEl.style.background = color; }
-    if (val) {
-      const el = document.getElementById(val);
-      if (el) { el.textContent = hasTargets ? `${r(actual)}/${target}g` : `${r(actual)}g`; el.style.color = (hasTargets && entries.length > 0) ? color : 'var(--text2)'; }
-    }
-  });
-
-  // Tap on primary rows (.mpr) → open nutrient ranking
-  [
-    { mprId: 'mpr-protein', nutrientKey: 'protein' },
-    { mprId: 'mpr-carbs',   nutrientKey: 'carbs'   },
-    { mprId: 'mpr-fat',     nutrientKey: 'fat'     },
-  ].forEach(({ mprId, nutrientKey }) => {
-    const n     = NUTRIENT_MAP[nutrientKey];
-    const mprEl = document.getElementById(mprId);
-    if (!n || !mprEl) return;
-    mprEl.style.cursor = 'pointer';
-    mprEl.onclick = () => openNutrientSheet(diaryEntries, n);
-  });
-
-  // Tap on secondary chips (.msc) → open nutrient ranking
-  [
-    { barId: 'bar-f', nutrientKey: 'fiber' },
-  ].forEach(({ barId, nutrientKey }) => {
-    const n      = NUTRIENT_MAP[nutrientKey];
-    const fillEl = document.getElementById(barId);
-    if (!n || !fillEl) return;
-    const mscEl = fillEl.closest('.msc');
-    if (mscEl) {
-      mscEl.style.cursor = 'pointer';
-      mscEl.onclick = () => openNutrientSheet(diaryEntries, n);
-    }
-  });
-
+  // ── CALORIES ──
+  const kcalNum = r(tot.kcal);
   const kcalPct = rawPct(tot.kcal, t.calories);
-  const kcalColor = (hasTargets && entries.length > 0) ? getNutrientColor('calories', kcalPct) : 'var(--accent)';
-  const kcalEl = document.getElementById('tot-kcal');
-  kcalEl.style.color = kcalColor;
+  const kcalColor = (hasTargets && hasData) ? getNutrientColor('calories', kcalPct) : 'var(--accent)';
+  const kcalBar = hasTargets ? buildSegmentedBar(tot.kcal, t.calories, 'calories') : '';
+  let badgeHTML = '';
+  if (hasTargets) {
+    const rem = t.calories - kcalNum;
+    badgeHTML = rem >= 0
+      ? `<div class="diary-kcal-badge within">${rem} rest.</div>`
+      : `<div class="diary-kcal-badge over">+${Math.abs(rem)} kcal</div>`;
+  }
+
+  // ── MACROS (grid) ──
+  const macros = [
+    { key: 'protein', label: 'PROT', actual: tot.prot, target: t.protein, color: 'var(--blue)'   },
+    { key: 'carbs',   label: 'HIDR', actual: tot.carb, target: t.carbs,   color: 'var(--yellow)' },
+    { key: 'fat',     label: 'GORD', actual: tot.fat,  target: t.fat,     color: 'var(--orange)' },
+  ];
+  const cellsHTML = macros.map(m => {
+    const tgtHTML = hasTargets ? `<span class="macro-cell-tgt">/${m.target}g</span>` : '';
+    // segmented bar: recolour the green (in-range) zone with the macro colour
+    const bar = hasTargets
+      ? buildSegmentedBar(m.actual, m.target, m.key).split('var(--accent)').join(m.color)
+      : '';
+    const rem = r(m.target - m.actual);
+    const remHTML = (hasTargets && rem > 0) ? `<div class="macro-cell-rem">▾ ${rem}g rest.</div>` : '';
+    return `<div class="macro-cell" data-nutrient="${m.key}">
+      <div class="macro-cell-label">${m.label}</div>
+      <div class="macro-cell-valrow"><span class="macro-cell-val" style="color:${m.color}">${r(m.actual)}</span>${tgtHTML}</div>
+      ${bar}
+      ${remHTML}
+    </div>`;
+  }).join('');
+
+  // ── FIBRE (inline) ──
+  const fibPct = rawPct(tot.fiber, t.fiber);
+  const fibColor = (hasTargets && hasData) ? getNutrientColor('fiber', fibPct) : 'var(--surface3)';
+  const fibFillW = hasTargets ? Math.min(100, fibPct) : 0;
+  const fibVal = hasTargets ? `${r(tot.fiber)}/${t.fiber}g` : `${r(tot.fiber)}g`;
+  const fibValColor = (hasTargets && hasData) ? fibColor : 'var(--text2)';
+  const fiberHTML = `<div class="diary-fiber" data-nutrient="fiber">
+    <span class="diary-fiber-label">FIBRA</span>
+    <div class="diary-fiber-track"><div class="diary-fiber-fill" style="width:${fibFillW}%;background:${fibColor}"></div></div>
+    <span class="diary-fiber-val" style="color:${fibValColor}">${fibVal}</span>
+  </div>`;
+
+  const summary = document.querySelector('#view-today .macro-summary');
+  summary.innerHTML = `
+    <div class="diary-kcal-row">
+      <div class="diary-kcal-main">
+        <span class="diary-kcal-num" id="tot-kcal" style="color:${kcalColor}">${kcalNum}</span>
+        <span class="diary-kcal-tgt">${hasTargets ? '/ ' + t.calories + ' kcal' : 'kcal'}</span>
+      </div>
+      ${badgeHTML}
+    </div>
+    <div id="bar-kcal-wrap">${kcalBar}</div>
+    <div class="macro-grid">${cellsHTML}</div>
+    ${fiberHTML}`;
+
+  // Tap handlers → open nutrient ranking
+  const kcalEl = summary.querySelector('#tot-kcal');
   kcalEl.style.cursor = 'pointer';
   kcalEl.onclick = () => openNutrientSheet(diaryEntries, NUTRIENT_MAP.calories);
-  document.getElementById('bar-kcal-wrap').innerHTML = hasTargets ? buildSegmentedBar(tot.kcal, t.calories, 'calories') : '';
+  summary.querySelectorAll('.macro-cell, .diary-fiber').forEach(el => {
+    const n = NUTRIENT_MAP[el.dataset.nutrient];
+    if (!n) return;
+    el.style.cursor = 'pointer';
+    el.onclick = () => openNutrientSheet(diaryEntries, n);
+  });
 
   const container = document.getElementById('diary-container');
   container.innerHTML = '';
@@ -121,15 +106,15 @@ function renderToday(entries, t) {
     const div = document.createElement('div');
     div.className = 'meal-section';
     const kcalInline = mes.length > 0
-      ? ` · <span style="color:var(--text);font-family:var(--mono);font-size:11px;text-transform:none;letter-spacing:0">${r(mkcal)} kcal</span>`
+      ? `<span class="meal-kcal-val">${r(mkcal)}</span><span class="meal-kcal-unit">kcal</span>`
       : '';
     const macroStr = mes.length > 0
-      ? `<div class="meal-macros">G ${r(mfat)}g · C ${r(mcarb)}g · P ${r(mprot)}g</div>`
+      ? `<div class="meal-macros">G ${r(mfat)} · C ${r(mcarb)} · P ${r(mprot)}</div>`
       : '';
     div.innerHTML = `
       <div class="meal-header">
         <div class="meal-header-left">
-          <div class="meal-name">${label}${kcalInline}</div>
+          <div class="meal-head-line"><span class="meal-name">${label}</span>${kcalInline}</div>
           ${macroStr}
         </div>
         <div class="meal-header-right">
@@ -175,10 +160,13 @@ function renderToday(entries, t) {
 }
 
 function setDateLabel() {
-  const today = new Date().toISOString().split('T')[0];
   const d = new Date(currentDate+'T12:00:00');
-  document.getElementById('today-title').textContent = 'Diário';
-  document.getElementById('today-date-label').textContent = d.toLocaleDateString('pt-PT',{weekday:'long',day:'numeric',month:'long'});
+  const fullEl = document.getElementById('today-date-full');
+  if (fullEl) fullEl.textContent = d.toLocaleDateString('pt-PT',{day:'numeric',month:'long'});
+  const wdEl = document.getElementById('today-weekday');
+  if (wdEl) wdEl.textContent = d.toLocaleDateString('pt-PT',{weekday:'long'});
+  const moEl = document.getElementById('today-month');
+  if (moEl) moEl.textContent = d.toLocaleDateString('pt-PT',{month:'short'}).replace('.','').toUpperCase();
 }
 
 function changeDay(delta) {

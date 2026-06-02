@@ -47,8 +47,8 @@ function renderToday(entries, t) {
     const bar = hasTargets ? buildSegmentedBar(m.actual, m.target, m.key) : '';
     const rem = r(m.target - m.actual);
     let remHTML = '';
-    if (hasTargets && rem > 0)      remHTML = `<span class="macro-cell-rem">· ${rem}g↓</span>`;
-    else if (hasTargets && rem < 0) remHTML = `<span class="macro-cell-rem">· +${Math.abs(rem)}g</span>`;
+    if (hasTargets && rem > 0)      remHTML = `<span class="macro-cell-rem">· ${rem}↓</span>`;
+    else if (hasTargets && rem < 0) remHTML = `<span class="macro-cell-rem">· +${Math.abs(rem)}</span>`;
     return `<div class="macro-cell" data-nutrient="${m.key}">
       <div class="macro-cell-label">${m.label}</div>
       <div class="macro-cell-valrow"><span class="macro-cell-val" style="color:${m.color}">${r(m.actual)}</span>${tgtHTML}${remHTML}</div>

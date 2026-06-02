@@ -115,6 +115,10 @@ body {
 .macro-cell .seg-bar-line { height: 18px; width: 2px; background: rgba(255,255,255,0.5); box-shadow: none; border-radius: 1px; }
 .macro-cell .seg-bar-labels { height: 12px; margin-top: 2px; }
 .macro-cell .seg-bar-labels span { font-size: 9px; color: #444; }
+/* mobile: drop green-limit labels but keep the position indicator */
+@media (max-width: 480px) {
+  .macro-cell .seg-bar-labels { display: none; }
+}
 
 /* ── UNUSED (legacy diary macro rows — kept for safety) ──
 .kcal-row { display: flex; justify-content: space-between; align-items: flex-end; }
@@ -147,8 +151,8 @@ body {
 .meal-header-right { flex: 1; padding: 12px 20px 12px 12px; display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(74,222,128,0.06); border-left: 1px solid var(--border); min-height: 52px; cursor: pointer; }
 .meal-header-right:active { background: rgba(74,222,128,0.12); }
 .meal-head-line { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; overflow: hidden; }
-.meal-name { font-size: 11px; font-family: var(--mono); color: var(--text2); font-weight: 500; text-transform: uppercase; letter-spacing: .12em; }
-.meal-kcal-val { font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--text); }
+.meal-name { font-size: 12px; font-family: var(--mono); color: var(--text); font-weight: 500; text-transform: uppercase; letter-spacing: .12em; }
+.meal-kcal-val { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent); }
 .meal-kcal-unit { font-family: var(--mono); font-size: 10px; color: var(--text3); }
 .meal-kcal { font-family: var(--mono); font-size: 13px; color: var(--text); font-weight: 600; }
 .meal-macros { font-family: var(--mono); font-size: 10px; color: var(--text3); margin-top: 3px; }
@@ -424,7 +428,7 @@ input[type="number"] { font-family: var(--mono); }
   .view-title { font-size: 18px; }
   .view-sub { font-size: 14px; }
   .mbt { height: 6px; }
-  .meal-name { font-size: 11px; }
+  .meal-name { font-size: 13px; }
   .meal-macros { font-size: 12px; }
   .meal-kcal { font-size: 15px; }
   .macro-cell-label { font-size: 11px; }

@@ -72,7 +72,6 @@ async function saveEditEntry() {
       fat:           n('eq-fat'),
       saturated_fat: n('eq-satfat'),
       sugar:         n('eq-sugar'),
-      fiber:         n('eq-fiber'),
     }).eq('id', editingEntry.id);
     if (error) { toast('Erro ao guardar'); return; }
     toast('Actualizado');

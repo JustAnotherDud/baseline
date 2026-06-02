@@ -83,8 +83,7 @@ async function openEditEntry(id) {
         <label><span class="lt">Calorias (kcal)</span><input type="number" id="eq-calories" inputmode="decimal" placeholder="0"></label>
         <label><span class="lt">Proteína (g)</span><input type="number" id="eq-protein" inputmode="decimal" placeholder="0"></label>
         <label><span class="lt">Hidratos (g)</span><input type="number" id="eq-carbs" inputmode="decimal" placeholder="0"></label>
-        <label><span class="lt">Gordura (g)</span><input type="number" id="eq-fat" inputmode="decimal" placeholder="0"></label>
-        <label><span class="lt">Fibra (g)</span><input type="number" id="eq-fiber" inputmode="decimal" placeholder="0"></label>`;
+        <label><span class="lt">Gordura (g)</span><input type="number" id="eq-fat" inputmode="decimal" placeholder="0"></label>`;
       previewEl.after(qf);
     }
     qf.style.display = 'block';
@@ -93,7 +92,6 @@ async function openEditEntry(id) {
     document.getElementById('eq-protein').value  = data.protein  ?? '';
     document.getElementById('eq-carbs').value    = data.carbs    ?? '';
     document.getElementById('eq-fat').value      = data.fat      ?? '';
-    document.getElementById('eq-fiber').value    = data.fiber    ?? '';
 
     document.getElementById('sheet-edit').classList.add('open');
     setTimeout(() => document.getElementById('eq-calories').focus(), 300);
@@ -578,7 +576,6 @@ function updateEditPreview() {
   document.getElementById('ep-kcal').textContent  = c(editingEntry.calories);
   document.getElementById('ep-fat').textContent   = c(editingEntry.fat);
   document.getElementById('ep-carb').textContent  = c(editingEntry.carbs);
-  document.getElementById('ep-fiber').textContent = c(editingEntry.fiber);
   document.getElementById('ep-prot').textContent  = c(editingEntry.protein);
   const serving = editingEntry._serving_size_g;
   if (serving) {
@@ -671,12 +668,21 @@ function buildSegmentedBar(actual, target, macro) {
   const minPct = 20;
   const range  = maxPct - minPct;
 
+  const CENTER = {
+    protein:  '#3b82f6',
+    carbs:    '#f59e0b',
+    fat:      '#f97316',
+    calories: '#22c55e',
+  };
+  const centerColor = CENTER[macro] || '#22c55e';
+  const RED    = 'rgba(239,68,68,0.35)';
+  const YELLOW = 'rgba(234,179,8,0.45)';
   const segs = [
-    { w: b1 - minPct,  color: 'var(--red)'    },
-    { w: b2 - b1,      color: 'var(--yellow)' },
-    { w: b3 - b2,      color: 'var(--accent)' },
-    { w: b4 - b3,      color: 'var(--yellow)' },
-    { w: maxPct - b4,  color: 'var(--red)'    },
+    { w: b1 - minPct,  color: RED         },
+    { w: b2 - b1,      color: YELLOW      },
+    { w: b3 - b2,      color: centerColor },
+    { w: b4 - b3,      color: YELLOW      },
+    { w: maxPct - b4,  color: RED         },
   ];
   const segsHTML = segs.map(s =>
     `<div style="flex-basis:${(s.w / range * 100).toFixed(3)}%;background:${s.color}"></div>`

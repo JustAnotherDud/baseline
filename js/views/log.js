@@ -69,7 +69,6 @@ function updatePreview() {
   document.getElementById('prev-kcal').textContent  = c(selectedFood.calories_per_100g);
   document.getElementById('prev-fat').textContent   = c(selectedFood.fat_per_100g);
   document.getElementById('prev-carb').textContent  = c(selectedFood.carbs_per_100g);
-  document.getElementById('prev-fiber').textContent = c(selectedFood.fiber_per_100g);
   document.getElementById('prev-prot').textContent  = c(selectedFood.protein_per_100g);
   if (selectedFood && selectedFood.serving_size_g) {
     const doses = g > 0 ? (g / selectedFood.serving_size_g).toFixed(1) : '';

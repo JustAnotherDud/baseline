@@ -46,12 +46,13 @@ function renderToday(entries, t) {
     const tgtHTML = hasTargets ? `<span class="macro-cell-tgt">/${m.target}g</span>` : '';
     const bar = hasTargets ? buildSegmentedBar(m.actual, m.target, m.key) : '';
     const rem = r(m.target - m.actual);
-    const remHTML = (hasTargets && rem > 0) ? `<div class="macro-cell-rem">▾ ${rem}g rest.</div>` : '';
+    let remHTML = '';
+    if (hasTargets && rem > 0)      remHTML = `<span class="macro-cell-rem">· ${rem}g↓</span>`;
+    else if (hasTargets && rem < 0) remHTML = `<span class="macro-cell-rem">· +${Math.abs(rem)}g</span>`;
     return `<div class="macro-cell" data-nutrient="${m.key}">
       <div class="macro-cell-label">${m.label}</div>
-      <div class="macro-cell-valrow"><span class="macro-cell-val" style="color:${m.color}">${r(m.actual)}</span>${tgtHTML}</div>
+      <div class="macro-cell-valrow"><span class="macro-cell-val" style="color:${m.color}">${r(m.actual)}</span>${tgtHTML}${remHTML}</div>
       ${bar}
-      ${remHTML}
     </div>`;
   }).join('');
 
@@ -89,7 +90,7 @@ function renderToday(entries, t) {
     const div = document.createElement('div');
     div.className = 'meal-section';
     const kcalInline = mes.length > 0
-      ? `<span class="meal-kcal-val">${r(mkcal)}</span><span class="meal-kcal-unit">kcal</span>`
+      ? `<span class="meal-kcal-val">${r(mkcal)}</span>`
       : '';
     const macroStr = mes.length > 0
       ? `<div class="meal-macros">G ${r(mfat)} · C ${r(mcarb)} · P ${r(mprot)}</div>`

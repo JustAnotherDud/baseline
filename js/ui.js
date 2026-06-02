@@ -685,7 +685,7 @@ function buildSegmentedBar(actual, target, macro) {
     { w: maxPct - b4,  color: RED         },
   ];
   const segsHTML = segs.map(s =>
-    `<div style="flex-basis:${(s.w / range * 100).toFixed(3)}%;background:${s.color}"></div>`
+    `<div style="flex:0 0 ${(s.w / range * 100).toFixed(3)}%;background:${s.color}"></div>`
   ).join('');
 
   const pct = target > 0 ? actual / target * 100 : 0;

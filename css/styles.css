@@ -48,7 +48,7 @@ body {
 .view {
   flex: 1; overflow-y: auto; overflow-x: hidden;
   display: none; flex-direction: column;
-  padding-bottom: calc(var(--nav-h) + var(--safe-b) + 32px);
+  padding-bottom: calc(var(--nav-h) + var(--safe-b) + 48px);
   -webkit-overflow-scrolling: touch;
 }
 .view.active { display: flex; }
@@ -145,9 +145,9 @@ body {
 .meal-header-right { flex: 1; padding: 12px 20px 12px 12px; display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(74,222,128,0.06); border-left: 1px solid var(--border); min-height: 52px; cursor: pointer; }
 .meal-header-right:active { background: rgba(74,222,128,0.12); }
 .meal-head-line { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; overflow: hidden; }
-.meal-name { font-size: 9px; font-family: var(--mono); color: var(--text3); text-transform: uppercase; letter-spacing: .12em; }
-.meal-kcal-val { font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--text2); }
-.meal-kcal-unit { font-family: var(--mono); font-size: 9px; color: var(--text3); }
+.meal-name { font-size: 11px; font-family: var(--mono); color: var(--text2); text-transform: uppercase; letter-spacing: .12em; }
+.meal-kcal-val { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--text); }
+.meal-kcal-unit { font-family: var(--mono); font-size: 10px; color: var(--text3); }
 .meal-kcal { font-family: var(--mono); font-size: 13px; color: var(--text); font-weight: 600; }
 .meal-macros { font-family: var(--mono); font-size: 10px; color: var(--text3); margin-top: 3px; }
 
@@ -169,9 +169,9 @@ body {
 .diary-entry:nth-child(odd)  { background: transparent; }
 .diary-entry:nth-child(even) { background: rgba(255,255,255,0.03); }
 .entry-info { flex: 1; min-width: 0; }
-.entry-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.entry-detail { font-family: var(--mono); font-size: 11px; color: var(--text2); margin-top: 2px; }
-.entry-kcal { font-family: var(--mono); font-size: 12px; font-weight: 500; min-width: 40px; text-align: right; }
+.entry-name { font-size: 13px; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.entry-detail { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-top: 2px; }
+.entry-kcal { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--text3); min-width: 40px; text-align: right; }
 .no-entries { padding: 10px 20px; font-size: 13px; color: var(--text3); border-top: 1px solid var(--border); font-style: italic; }
 
 /* ── BOTTOM NAV ── */

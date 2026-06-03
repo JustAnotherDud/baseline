@@ -433,6 +433,9 @@ input[type="number"] { font-family: var(--mono); }
   .meal-kcal { font-size: 15px; }
   .macro-cell-label { font-size: 11px; }
   .macro-cell-val { font-size: 26px; }
+  .macro-cell-tgt { font-size: 12px; }
+  .macro-cell-rem { font-size: 12px; }
+  .macro-cell .seg-bar-labels span { font-size: 11px; }
   .entry-name { font-size: 16px; }
   .entry-detail { font-size: 13px; }
   .entry-kcal { font-size: 13px; }

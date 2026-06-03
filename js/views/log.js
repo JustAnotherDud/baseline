@@ -267,9 +267,9 @@ async function loadLogTotalsStrip() {
     remHtml = `<div style="font-family:var(--mono);font-size:11px;color:${remColor}">${rem>=0?rem+'↓':Math.abs(rem)+'↑'} kcal</div>`;
   }
   strip.innerHTML = kcalHtml + remHtml + `
-    <div style="font-family:var(--mono);font-size:11px;color:var(--blue)">P ${r(tot.prot)}g</div>
-    <div style="font-family:var(--mono);font-size:11px;color:var(--yellow)">H ${r(tot.carb)}g</div>
-    <div style="font-family:var(--mono);font-size:11px;color:var(--orange)">G ${r(tot.fat)}g</div>`;
+    <div style="font-family:var(--mono);font-size:11px;color:var(--orange)">F ${r(tot.fat)}g</div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--yellow)">C ${r(tot.carb)}g</div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--blue)">P ${r(tot.prot)}g</div>`;
 }
 
 // ── SAVE DIARY HANDLER (DOM side of saveDiary) ───────────────────────────────

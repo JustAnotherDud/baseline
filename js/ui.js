@@ -491,11 +491,11 @@ function openMealBreakdown(mealKey, allEntries) {
     </div>
     <div class="meal-donut-legend-item">
       <span class="meal-donut-dot" style="background:var(--yellow)"></span>
-      <span>H ${Math.round(totalCarbs * 10) / 10}g ${pct(h_kcal)}%</span>
+      <span>C ${Math.round(totalCarbs * 10) / 10}g ${pct(h_kcal)}%</span>
     </div>
     <div class="meal-donut-legend-item">
       <span class="meal-donut-dot" style="background:var(--orange)"></span>
-      <span>G ${Math.round(totalFat * 10) / 10}g ${pct(g_kcal)}%</span>
+      <span>F ${Math.round(totalFat * 10) / 10}g ${pct(g_kcal)}%</span>
     </div>
   </div>`;
 

@@ -171,7 +171,7 @@ async function mcSearchFood(itemId, q) {
   res.innerHTML = data.map((f, idx) =>
     `<div class="mc-food-option" data-idx="${idx}">
       <div style="font-size:13px;color:var(--text)">${f.name}</div>
-      <div style="font-family:var(--mono);font-size:11px;color:var(--text3)">${f.calories_per_100g} kcal · P${f.protein_per_100g} H${f.carbs_per_100g} G${f.fat_per_100g}</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text3)">${f.calories_per_100g} kcal · P${f.protein_per_100g} C${f.carbs_per_100g} F${f.fat_per_100g}</div>
     </div>`
   ).join('');
   // Attach listeners with food objects captured in closure — no JSON serialisation needed
@@ -329,7 +329,7 @@ async function openApplyMeal(templateId, templateName) {
   itemsEl.innerHTML = items.map(i => `
     <div class="apply-meal-item">
       <div class="apply-meal-item-name">${i.food_name}</div>
-      <div class="apply-meal-item-detail">${i.grams}g · ${Math.round(+(i.calories||0))} kcal · P${r(i.protein)}g H${r(i.carbs)}g G${r(i.fat)}g</div>
+      <div class="apply-meal-item-detail">${i.grams}g · ${Math.round(+(i.calories||0))} kcal · P${r(i.protein)}g C${r(i.carbs)}g F${r(i.fat)}g</div>
     </div>`).join('')
     + `<div class="apply-meal-total">${Math.round(totalKcal)} kcal total</div>`;
 }

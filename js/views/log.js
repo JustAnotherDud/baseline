@@ -25,7 +25,7 @@ async function searchDB() {
   }
   res.innerHTML = data.map(f=>`
     <div class="sr-item" onclick="pickFood(${f.id})">
-      <div><div class="sr-name">${highlightFoodKeywords(f.name)}</div><div class="sr-detail">${f.brand?f.brand+' · ':''}${f.calories_per_100g} kcal · P${f.protein_per_100g} C${f.carbs_per_100g} G${f.fat_per_100g}</div></div>
+      <div><div class="sr-name">${highlightFoodKeywords(f.name)}</div><div class="sr-detail">${f.brand?f.brand+' · ':''}${f.calories_per_100g} kcal · P${f.protein_per_100g} C${f.carbs_per_100g} F${f.fat_per_100g}</div></div>
       <div class="sr-kcal">${f.calories_per_100g}<br><span style="font-size:9px;color:var(--text3)">kcal/100g</span></div>
     </div>`).join('');
 }
@@ -44,7 +44,7 @@ async function pickFood(id) {
 
   document.getElementById('log-food-card').innerHTML=`
     <div class="food-card-name">${data.name}</div>
-    <div class="food-card-sub">${data.brand?data.brand+' · ':''}${data.calories_per_100g} kcal/100g · P${data.protein_per_100g}g C${data.carbs_per_100g}g G${data.fat_per_100g}g</div>
+    <div class="food-card-sub">${data.brand?data.brand+' · ':''}${data.calories_per_100g} kcal/100g · P${data.protein_per_100g}g C${data.carbs_per_100g}g F${data.fat_per_100g}g</div>
     ${servingBtn}`;
 
   const doseBtn = document.getElementById('dose-btn');

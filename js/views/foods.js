@@ -8,9 +8,9 @@ const SORT_CONFIG = {
 
 const MORE_SORTS = [
   { group: 'NUTRIENTES (por 100g)' },
-  { key: 'carbs',  label: 'Hidratos ↑',       fn: f => f.carbs_per_100g || 0 },
+  { key: 'carbs',  label: 'Carbs ↑',          fn: f => f.carbs_per_100g || 0 },
   { key: 'fiber',  label: 'Fibra ↑',           fn: f => f.fiber_per_100g || 0 },
-  { key: 'fat',    label: 'Gordura ↑',         fn: f => f.fat_per_100g || 0 },
+  { key: 'fat',    label: 'Fat ↑',             fn: f => f.fat_per_100g || 0 },
   { key: 'satfat', label: 'Gord. Saturada ↑',  fn: f => f.saturated_fat_per_100g || 0 },
   { key: 'sugar',  label: 'Açúcar ↑',          fn: f => f.sugar_per_100g || 0 },
   { group: 'RÁCIOS' },
@@ -192,8 +192,8 @@ function renderFoods(foods) {
 
     // Fat — highlight when MORE fat active
     const gStr = ms === 'fat'
-      ? `<span style="${HL}">G${f.fat_per_100g}</span>`
-      : `G${f.fat_per_100g}`;
+      ? `<span style="${HL}">F${f.fat_per_100g}</span>`
+      : `F${f.fat_per_100g}`;
 
     // Right column: kcal default, swapped for hidden fields + ratios
     // All values are numeric — safe for innerHTML

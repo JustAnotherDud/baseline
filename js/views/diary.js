@@ -33,9 +33,9 @@ function renderToday(entries, t) {
     const diff = t.calories - kcalNum;
     const pct  = Math.round(kcalPct);
     const restHTML = diff >= 0
-      ? `<span style="font-size:12px;color:#444">${diff}↓ rest.</span>`
-      : `<span style="font-size:12px;color:var(--accent);opacity:.6">+${Math.abs(diff)} excesso</span>`;
-    kcalLine2 = `<div style="display:flex;justify-content:flex-end;align-items:baseline;gap:6px;margin-top:4px;font-family:var(--mono)">${restHTML}<span style="font-size:12px;color:#555">${pct}%</span></div>`;
+      ? `<span style="font-size:12px;color:var(--text2)">${diff}↓ rest.</span>`
+      : `<span style="font-size:12px;color:var(--accent)">+${Math.abs(diff)} excesso</span>`;
+    kcalLine2 = `<div style="display:flex;justify-content:flex-end;align-items:baseline;gap:6px;margin-top:4px;font-family:var(--mono)">${restHTML}<span style="font-size:12px;color:var(--text3)">${pct}%</span></div>`;
   }
 
   // ── MACROS (grid) ──
@@ -46,7 +46,7 @@ function renderToday(entries, t) {
   ];
   const cellsHTML = macros.map((m, i) => {
     const pad = i === 0 ? 'padding-right:8px' : 'padding-left:10px;padding-right:4px';
-    const tgtHTML = hasTargets ? `<span class="macro-cell-tgt" style="color:#333">/${m.target}g</span>` : '';
+    const tgtHTML = hasTargets ? `<span class="macro-cell-tgt" style="color:var(--text3)">/${m.target}g</span>` : '';
     const bar = hasTargets ? buildSegmentedBar(m.actual, m.target, m.key) : '';
     // Line 2: remaining / excess + percentage
     let line2 = '';
@@ -54,9 +54,9 @@ function renderToday(entries, t) {
       const diff = r(m.target - m.actual);
       const pct  = Math.round(rawPct(m.actual, m.target));
       const restHTML = diff >= 0
-        ? `<span style="font-size:10px;color:#444">${diff}↓</span>`
-        : `<span style="font-size:10px;color:${m.color};opacity:.6">+${Math.abs(diff)}↑</span>`;
-      line2 = `<div style="display:flex;justify-content:flex-end;align-items:baseline;gap:4px;margin-top:3px;font-family:var(--mono)">${restHTML}<span style="font-size:10px;color:#555">${pct}%</span></div>`;
+        ? `<span style="font-size:10px;color:var(--text2)">${diff}↓</span>`
+        : `<span style="font-size:10px;color:${m.color}">+${Math.abs(diff)}↑</span>`;
+      line2 = `<div style="display:flex;justify-content:flex-end;align-items:baseline;gap:4px;margin-top:3px;font-family:var(--mono)">${restHTML}<span style="font-size:10px;color:var(--text3)">${pct}%</span></div>`;
     }
     return `<div class="macro-cell" data-nutrient="${m.key}" style="${pad}">
       <div style="display:flex;justify-content:space-between;align-items:baseline">

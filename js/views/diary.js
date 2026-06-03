@@ -2,9 +2,9 @@ let diaryEntries = [];
 
 const NUTRIENT_MAP = {
   calories: { key: 'calories', label: 'Calorias', unit: 'kcal', color: 'var(--accent)' },
-  protein:  { key: 'protein',  label: 'Proteína', unit: 'g',    color: 'var(--blue)'   },
-  carbs:    { key: 'carbs',    label: 'Hidratos',  unit: 'g',    color: 'var(--yellow)' },
-  fat:      { key: 'fat',      label: 'Gordura',   unit: 'g',    color: 'var(--orange)' },
+  protein:  { key: 'protein',  label: 'PROT',  unit: 'g',    color: 'var(--blue)'   },
+  carbs:    { key: 'carbs',    label: 'CARBS', unit: 'g',    color: 'var(--yellow)' },
+  fat:      { key: 'fat',      label: 'FAT',   unit: 'g',    color: 'var(--orange)' },
   fiber:    { key: 'fiber',    label: 'Fibra',     unit: 'g',    color: 'var(--accent)' },
 };
 
@@ -40,9 +40,9 @@ function renderToday(entries, t) {
 
   // ── MACROS (grid) ──
   const macros = [
-    { key: 'protein', label: 'PROT', actual: tot.prot, target: t.protein, color: 'var(--blue)'   },
-    { key: 'carbs',   label: 'HIDR', actual: tot.carb, target: t.carbs,   color: 'var(--yellow)' },
-    { key: 'fat',     label: 'GORD', actual: tot.fat,  target: t.fat,     color: 'var(--orange)' },
+    { key: 'fat',     label: 'FAT',   actual: tot.fat,  target: t.fat,     color: 'var(--orange)' },
+    { key: 'carbs',   label: 'CARBS', actual: tot.carb, target: t.carbs,   color: 'var(--yellow)' },
+    { key: 'protein', label: 'PROT',  actual: tot.prot, target: t.protein, color: 'var(--blue)'   },
   ];
   const cellsHTML = macros.map((m, i) => {
     const pad = i === 0 ? 'padding-right:8px' : 'padding-left:10px;padding-right:4px';
@@ -103,7 +103,7 @@ function renderToday(entries, t) {
       ? `<span class="meal-kcal-val">${r(mkcal)}</span>`
       : '';
     const macroStr = mes.length > 0
-      ? `<div class="meal-macros">G ${r(mfat)} · C ${r(mcarb)} · P ${r(mprot)}</div>`
+      ? `<div class="meal-macros">F ${r(mfat)} · C ${r(mcarb)} · P ${r(mprot)}</div>`
       : '';
     div.innerHTML = `
       <div class="meal-header">
@@ -140,7 +140,7 @@ function renderToday(entries, t) {
         entryEl.innerHTML = `
           <div class="entry-info">
             <div class="entry-name"></div>
-            <div class="entry-detail">${entry.grams ? entry.grams + 'g · ' : ''}G ${r(entry.fat)}g · C ${r(entry.carbs)}g · P ${r(entry.protein)}g</div>
+            <div class="entry-detail">${entry.grams ? entry.grams + 'g · ' : ''}F ${r(entry.fat)}g · C ${r(entry.carbs)}g · P ${r(entry.protein)}g</div>
           </div>
           <div class="entry-kcal">${r(entry.calories)}</div>`;
         entryEl.querySelector('.entry-name').innerHTML = highlightFoodKeywords(entry.food_name);

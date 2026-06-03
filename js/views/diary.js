@@ -28,12 +28,14 @@ function renderToday(entries, t) {
   const kcalPct = rawPct(tot.kcal, t.calories);
   const kcalColor = (hasTargets && hasData) ? getNutrientColor('calories', kcalPct) : 'var(--accent)';
   const kcalBar = hasTargets ? buildSegmentedBar(tot.kcal, t.calories, 'calories') : '';
-  let badgeHTML = '';
+  let kcalLine2 = '';
   if (hasTargets) {
-    const rem = t.calories - kcalNum;
-    badgeHTML = rem >= 0
-      ? `<div class="diary-kcal-badge within">${rem} rest.</div>`
-      : `<div class="diary-kcal-badge over">+${Math.abs(rem)} kcal</div>`;
+    const diff = t.calories - kcalNum;
+    const pct  = Math.round(kcalPct);
+    const restHTML = diff >= 0
+      ? `<span style="font-size:12px;color:#444">${diff}↓ rest.</span>`
+      : `<span style="font-size:12px;color:var(--accent);opacity:.6">+${Math.abs(diff)} excesso</span>`;
+    kcalLine2 = `<div style="display:flex;justify-content:flex-end;align-items:baseline;gap:6px;margin-top:4px;font-family:var(--mono)">${restHTML}<span style="font-size:12px;color:#555">${pct}%</span></div>`;
   }
 
   // ── MACROS (grid) ──
@@ -42,16 +44,26 @@ function renderToday(entries, t) {
     { key: 'carbs',   label: 'HIDR', actual: tot.carb, target: t.carbs,   color: 'var(--yellow)' },
     { key: 'fat',     label: 'GORD', actual: tot.fat,  target: t.fat,     color: 'var(--orange)' },
   ];
-  const cellsHTML = macros.map(m => {
-    const tgtHTML = hasTargets ? `<span class="macro-cell-tgt">/${m.target}g</span>` : '';
+  const cellsHTML = macros.map((m, i) => {
+    const pad = i === 0 ? 'padding-right:8px' : 'padding-left:10px;padding-right:4px';
+    const tgtHTML = hasTargets ? `<span class="macro-cell-tgt" style="color:#333">/${m.target}g</span>` : '';
     const bar = hasTargets ? buildSegmentedBar(m.actual, m.target, m.key) : '';
-    const rem = r(m.target - m.actual);
-    let remHTML = '';
-    if (hasTargets && rem > 0)      remHTML = `<span class="macro-cell-rem">·${rem}↓</span>`;
-    else if (hasTargets && rem < 0) remHTML = `<span class="macro-cell-rem">·+${Math.abs(rem)}</span>`;
-    return `<div class="macro-cell" data-nutrient="${m.key}">
-      <div class="macro-cell-label">${m.label}</div>
-      <div class="macro-cell-valrow"><span class="macro-cell-val" style="color:${m.color}">${r(m.actual)}</span>${tgtHTML}${remHTML}</div>
+    // Line 2: remaining / excess + percentage
+    let line2 = '';
+    if (hasTargets) {
+      const diff = r(m.target - m.actual);
+      const pct  = Math.round(rawPct(m.actual, m.target));
+      const restHTML = diff >= 0
+        ? `<span style="font-size:10px;color:#444">${diff}↓</span>`
+        : `<span style="font-size:10px;color:${m.color};opacity:.6">+${Math.abs(diff)}↑</span>`;
+      line2 = `<div style="display:flex;justify-content:flex-end;align-items:baseline;gap:4px;margin-top:3px;font-family:var(--mono)">${restHTML}<span style="font-size:10px;color:#555">${pct}%</span></div>`;
+    }
+    return `<div class="macro-cell" data-nutrient="${m.key}" style="${pad}">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <span class="macro-cell-label">${m.label}</span>
+        <span style="display:flex;align-items:baseline;gap:2px"><span class="macro-cell-val" style="color:${m.color}">${r(m.actual)}</span>${tgtHTML}</span>
+      </div>
+      ${line2}
       ${bar}
     </div>`;
   }).join('');
@@ -59,12 +71,10 @@ function renderToday(entries, t) {
   const summary = document.querySelector('#view-today .macro-summary');
   summary.innerHTML = `
     <div class="diary-kcal-row">
-      <div class="diary-kcal-main">
-        <span class="diary-kcal-num" id="tot-kcal" style="color:${kcalColor}">${kcalNum}</span>
-        <span class="diary-kcal-tgt">${hasTargets ? '/ ' + t.calories + ' kcal' : 'kcal'}</span>
-      </div>
-      ${badgeHTML}
+      <span class="diary-kcal-num" id="tot-kcal" style="color:${kcalColor}">${kcalNum}</span>
+      <span class="diary-kcal-tgt">${hasTargets ? '/ ' + t.calories + ' kcal' : 'kcal'}</span>
     </div>
+    ${kcalLine2}
     <div id="bar-kcal-wrap">${kcalBar}</div>
     <div class="macro-grid">${cellsHTML}</div>`;
 

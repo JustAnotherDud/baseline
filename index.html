@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="css/styles.css?v=20260603-4">
+  <link rel="stylesheet" href="css/styles.css?v=20260603-6">
 </head>
 <body>
 
@@ -172,8 +172,10 @@
       </div>
       <div class="sort-chips">
         <button class="sort-chip active" data-sort="name"     onclick="setSortFoods('name')">Nome A→Z</button>
-        <button class="sort-chip"        data-sort="protein"  onclick="setSortFoods('protein')">Proteína ↑</button>
         <button class="sort-chip"        data-sort="calories" onclick="setSortFoods('calories')">Kcal ↑</button>
+        <button class="sort-chip"        data-sort="p_kcal"   onclick="setSortFoods('p_kcal')">P/Kcal ↑</button>
+        <button class="sort-chip"        data-sort="c_kcal"   onclick="setSortFoods('c_kcal')">C/Kcal ↑</button>
+        <button class="sort-chip"        data-sort="f_kcal"   onclick="setSortFoods('f_kcal')">F/Kcal ↑</button>
       </div>
       <div id="foods-list"></div>
     </div>
@@ -567,7 +569,7 @@
 <script src="js/ui.js?v=20260603-5"></script>
 <script src="js/views/diary.js?v=20260603-5"></script>
 <script src="js/views/log.js?v=20260603-5"></script>
-<script src="js/views/foods.js?v=20260603-5"></script>
+<script src="js/views/foods.js?v=20260603-6"></script>
 <script src="js/views/meals.js?v=20260603-5"></script>
 <script src="js/views/targets.js?v=20260602"></script>
 <script src="js/views/stats.js?v=20260603-5"></script>

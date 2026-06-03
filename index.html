@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="css/styles.css?v=20260603-6">
+  <link rel="stylesheet" href="css/styles.css?v=20260603-7">
 </head>
 <body>
 
@@ -33,6 +33,14 @@
     <label>
       <span class="lt">Publishable Key</span>
       <input type="text" id="setup-key" placeholder="sb_publishable_..." autocomplete="off">
+    </label>
+    <label>
+      <span class="lt">Intervals.icu ID</span>
+      <input type="text" id="setup-icu-id" placeholder="i123456" autocomplete="off">
+    </label>
+    <label>
+      <span class="lt">Intervals.icu API Key</span>
+      <input type="password" id="setup-icu-key" placeholder="••••••••" autocomplete="off">
     </label>
     <button class="btn btn-primary" onclick="saveSetup()">Guardar e continuar</button>
   </div>
@@ -363,6 +371,16 @@
     <div id="body-historico-panel" style="display:none"></div>
   </div>
 
+  <!-- ─── VIEW: TREINO ─── -->
+  <div id="view-treino" class="view">
+    <div class="view-header">
+      <div class="view-title">Treino</div>
+    </div>
+    <div id="treino-container">
+      <div class="loading">A carregar...</div>
+    </div>
+  </div>
+
   <!-- ─── NAV ─── -->
   <nav>
     <button class="nav-btn active" id="nav-today" onclick="go('today')">
@@ -372,6 +390,10 @@
     <button class="nav-btn" id="nav-foods" onclick="go('foods')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
       <span class="nav-label">Comida</span>
+    </button>
+    <button class="nav-btn" id="nav-treino" onclick="go('treino')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      <span class="nav-label">Treino</span>
     </button>
     <button class="nav-btn" id="nav-mais" onclick="go('mais')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -574,6 +596,7 @@
 <script src="js/views/targets.js?v=20260602"></script>
 <script src="js/views/stats.js?v=20260603-5"></script>
 <script src="js/views/body.js?v=20260528"></script>
+<script src="js/views/treino.js?v=20260603-7"></script>
 <script src="js/app.js?v=20260603-7"></script>
 </body>
 </html>

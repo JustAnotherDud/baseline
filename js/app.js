@@ -1,5 +1,7 @@
 const { createClient } = supabase;
 let db = null;
+let icuId = null;
+let icuKey = null;
 let currentDate = new Date().toISOString().split('T')[0];
 let selectedMeal = 'breakfast';
 let selectedFood = null;
@@ -11,6 +13,8 @@ let mealManuallySelected = false;
 function init() {
   const url = localStorage.getItem('nt_url');
   const key = localStorage.getItem('nt_key');
+  icuId  = localStorage.getItem('icu_id')  || null;
+  icuKey = localStorage.getItem('icu_key') || null;
   if (url && key) {
     db = createClient(url, key);
     document.getElementById('setup-screen').style.display = 'none';
@@ -32,6 +36,10 @@ function saveSetup() {
   if (!url || !key) { toast('Preenche os dois campos'); return; }
   localStorage.setItem('nt_url', url);
   localStorage.setItem('nt_key', key);
+  const icuIdVal  = document.getElementById('setup-icu-id').value.trim();
+  const icuKeyVal = document.getElementById('setup-icu-key').value.trim();
+  if (icuIdVal)  localStorage.setItem('icu_id', icuIdVal);  else localStorage.removeItem('icu_id');
+  if (icuKeyVal) localStorage.setItem('icu_key', icuKeyVal); else localStorage.removeItem('icu_key');
   init();
 }
 
@@ -54,6 +62,7 @@ function go(view) {
     else loadMeals();
   }
   if (view==='body') loadBody();
+  if (view==='treino') loadTreino();
   if (view==='settings') loadSettingsView();
   if (view==='stats')    loadStats();
 }

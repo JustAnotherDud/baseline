@@ -72,7 +72,7 @@ function renderToday(entries, t) {
   summary.innerHTML = `
     <div class="diary-kcal-row">
       <span class="diary-kcal-num" id="tot-kcal" style="color:${kcalColor}">${kcalNum}</span>
-      <span class="diary-kcal-tgt">${hasTargets ? '/ ' + t.calories + ' kcal' : 'kcal'}</span>
+      <span class="diary-kcal-tgt" style="cursor:pointer" onclick="go('targets')" title="Ver targets">${hasTargets ? '/ ' + t.calories + ' kcal' : 'kcal'}</span>
     </div>
     ${kcalLine2}
     <div id="bar-kcal-wrap">${kcalBar}</div>

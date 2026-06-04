@@ -1,3 +1,16 @@
+// Tema dos charts — Chart.js não resolve CSS vars dentro do canvas, por isso
+// lemos os tokens uma vez via getComputedStyle. `var` (não `const`) porque
+// treino.js declara o mesmo identificador no escopo global partilhado.
+var chartTheme = {
+  accent:  getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
+  orange:  getComputedStyle(document.documentElement).getPropertyValue('--orange').trim(),
+  blue:    getComputedStyle(document.documentElement).getPropertyValue('--blue').trim(),
+  grid:    'rgba(255,255,255,0.04)',
+  tick:    '#888',
+  legend:  '#bbb',
+  surface: getComputedStyle(document.documentElement).getPropertyValue('--surface2').trim(),
+};
+
 let loadBodyGen = 0;
 let bodyChartInstance = null;
 let bodyAllData = [];
@@ -74,10 +87,10 @@ function bodyDiaHeaderHtml() {
   const d = new Date(bodyDate + 'T12:00:00');
   const label = d.toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' });
   return `<div style="display:flex;align-items:center;gap:6px;padding:16px 20px 4px">
-    <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:16px;line-height:1" onclick="changeBodyDay(-1)">←</button>
+    <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:16px;line-height:1;min-width:44px;min-height:44px" onclick="changeBodyDay(-1)">←</button>
     <div style="flex:1;text-align:center;font-family:var(--mono);font-size:13px;color:var(--text2);text-transform:capitalize">${label}</div>
-    <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:13px" onclick="pickBodyDate()">📅</button>
-    <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:16px;line-height:1" onclick="changeBodyDay(1)">→</button>
+    <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:13px;min-width:44px;min-height:44px" onclick="pickBodyDate()">📅</button>
+    <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:16px;line-height:1;min-width:44px;min-height:44px" onclick="changeBodyDay(1)">→</button>
   </div>`;
 }
 
@@ -314,11 +327,11 @@ function buildBodyChart(rows) {
         {
           label: 'Peso (kg)',
           data: weights,
-          borderColor: '#4ade80',
+          borderColor: chartTheme.accent,
           backgroundColor: 'transparent',
           borderWidth: 2,
           pointRadius: ptRadius,
-          pointBackgroundColor: '#4ade80',
+          pointBackgroundColor: chartTheme.accent,
           tension: 0.3,
           hidden: !bodyActiveDatasets.weight,
           yAxisID: 'y',
@@ -327,11 +340,11 @@ function buildBodyChart(rows) {
         {
           label: 'Body Fat (%)',
           data: fats,
-          borderColor: '#60a5fa',
+          borderColor: chartTheme.blue,
           backgroundColor: 'transparent',
           borderWidth: 2,
           pointRadius: ptRadius,
-          pointBackgroundColor: '#60a5fa',
+          pointBackgroundColor: chartTheme.blue,
           tension: 0.3,
           hidden: !bodyActiveDatasets.fat,
           yAxisID: 'y3',
@@ -340,11 +353,11 @@ function buildBodyChart(rows) {
         {
           label: 'LBM (kg)',
           data: lbms,
-          borderColor: '#fb923c',
+          borderColor: chartTheme.orange,
           backgroundColor: 'transparent',
           borderWidth: 2,
           pointRadius: ptRadius,
-          pointBackgroundColor: '#fb923c',
+          pointBackgroundColor: chartTheme.orange,
           tension: 0.3,
           hidden: !bodyActiveDatasets.lbm,
           yAxisID: 'y2',
@@ -355,13 +368,14 @@ function buildBodyChart(rows) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? false : { duration: 400 },
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: '#1a1a1a',
+          backgroundColor: chartTheme.surface,
           borderColor: '#2e2e2e',
           borderWidth: 1,
-          titleColor: '#bbb',
+          titleColor: chartTheme.legend,
           bodyColor: '#f0f0f0',
         },
       },
@@ -369,7 +383,7 @@ function buildBodyChart(rows) {
         x: {
           grid: { display: false },
           ticks: {
-            color: '#888',
+            color: chartTheme.tick,
             font: { family: 'IBM Plex Mono', size: 10 },
             maxRotation: 0,
             autoSkip: true,
@@ -380,22 +394,22 @@ function buildBodyChart(rows) {
         y: {
           position: 'left',
           display: bodyActiveDatasets.weight,
-          grid: { color: '#1e1e1e' },
-          ticks: { color: '#888', font: { family: 'IBM Plex Mono', size: 10 } },
+          grid: { color: chartTheme.grid },
+          ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } },
           border: { color: '#2e2e2e' },
         },
         y2: {
           position: 'right',
           display: bodyActiveDatasets.lbm,
           grid: { drawOnChartArea: false },
-          ticks: { color: '#888', font: { family: 'IBM Plex Mono', size: 10 } },
+          ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } },
           border: { color: '#2e2e2e' },
         },
         y3: {
           position: 'right',
           display: bodyActiveDatasets.fat,
           grid: { drawOnChartArea: false },
-          ticks: { color: '#888', font: { family: 'IBM Plex Mono', size: 10 } },
+          ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } },
           border: { color: '#2e2e2e' },
         },
       },

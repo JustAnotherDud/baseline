@@ -7,9 +7,13 @@
   --surface3: #2a2a2a;
   --border: #2e2e2e;
   --accent: #4ade80;
+  --accent-ink: var(--accent-ink);
+  --accent-a06: rgba(74,222,128,0.06);
+  --accent-a08: rgba(74,222,128,0.08);
+  --accent-a12: rgba(74,222,128,0.12);
   --text: #f0f0f0;
   --text2: #bbb;
-  --text3: #888;
+  --text3: #9a9a9a;
   --red: #f87171;
   --orange: #fb923c;
   --blue: #60a5fa;
@@ -69,7 +73,7 @@ body {
 .diary-head-date { font-family: var(--sans); font-size: 18px; font-weight: 600; color: var(--text); margin-top: 4px; line-height: 1.1; }
 .diary-head-weekday { font-family: var(--mono); font-size: 10px; color: var(--text3); margin-top: 2px; }
 .diary-date-pill { display: flex; align-items: center; border: 1px solid var(--border); background: var(--surface2); border-radius: 10px; padding: 3px; }
-.diary-date-nav { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: none; border: none; color: var(--text3); font-size: 16px; line-height: 1; cursor: pointer; font-family: var(--mono); }
+.diary-date-nav { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: none; border: none; color: var(--text3); font-size: 16px; line-height: 1; cursor: pointer; font-family: var(--mono); }
 .diary-date-nav:active { color: var(--text); }
 .diary-date-pill-sep { width: 1px; height: 14px; background: var(--border); }
 .diary-date-month { font-family: var(--mono); font-size: 9px; color: var(--accent); letter-spacing: .06em; padding: 0 8px; cursor: pointer; }
@@ -114,42 +118,25 @@ body {
 .macro-cell .seg-bar-tick { display: none; }
 .macro-cell .seg-bar-line { height: 18px; width: 2px; background: rgba(255,255,255,0.5); box-shadow: none; border-radius: 1px; }
 .macro-cell .seg-bar-labels { height: 12px; margin-top: 2px; }
-.macro-cell .seg-bar-labels span { font-size: 9px; color: #555; }
+.macro-cell .seg-bar-labels span { font-size: 9px; color: #777; }
 /* mobile: drop green-limit labels but keep the position indicator */
 @media (max-width: 480px) {
   .macro-cell .seg-bar-labels { display: none; }
 }
 
-/* ── UNUSED (legacy diary macro rows — kept for safety) ──
-.kcal-row { display: flex; justify-content: space-between; align-items: flex-end; }
-.kcal-value { font-family: var(--mono); font-size: 42px; font-weight: 600; color: var(--accent); line-height: 1; }
-.kcal-label { font-family: var(--mono); font-size: 13px; color: var(--text3); margin-top: 3px; }
-.kcal-remaining { font-family: var(--mono); font-size: 13px; color: var(--text2); text-align: right; }
-.macro-primary { margin-top: 6px; }
-.mpr { padding: 13px 0; border-bottom: 1px solid var(--border); cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.mpr:last-child { border-bottom: none; }
-.mpr:active { opacity: 0.8; }
-.mpr-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 9px; }
-.mpr-name { font-family: var(--sans); font-size: 13px; font-weight: 500; color: var(--text2); transition: color .2s; }
-.mpr-expanded .mpr-name { color: var(--text); }
-.mpr-val-group { font-family: var(--mono); display: flex; align-items: baseline; gap: 2px; }
-.mpr-num { font-size: 22px; font-weight: 600; transition: color .2s; }
-.mpr-unit { font-size: 11px; color: var(--text3); }
-.mpr-tgt { font-size: 11px; color: var(--text3); margin-left: 3px; }
-.macro-sep { height: 1px; background: var(--border); margin: 18px 0 12px; }
+/* ── MACRO SECONDARY CHIPS (.msc) — used by Treino wellness/week chips ── */
 .macro-secondary { display: flex; gap: 8px; }
 .msc { flex: 1; padding: 10px 10px 11px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; display: flex; flex-direction: column; gap: 4px; }
 .msc-name { font-family: var(--sans); font-size: 11px; font-weight: 500; color: var(--text3); }
 .msc-val { font-family: var(--sans); font-size: 12px; font-weight: 600; color: var(--text2); }
-   ── end unused ── */
 
 /* ── MEAL SECTIONS ── */
 #diary-container { padding-top: 10px; }
 .meal-section { border-radius: 12px; overflow: hidden; margin: 8px 12px; border: 1px solid var(--border); }
 .meal-header { display: flex; align-items: stretch; border-top: 1px solid var(--surface3); }
 .meal-header-left { flex: 3; padding: 8px 0 8px 14px; background: var(--surface2); min-height: 52px; cursor: pointer; display: flex; flex-direction: column; justify-content: center; }
-.meal-header-right { flex: 1; padding: 12px 20px 12px 12px; display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(74,222,128,0.06); border-left: 1px solid var(--border); min-height: 52px; cursor: pointer; }
-.meal-header-right:active { background: rgba(74,222,128,0.12); }
+.meal-header-right { flex: 1; padding: 12px 20px 12px 12px; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--accent-a06); border-left: 1px solid var(--border); min-height: 52px; cursor: pointer; }
+.meal-header-right:active { background: var(--accent-a12); }
 .meal-head-line { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; overflow: hidden; }
 .meal-name { font-size: 12px; font-family: var(--mono); color: var(--text); font-weight: 500; text-transform: uppercase; letter-spacing: .12em; }
 .meal-kcal-val { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent); }
@@ -216,7 +203,7 @@ nav {
   border-bottom: 1px solid var(--border);
 }
 .sheet-title { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); }
-.sheet-close { color: var(--text3); font-size: 22px; cursor: pointer; line-height: 1; padding: 2px 6px; }
+.sheet-close { color: var(--text3); font-size: 22px; cursor: pointer; line-height: 1; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; margin: -8px -8px -8px 0; }
 
 /* ── FORMS ── */
 .form-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
@@ -241,7 +228,7 @@ input[type="number"] { font-family: var(--mono); }
   transition: opacity .15s, transform .1s; width: 100%;
 }
 .btn:active { opacity: .8; transform: scale(.98); }
-.btn-primary { background: var(--accent); color: #0a0a0a; }
+.btn-primary { background: var(--accent); color: var(--accent-ink); }
 .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
 .btn-danger { background: transparent; color: var(--red); border: 1px solid var(--red); }
 
@@ -275,7 +262,7 @@ input[type="number"] { font-family: var(--mono); }
   border: 1px solid var(--border); background: transparent;
   color: var(--text2); font-family: var(--sans); transition: all .15s;
 }
-.meal-tab.active { background: var(--accent); border-color: var(--accent); color: #0a0a0a; }
+.meal-tab.active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .sheet-meal-tabs {
   display: flex; gap: 6px; padding: 10px 16px;
   overflow-x: auto; scrollbar-width: none;
@@ -300,21 +287,7 @@ input[type="number"] { font-family: var(--mono); }
   color: var(--text3); font-family: var(--sans); transition: all .15s;
   flex-shrink: 0;
 }
-.sort-chip.active { background: var(--accent); border-color: var(--accent); color: #0a0a0a; }
-/* ── UNUSED (legacy "Mais" sort menu — removed) ──
-.sort-more-menu {
-  position: fixed; background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 12px; z-index: 50; min-width: 180px; overflow: hidden;
-  box-shadow: 0 4px 24px rgba(0,0,0,.5);
-}
-.sort-more-group {
-  font-family: var(--mono); font-size: 10px; color: var(--text3);
-  text-transform: uppercase; letter-spacing: .08em; padding: 10px 14px 4px;
-}
-.sort-more-item { padding: 12px 14px; font-size: 14px; cursor: pointer; color: var(--text); }
-.sort-more-item:active { background: var(--surface3); }
-.sort-more-item-active { color: var(--accent); font-weight: 600; }
-   ── end unused ── */
+.sort-chip.active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 
 /* ── DATE PICKER WEEKEND ── */
 .cal-weekend { background: rgba(255,255,255,0.04) !important; }
@@ -372,7 +345,7 @@ input[type="number"] { font-family: var(--mono); }
 .fab {
   position: fixed; bottom: calc(var(--nav-h) + var(--safe-b) + 16px); right: 20px;
   width: 52px; height: 52px; border-radius: 50%;
-  background: var(--accent); color: #0a0a0a; border: none;
+  background: var(--accent); color: var(--accent-ink); border: none;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
   font-size: 26px; font-weight: 300;
   box-shadow: 0 4px 20px rgba(74,222,128,.25); z-index: 50; transition: transform .15s;
@@ -386,7 +359,7 @@ input[type="number"] { font-family: var(--mono); }
   background: var(--surface2); color: var(--text); font-family: var(--sans);
   transition: all .15s; white-space: nowrap;
 }
-.recent-chip:active { background: var(--accent); border-color: var(--accent); color: #0a0a0a; }
+.recent-chip:active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 
 /* ── LOG STAGES ── */
 #log-stage-search, #log-stage-grams { display: none; }
@@ -399,7 +372,7 @@ input[type="number"] { font-family: var(--mono); }
 .settings-row:last-child { border-bottom: none; }
 .settings-label { font-size: 14px; color: var(--text2); }
 .settings-value { font-family: var(--mono); font-size: 13px; color: var(--text); }
-.phase-badge { font-family: var(--mono); font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: .08em; padding: 6px 10px; background: rgba(74,222,128,.08); border-radius: 6px; display: inline-block; }
+.phase-badge { font-family: var(--mono); font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: .08em; padding: 6px 10px; background: var(--accent-a08); border-radius: 6px; display: inline-block; }
 .phase-badge-empty { color: var(--text3); background: transparent; }
 /* ── LOG VIEW ── */
 .log-meal-wrap { padding: 0 20px 4px; }
@@ -622,4 +595,12 @@ input[type="range"]::-moz-range-thumb {
   background: var(--accent);
   cursor: pointer;
   border: none;
+}
+
+/* ── REDUCED MOTION ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition: none !important;
+    animation: none !important;
+  }
 }

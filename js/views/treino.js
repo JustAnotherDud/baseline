@@ -14,10 +14,18 @@ let treinoHrvChart = null;
 
 const ICU_BASE = 'https://intervals.icu/api/v1';
 
-// Cores dos charts (Chart.js não resolve CSS vars dentro do canvas).
-const TREINO_GRID = 'rgba(255,255,255,0.04)';
-const TREINO_TICK = '#666';
-const TREINO_LEGEND = '#bbb'; // = var(--text2)
+// Tema dos charts — Chart.js não resolve CSS vars dentro do canvas, por isso
+// lemos os tokens uma vez via getComputedStyle. `var` (não `const`) porque
+// body.js declara o mesmo identificador no escopo global partilhado.
+var chartTheme = {
+  accent:  getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
+  orange:  getComputedStyle(document.documentElement).getPropertyValue('--orange').trim(),
+  blue:    getComputedStyle(document.documentElement).getPropertyValue('--blue').trim(),
+  grid:    'rgba(255,255,255,0.04)',
+  tick:    '#888',
+  legend:  '#bbb',
+  surface: getComputedStyle(document.documentElement).getPropertyValue('--surface2').trim(),
+};
 
 function icuHeaders() {
   return { 'Authorization': 'Basic ' + btoa('API_KEY:' + icuKey) };
@@ -202,7 +210,7 @@ function buildTreinoCtlChart(wSorted) {
         {
           label: 'Fitness (CTL)',
           data: ctlData,
-          borderColor: '#4ade80',
+          borderColor: chartTheme.accent,
           backgroundColor: 'transparent',
           borderWidth: 2,
           pointRadius: 0,
@@ -212,7 +220,7 @@ function buildTreinoCtlChart(wSorted) {
         {
           label: 'Fadiga (ATL)',
           data: atlData,
-          borderColor: '#fb923c',
+          borderColor: chartTheme.orange,
           backgroundColor: 'transparent',
           borderWidth: 2,
           pointRadius: 0,
@@ -224,25 +232,26 @@ function buildTreinoCtlChart(wSorted) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? false : { duration: 400 },
       plugins: {
         legend: {
           display: true,
           position: 'top',
-          labels: { color: TREINO_LEGEND, font: { size: 12 }, boxWidth: 12 },
+          labels: { color: chartTheme.legend, font: { size: 12 }, boxWidth: 12 },
         },
         tooltip: {
-          backgroundColor: '#1a1a1a',
+          backgroundColor: chartTheme.surface,
           borderColor: '#2e2e2e',
           borderWidth: 1,
-          titleColor: '#bbb',
+          titleColor: chartTheme.legend,
           bodyColor: '#f0f0f0',
         },
       },
       scales: {
         x: {
-          grid: { color: TREINO_GRID },
+          grid: { color: chartTheme.grid },
           ticks: {
-            color: TREINO_TICK,
+            color: chartTheme.tick,
             font: { family: 'IBM Plex Mono', size: 10 },
             maxRotation: 0,
             autoSkip: false,
@@ -254,8 +263,8 @@ function buildTreinoCtlChart(wSorted) {
           border: { color: '#2e2e2e' },
         },
         y: {
-          grid: { color: TREINO_GRID },
-          ticks: { color: TREINO_TICK, font: { family: 'IBM Plex Mono', size: 10 } },
+          grid: { color: chartTheme.grid },
+          ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } },
           border: { color: '#2e2e2e' },
         },
       },
@@ -294,11 +303,11 @@ function buildTreinoHrvChart(wSorted) {
       datasets: [{
         label: 'HRV',
         data: hrvData,
-        borderColor: '#60a5fa',
+        borderColor: chartTheme.blue,
         backgroundColor: 'transparent',
         borderWidth: 2,
         pointRadius: 2,
-        pointBackgroundColor: '#60a5fa',
+        pointBackgroundColor: chartTheme.blue,
         tension: 0.3,
         spanGaps: true,
       }],
@@ -306,25 +315,26 @@ function buildTreinoHrvChart(wSorted) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? false : { duration: 400 },
       plugins: {
         legend: {
           display: true,
           position: 'top',
-          labels: { color: TREINO_LEGEND, font: { size: 12 }, boxWidth: 12 },
+          labels: { color: chartTheme.legend, font: { size: 12 }, boxWidth: 12 },
         },
         tooltip: {
-          backgroundColor: '#1a1a1a',
+          backgroundColor: chartTheme.surface,
           borderColor: '#2e2e2e',
           borderWidth: 1,
-          titleColor: '#bbb',
+          titleColor: chartTheme.legend,
           bodyColor: '#f0f0f0',
         },
       },
       scales: {
         x: {
-          grid: { color: TREINO_GRID },
+          grid: { color: chartTheme.grid },
           ticks: {
-            color: TREINO_TICK,
+            color: chartTheme.tick,
             font: { family: 'IBM Plex Mono', size: 10 },
             maxRotation: 0,
             autoSkip: true,
@@ -333,8 +343,8 @@ function buildTreinoHrvChart(wSorted) {
           border: { color: '#2e2e2e' },
         },
         y: {
-          grid: { color: TREINO_GRID },
-          ticks: { color: TREINO_TICK, font: { family: 'IBM Plex Mono', size: 10 } },
+          grid: { color: chartTheme.grid },
+          ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } },
           border: { color: '#2e2e2e' },
         },
       },

@@ -2,7 +2,6 @@
 
 > Estado actual: **Junho 2026**
 > PWA pessoal de dados de atleta — nutrição, composição corporal e treino.
-> Nome anterior do projecto: *NutriTrack* (renomeado para **Baseline**).
 
 ---
 
@@ -86,7 +85,7 @@ baseline/
 │       ├── body.js             — loadBody(), switchBodyTab(), renderBodyDia(),
 │       │                         renderBodyHistorico(), buildBodyChart() (Chart.js)
 │       └── treino.js           — loadTreino() + secções/charts Intervals.icu
-└── nutritrack-handoff.md       — este ficheiro
+└── baseline-handoff.md         — este ficheiro
 ```
 
 **Ordem de carregamento dos scripts** (em `index.html`, antes de `</body>`):

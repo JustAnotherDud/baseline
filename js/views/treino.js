@@ -14,6 +14,11 @@ let treinoHrvChart = null;
 
 const ICU_BASE = 'https://intervals.icu/api/v1';
 
+// Cores dos charts (Chart.js não resolve CSS vars dentro do canvas).
+const TREINO_GRID = 'rgba(255,255,255,0.04)';
+const TREINO_TICK = '#666';
+const TREINO_LEGEND = '#bbb'; // = var(--text2)
+
 function icuHeaders() {
   return { 'Authorization': 'Basic ' + btoa('API_KEY:' + icuKey) };
 }
@@ -62,8 +67,13 @@ function tWellnessSorted(wellness) {
     .sort((a, b) => tWellnessDate(a).localeCompare(tWellnessDate(b)));
 }
 
+// Label de secção (12px).
+function tSecLabel(text) {
+  return `<div class="treino-section-label" style="font-size:12px">${text}</div>`;
+}
+
 function tEmpty(msg) {
-  return `<div style="font-family:var(--mono);font-size:11px;color:var(--text3);padding:4px 0">${msg}</div>`;
+  return `<div style="font-family:var(--mono);font-size:12px;color:var(--text3);padding:4px 0">${msg}</div>`;
 }
 
 // ── Load ─────────────────────────────────────────────────────────────────────
@@ -124,7 +134,7 @@ async function loadTreino() {
 // ── Secção 1 — Forma actual ──────────────────────────────────────────────────
 
 function treinoFormaHtml(wSorted) {
-  const header = `<div class="treino-section-label">Forma actual</div>`;
+  const header = tSecLabel('Forma actual');
   const latest = wSorted.length ? wSorted[wSorted.length - 1] : null;
 
   if (!latest) {
@@ -144,7 +154,7 @@ function treinoFormaHtml(wSorted) {
   const cell = (label, val, color) => `
     <div class="macro-cell" style="cursor:default">
       <div class="macro-cell-label">${label}</div>
-      <div class="macro-cell-valrow"><span class="macro-cell-val" style="color:${color}">${val}</span></div>
+      <div class="macro-cell-valrow"><span class="macro-cell-val" style="color:${color};font-size:32px">${val}</span></div>
     </div>`;
 
   const rampStr = ramp != null
@@ -158,19 +168,19 @@ function treinoFormaHtml(wSorted) {
       ${cell('Fadiga',  d0(atl), 'var(--orange)')}
       ${cell('Forma',   tsbStr,  tsbColor)}
     </div>
-    ${rampStr ? `<div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:10px">${rampStr}</div>` : ''}
+    ${rampStr ? `<div style="font-family:var(--mono);font-size:13px;color:var(--text3);margin-top:10px">${rampStr}</div>` : ''}
   </div>`;
 }
 
 // ── Secção 2 — Chart CTL / ATL · 60 dias ─────────────────────────────────────
 
 function treinoCtlSectionHtml(wSorted) {
-  const header = `<div class="treino-section-label">Fitness · 60 dias</div>`;
+  const header = tSecLabel('Fitness · 60 dias');
   const hasData = wSorted.some(w => tNum(w.ctl) != null || tNum(w.atl) != null);
   if (!hasData) {
-    return `<div style="padding:18px 20px 0">${header}${tEmpty('Sem dados de fitness.')}</div>`;
+    return `<div style="padding:18px 20px 0;margin-top:20px">${header}${tEmpty('Sem dados de fitness.')}</div>`;
   }
-  return `<div style="padding:18px 20px 0">
+  return `<div class="treino-chart-section" style="padding:18px 20px 0;margin-top:20px">
     ${header}
     <div class="treino-chart"><div style="position:relative;height:160px"><canvas id="treino-ctl-chart"></canvas></div></div>
   </div>`;
@@ -215,7 +225,11 @@ function buildTreinoCtlChart(wSorted) {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { display: false },
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { color: TREINO_LEGEND, font: { size: 12 }, boxWidth: 12 },
+        },
         tooltip: {
           backgroundColor: '#1a1a1a',
           borderColor: '#2e2e2e',
@@ -226,9 +240,9 @@ function buildTreinoCtlChart(wSorted) {
       },
       scales: {
         x: {
-          grid: { display: false },
+          grid: { color: TREINO_GRID },
           ticks: {
-            color: '#888',
+            color: TREINO_TICK,
             font: { family: 'IBM Plex Mono', size: 10 },
             maxRotation: 0,
             autoSkip: false,
@@ -240,8 +254,8 @@ function buildTreinoCtlChart(wSorted) {
           border: { color: '#2e2e2e' },
         },
         y: {
-          grid: { color: '#1e1e1e' },
-          ticks: { color: '#888', font: { family: 'IBM Plex Mono', size: 10 } },
+          grid: { color: TREINO_GRID },
+          ticks: { color: TREINO_TICK, font: { family: 'IBM Plex Mono', size: 10 } },
           border: { color: '#2e2e2e' },
         },
       },
@@ -252,14 +266,14 @@ function buildTreinoCtlChart(wSorted) {
 // ── Secção 3 — Chart HRV · 30 dias ───────────────────────────────────────────
 
 function treinoHrvSectionHtml(wSorted) {
-  const header = `<div class="treino-section-label">HRV · 30 dias</div>`;
+  const header = tSecLabel('HRV · 30 dias');
   const last30 = wSorted.slice(-30);
   const withHrv = last30.filter(w => tNum(w.hrv) != null);
 
   if (withHrv.length < 3) {
-    return `<div style="padding:18px 20px 0">${header}${tEmpty('Sem dados HRV suficientes')}</div>`;
+    return `<div style="padding:18px 20px 0;margin-top:20px">${header}${tEmpty('Sem dados HRV suficientes')}</div>`;
   }
-  return `<div style="padding:18px 20px 0">
+  return `<div class="treino-chart-section" style="padding:18px 20px 0;margin-top:20px">
     ${header}
     <div class="treino-chart"><div style="position:relative;height:120px"><canvas id="treino-hrv-chart"></canvas></div></div>
   </div>`;
@@ -293,7 +307,11 @@ function buildTreinoHrvChart(wSorted) {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { display: false },
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { color: TREINO_LEGEND, font: { size: 12 }, boxWidth: 12 },
+        },
         tooltip: {
           backgroundColor: '#1a1a1a',
           borderColor: '#2e2e2e',
@@ -304,9 +322,9 @@ function buildTreinoHrvChart(wSorted) {
       },
       scales: {
         x: {
-          grid: { display: false },
+          grid: { color: TREINO_GRID },
           ticks: {
-            color: '#888',
+            color: TREINO_TICK,
             font: { family: 'IBM Plex Mono', size: 10 },
             maxRotation: 0,
             autoSkip: true,
@@ -315,8 +333,8 @@ function buildTreinoHrvChart(wSorted) {
           border: { color: '#2e2e2e' },
         },
         y: {
-          grid: { color: '#1e1e1e' },
-          ticks: { color: '#888', font: { family: 'IBM Plex Mono', size: 10 } },
+          grid: { color: TREINO_GRID },
+          ticks: { color: TREINO_TICK, font: { family: 'IBM Plex Mono', size: 10 } },
           border: { color: '#2e2e2e' },
         },
       },
@@ -355,15 +373,33 @@ function tDeltaPct(cur, prev) {
   return (cur - prev) / prev * 100;
 }
 
+// Delta em mono 10px: verde se positivo, vermelho se negativo.
 function tDeltaHtml(cur, prev) {
   const pct = tDeltaPct(cur, prev);
-  if (pct == null) return `<span style="font-family:var(--mono);font-size:10px;color:var(--text3)">vs sem. ant. —</span>`;
-  const arrow = pct > 0 ? '↑' : (pct < 0 ? '↓' : '=');
-  return `<span style="font-family:var(--mono);font-size:10px;color:var(--text3)">${arrow} ${Math.abs(Math.round(pct))}%</span>`;
+  if (pct == null) {
+    return `<span style="font-family:var(--mono);font-size:10px;color:var(--text3)">—</span>`;
+  }
+  const rounded = Math.round(pct);
+  if (rounded === 0) {
+    return `<span style="font-family:var(--mono);font-size:10px;color:var(--text3)">= 0%</span>`;
+  }
+  const up = rounded > 0;
+  const arrow = up ? '↑' : '↓';
+  const col = up ? 'var(--accent)' : 'var(--red)';
+  return `<span style="font-family:var(--mono);font-size:10px;color:${col}">${arrow} ${Math.abs(rounded)}%</span>`;
+}
+
+// Chip estilo .msc: label mono 9px uppercase + valor 16px/600 + linha extra.
+function tChip(label, valHtml, extraHtml) {
+  return `<div class="msc">
+    <span style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">${label}</span>
+    <span style="font-size:16px;font-weight:600">${valHtml}</span>
+    ${extraHtml || ''}
+  </div>`;
 }
 
 function treinoWeekSectionHtml(activities) {
-  const header = `<div class="treino-section-label">Resumo da semana</div>`;
+  const header = tSecLabel('Resumo da semana');
 
   if (!Array.isArray(activities)) {
     return `<div style="padding:18px 20px 0">${header}${tEmpty('Sem dados de actividades.')}</div>`;
@@ -377,15 +413,13 @@ function treinoWeekSectionHtml(activities) {
   const cur  = tWeekTotals(activities, thisMon, nextMon);
   const prev = tWeekTotals(activities, lastMon, thisMon);
 
-  const chip = (name, valHtml, deltaHtml) => `<div class="msc">
-    <span class="msc-name">${name}</span>
-    <span class="msc-val" style="font-size:15px">${valHtml}</span>
-    ${deltaHtml}
-  </div>`;
-
-  const km = chip('Distância', `${(cur.meters / 1000).toFixed(1)} <span style="font-size:11px;color:var(--text3)">km</span>`, tDeltaHtml(cur.meters, prev.meters));
-  const tempo = chip('Tempo', tFmtHM(cur.secs), tDeltaHtml(cur.secs, prev.secs));
-  const carga = chip('Carga', `${Math.round(cur.load)}`, tDeltaHtml(cur.load, prev.load));
+  const km = tChip(
+    'Distância',
+    `${(cur.meters / 1000).toFixed(1)} <span style="font-size:11px;color:var(--text3)">km</span>`,
+    tDeltaHtml(cur.meters, prev.meters),
+  );
+  const tempo = tChip('Tempo', tFmtHM(cur.secs), tDeltaHtml(cur.secs, prev.secs));
+  const carga = tChip('Carga', `${Math.round(cur.load)}`, tDeltaHtml(cur.load, prev.load));
 
   return `<div style="padding:18px 20px 0">
     ${header}
@@ -396,7 +430,7 @@ function treinoWeekSectionHtml(activities) {
 // ── Wellness chips (HRV + Sono) ──────────────────────────────────────────────
 
 function treinoWellnessChipsHtml(wSorted) {
-  const header = `<div class="treino-section-label">Wellness · 7 dias</div>`;
+  const header = tSecLabel('Wellness · 7 dias');
   const last7 = wSorted.slice(-7);
 
   if (!last7.length) {
@@ -409,7 +443,7 @@ function treinoWellnessChipsHtml(wSorted) {
   if (hrvVals.length) {
     const last = hrvVals[hrvVals.length - 1];
     const avg = hrvVals.reduce((s, v) => s + v, 0) / hrvVals.length;
-    let arrow = '', col = 'var(--text2)';
+    let arrow = '', col = 'var(--text)';
     if (last > avg + 0.5)      { arrow = ' ↑'; col = 'var(--accent)'; }
     else if (last < avg - 0.5) { arrow = ' ↓'; col = 'var(--red)'; }
     hrvChipVal = `<span style="color:${col}">${Math.round(last)}${arrow}</span>`;
@@ -424,16 +458,11 @@ function treinoWellnessChipsHtml(wSorted) {
     ? (sleepHours.reduce((s, v) => s + v, 0) / sleepHours.length).toFixed(1) + 'h'
     : '—';
 
-  const chip = (name, val) => `<div class="msc">
-    <span class="msc-name">${name}</span>
-    <span class="msc-val">${val}</span>
-  </div>`;
-
   return `<div style="padding:18px 20px 24px">
     ${header}
     <div class="macro-secondary">
-      ${chip('HRV', hrvChipVal)}
-      ${chip('Sono', sleepChipVal)}
+      ${tChip('HRV', hrvChipVal)}
+      ${tChip('Sono', sleepChipVal)}
     </div>
   </div>`;
 }

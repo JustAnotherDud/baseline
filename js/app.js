@@ -100,6 +100,61 @@ async function loadSettingsView() {
     if (phaseNumEl)  phaseNumEl.textContent  = '—';
     if (objetivoEl)  objetivoEl.textContent  = '—';
   }
+
+  const icuIdEl  = document.getElementById('settings-icu-id');
+  const icuKeyEl = document.getElementById('settings-icu-key');
+  const savedId  = localStorage.getItem('icu_id');
+  const savedKey = localStorage.getItem('icu_key');
+  if (icuIdEl)  icuIdEl.textContent  = savedId ? savedId : '—';
+  if (icuKeyEl) icuKeyEl.textContent = savedKey ? '••••••' : '—';
+}
+
+function editIcuSettings() {
+  let overlay = document.getElementById('icu-settings-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'icu-settings-overlay';
+    overlay.className = 'sheet-overlay';
+    overlay.innerHTML = `
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <div class="sheet-title">Intervals.icu</div>
+          <div class="sheet-close" id="icu-settings-close">×</div>
+        </div>
+        <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:14px">
+          <label>
+            <span class="lt">Athlete ID</span>
+            <input type="text" id="icu-settings-id" placeholder="i123456" autocomplete="off">
+          </label>
+          <label>
+            <span class="lt">API Key</span>
+            <input type="password" id="icu-settings-key" placeholder="••••••••" autocomplete="off">
+          </label>
+          <button class="btn btn-primary" onclick="saveIcuSettings()">Guardar</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('open'); };
+    document.getElementById('icu-settings-close').onclick = () => overlay.classList.remove('open');
+  }
+
+  document.getElementById('icu-settings-id').value  = localStorage.getItem('icu_id')  || '';
+  document.getElementById('icu-settings-key').value = localStorage.getItem('icu_key') || '';
+  overlay.classList.add('open');
+}
+
+function saveIcuSettings() {
+  const idVal  = document.getElementById('icu-settings-id').value.trim();
+  const keyVal = document.getElementById('icu-settings-key').value.trim();
+  if (idVal)  localStorage.setItem('icu_id', idVal);   else localStorage.removeItem('icu_id');
+  if (keyVal) localStorage.setItem('icu_key', keyVal); else localStorage.removeItem('icu_key');
+  icuId  = idVal  || null;
+  icuKey = keyVal || null;
+  document.getElementById('icu-settings-overlay').classList.remove('open');
+  toast('Intervals.icu guardado');
+  loadSettingsView();
+  loadTreino();
 }
 
 async function clearCacheAndReload() {

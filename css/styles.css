@@ -413,12 +413,7 @@ input[type="number"] { font-family: var(--mono); }
 /* ── TREINO ── */
 .treino-section-label { font-family: var(--mono); font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px; }
 .treino-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
-.treino-act { display: flex; align-items: center; gap: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; cursor: pointer; }
-.treino-act:active { opacity: .8; }
-.treino-act-icon { font-size: 22px; line-height: 1; }
-.treino-act-body { flex: 1; min-width: 0; }
-.treino-act-name { font-family: var(--sans); font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.treino-act-meta { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-top: 3px; }
+.treino-chart { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
 
 /* ── LOADING ── */
 .loading { padding: 24px 20px; font-family: var(--mono); font-size: 11px; color: var(--text3); text-align: center; }

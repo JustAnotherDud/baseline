@@ -62,7 +62,6 @@ function go(view) {
     else loadMeals();
   }
   if (view==='body') loadBody();
-  if (view==='treino') loadTreino();
   if (view==='settings') loadSettingsView();
   if (view==='stats')    loadStats();
 }
@@ -154,7 +153,7 @@ function saveIcuSettings() {
   document.getElementById('icu-settings-overlay').classList.remove('open');
   toast('Intervals.icu guardado');
   loadSettingsView();
-  loadTreino();
+  loadBody();
 }
 
 async function clearCacheAndReload() {

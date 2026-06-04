@@ -1,289 +1,107 @@
-// Tema dos charts — Chart.js não resolve CSS vars dentro do canvas, por isso
-// lemos os tokens uma vez via getComputedStyle. `var` (não `const`) porque
-// treino.js declara o mesmo identificador no escopo global partilhado.
-var chartTheme = {
+// ── Body — composição corporal (Supabase) + forma de treino (Intervals.icu) ──
+// View única em scroll que funde body_comp (peso/BF/músculo/água) com as
+// métricas de forma do Intervals.icu (CTL/ATL/TSB, HRV, sono, carga semanal).
+//
+// Secções: 1 Forma actual · 2 Última pesagem · 3 Tendência (chart unificado)
+//          4 LBM · 5 HRV · 6 Resumo da semana · 7 Wellness
+
+let loadBodyGen = 0;
+
+// Instâncias de chart (destruídas antes de cada rebuild).
+let bodyTrendChart = null;
+let bodyLbmChart   = null;
+let bodyHrvChart   = null;
+
+// Estado partilhado (período é comum às secções 3 e 4).
+let bodyPeriod = 'month';                                      // week|month|3m|6m|1y|all
+let bodyTrendActive = { ctl: true, atl: false, weight: true, fat: false };
+
+// Dados.
+let bodyAsc       = [];   // body_comp ascendente por data
+let bodyWellness  = [];   // wellness ICU ordenado ascendente
+let bodyTrendRows = [];   // merge wellness + body_comp por data: {date, ctl, atl, weight, fat}
+let bodyLbmRows   = [];   // {date, lbm}
+
+const ICU_BASE = 'https://intervals.icu/api/v1';
+
+// Chart.js não resolve CSS vars dentro do canvas; lemos os tokens uma vez.
+const chartTheme = {
   accent:  getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
   orange:  getComputedStyle(document.documentElement).getPropertyValue('--orange').trim(),
   blue:    getComputedStyle(document.documentElement).getPropertyValue('--blue').trim(),
+  red:     getComputedStyle(document.documentElement).getPropertyValue('--red').trim(),
   grid:    'rgba(255,255,255,0.04)',
   tick:    '#888',
   legend:  '#bbb',
   surface: getComputedStyle(document.documentElement).getPropertyValue('--surface2').trim(),
 };
 
-let loadBodyGen = 0;
-let bodyChartInstance = null;
-let bodyAllData = [];
-let bodyPeriod = 'month';
-let bodyActiveDatasets = { weight: true, fat: false, lbm: false };
-let bodyDate = new Date().toISOString().split('T')[0];
-let bodyTab = 'dia';
+const chartAnim = () =>
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches ? false : { duration: 400 };
 
-async function loadBody() {
-  const gen = ++loadBodyGen;
-  const diaPanel = document.getElementById('body-dia-panel');
-  if (diaPanel) diaPanel.innerHTML = '<div class="loading">A carregar...</div>';
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
-  const { data, error } = await db
-    .from('body_comp')
-    .select('*')
-    .order('date', { ascending: true });
+function tNum(v) { const n = parseFloat(v); return Number.isFinite(n) ? n : null; }
 
-  if (gen !== loadBodyGen) return;
-
-  bodyAllData = (!error && data) ? data : [];
-  bodyPeriod = 'month';
-  bodyActiveDatasets = { weight: true, fat: false, lbm: false };
-  if (bodyChartInstance) { bodyChartInstance.destroy(); bodyChartInstance = null; }
-
-  renderBodyHistorico();
-  await renderBodyDia();
-  if (gen !== loadBodyGen) return;
-  applyBodyTab();
+function tFmtHM(secs) {
+  const s = tNum(secs);
+  if (s == null) return '—';
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  return `${h}:${String(m).padStart(2, '0')}`;
 }
 
-// ── Tab switching ────────────────────────────────────────────────────────────
-
-function applyBodyTab() {
-  const dia  = document.getElementById('body-dia-panel');
-  const hist = document.getElementById('body-historico-panel');
-  if (dia)  dia.style.display  = bodyTab === 'dia' ? '' : 'none';
-  if (hist) hist.style.display = bodyTab === 'historico' ? '' : 'none';
-  const dTab = document.getElementById('body-subtab-dia');
-  const hTab = document.getElementById('body-subtab-historico');
-  if (dTab) dTab.classList.toggle('active', bodyTab === 'dia');
-  if (hTab) hTab.classList.toggle('active', bodyTab === 'historico');
-  // Chart must be (re)built while its panel is visible, else it sizes to 0px.
-  if (bodyTab === 'historico') showBodyHistoricoChart();
+function tDayLabel(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr.length <= 10 ? dateStr + 'T12:00:00' : dateStr);
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
-function switchBodyTab(tab) {
-  bodyTab = tab;
-  applyBodyTab();
+function tWellnessDate(w) { return w.id || w.date || ''; }
+
+function tWellnessSorted(wellness) {
+  return (Array.isArray(wellness) ? wellness.slice() : [])
+    .sort((a, b) => tWellnessDate(a).localeCompare(tWellnessDate(b)));
 }
 
-// ── Tab: Dia ───────────────────────────────────────────────────────────────
-
-function changeBodyDay(delta) {
-  const d = new Date(bodyDate + 'T12:00:00');
-  d.setDate(d.getDate() + delta);
-  bodyDate = d.toISOString().split('T')[0];
-  renderBodyDia();
+function tSecLabel(text) {
+  return `<div class="treino-section-label" style="font-size:12px">${text}</div>`;
 }
 
-function pickBodyDate() {
-  openDatePicker(bodyDate, date => {
-    bodyDate = date;
-    renderBodyDia();
-  });
+function tEmpty(msg) {
+  return `<div style="font-family:var(--mono);font-size:12px;color:var(--text3);padding:4px 0">${msg}</div>`;
 }
 
-function bodyPrevWeighIn(dateStr) {
-  const prior = bodyAllData.filter(r => r.date < dateStr && r.weight_kg != null);
-  return prior.length ? prior[prior.length - 1] : null;
-}
-
-function bodyDiaHeaderHtml() {
-  const d = new Date(bodyDate + 'T12:00:00');
-  const label = d.toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' });
-  return `<div style="display:flex;align-items:center;gap:6px;padding:16px 20px 4px">
-    <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:16px;line-height:1;min-width:44px;min-height:44px" onclick="changeBodyDay(-1)">←</button>
-    <div style="flex:1;text-align:center;font-family:var(--mono);font-size:13px;color:var(--text2);text-transform:capitalize">${label}</div>
-    <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:13px;min-width:44px;min-height:44px" onclick="pickBodyDate()">📅</button>
-    <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:16px;line-height:1;min-width:44px;min-height:44px" onclick="changeBodyDay(1)">→</button>
+// Chip estilo .msc: label mono 9px uppercase + valor 16px/600 + linha extra.
+function tChip(label, valHtml, extraHtml) {
+  return `<div class="msc">
+    <span style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">${label}</span>
+    <span style="font-size:16px;font-weight:600">${valHtml}</span>
+    ${extraHtml || ''}
   </div>`;
 }
 
-function bodyDayCardHtml(bc) {
-  const wrap = inner => `<div style="padding:16px 20px 0">
-    <div style="font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Pesagem</div>
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px">${inner}</div>
-  </div>`;
+// ── ICU fetch ─────────────────────────────────────────────────────────────────
 
-  if (!bc || bc.weight_kg == null) {
-    return wrap(`<div style="text-align:center;color:var(--text3);font-family:var(--mono);font-size:13px">Sem pesagem registada</div>`);
-  }
+function icuHeaders() { return { 'Authorization': 'Basic ' + btoa('API_KEY:' + icuKey) }; }
 
-  const prev = bodyPrevWeighIn(bc.date);
-  let deltaHtml = '';
-  if (prev?.weight_kg != null) {
-    const delta = parseFloat((bc.weight_kg - prev.weight_kg).toFixed(1));
-    if (delta > 0) {
-      deltaHtml = `<span style="color:var(--red);font-family:var(--mono);font-size:13px">↑ ${delta.toFixed(1)} kg</span>`;
-    } else if (delta < 0) {
-      deltaHtml = `<span style="color:var(--accent);font-family:var(--mono);font-size:13px">↓ ${Math.abs(delta).toFixed(1)} kg</span>`;
-    } else {
-      deltaHtml = `<span style="color:var(--text3);font-family:var(--mono);font-size:13px">= 0.0 kg</span>`;
-    }
-  }
-
-  return wrap(`
-    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px">
-      <span style="font-family:var(--mono);font-size:32px;font-weight:600;color:var(--accent);line-height:1">${parseFloat(bc.weight_kg).toFixed(1)}</span>
-      <span style="font-family:var(--mono);font-size:13px;color:var(--text3)">kg</span>
-      ${deltaHtml}
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      ${bodyMetricCard('Body Fat', bc.body_fat_pct, '%', 'var(--orange)')}
-      ${bodyMetricCard('Músculo', bc.muscle_mass_kg, 'kg', 'var(--blue)')}
-      ${bodyMetricCard('Osso', bc.bone_mass_kg, 'kg', 'var(--text2)')}
-      ${bodyMetricCard('Água', bc.water_pct, '%', 'var(--blue)')}
-    </div>
-  `);
+function icuDateOffset(days) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
 }
 
-function bodyNutritionCardHtml(entries, t) {
-  const wrap = inner => `<div style="padding:16px 20px 24px">
-    <div style="font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Nutrição</div>
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px">${inner}</div>
-  </div>`;
-
-  if (!entries || entries.length === 0) {
-    return wrap(`<div style="text-align:center;color:var(--text3);font-family:var(--mono);font-size:13px">Sem registos nutricionais</div>`);
-  }
-
-  const tot = { kcal: 0, prot: 0, carb: 0, fat: 0, fiber: 0 };
-  entries.forEach(e => {
-    tot.kcal  += +e.calories;
-    tot.prot  += +e.protein;
-    tot.carb  += +e.carbs;
-    tot.fat   += +e.fat;
-    tot.fiber += +(e.fiber || 0);
-  });
-
-  const r = n => Math.round(n);
-  const hasTargets = t && t.calories > 0;
-  const kcalPct   = hasTargets ? tot.kcal / t.calories * 100 : 0;
-  const kcalColor = hasTargets ? getNutrientColor('calories', kcalPct) : 'var(--accent)';
-  const kcalTgt   = hasTargets ? `/ ${t.calories} kcal` : 'kcal';
-
-  return wrap(`
-    <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:12px">
-      <span style="font-family:var(--mono);font-size:24px;font-weight:600;color:${kcalColor};line-height:1">${r(tot.kcal)}</span>
-      <span style="font-family:var(--mono);font-size:13px;color:var(--text3)">${kcalTgt}</span>
-    </div>
-    <div style="font-family:var(--mono);font-size:13px;display:flex;flex-wrap:wrap;gap:4px 8px">
-      <span style="color:var(--blue)">P ${r(tot.prot)}g</span>
-      <span style="color:var(--text3)">·</span>
-      <span style="color:var(--yellow)">H ${r(tot.carb)}g</span>
-      <span style="color:var(--text3)">·</span>
-      <span style="color:var(--orange)">G ${r(tot.fat)}g</span>
-      <span style="color:var(--text3)">·</span>
-      <span style="color:var(--accent)">Fibra ${r(tot.fiber)}g</span>
-    </div>
-  `);
+async function icuFetch(path) {
+  const res = await fetch(ICU_BASE + path, { headers: icuHeaders() });
+  if (!res.ok) throw new Error('ICU ' + res.status);
+  return res.json();
 }
 
-async function renderBodyDia() {
-  const panel = document.getElementById('body-dia-panel');
-  if (!panel) return;
-  const gen = loadBodyGen;
-
-  const { data: bc }    = await db.from('body_comp').select('*').eq('date', bodyDate).maybeSingle();
-  const { data: diary } = await db.from('diary').select('*').eq('date', bodyDate);
-  const targets         = await getTargetsForDate(bodyDate);
-
-  if (gen !== loadBodyGen) return;
-
-  panel.innerHTML = bodyDiaHeaderHtml()
-    + bodyDayCardHtml(bc)
-    + bodyNutritionCardHtml(diary || [], targets);
-}
-
-// ── Tab: Histórico ───────────────────────────────────────────────────────────
-
-function renderBodyHistorico() {
-  const container = document.getElementById('body-historico-panel');
-  if (!container) return;
-
-  if (bodyAllData.length === 0) {
-    container.innerHTML = `<div class="empty">
-      <div class="empty-icon">⚖️</div>
-      <div class="empty-text">Sem dados de composição corporal.<br>Sincroniza primeiro com o Garmin.</div>
-    </div>`;
-    return;
-  }
-
-  const latest = bodyAllData[bodyAllData.length - 1];
-  const prev   = bodyAllData.length >= 2 ? bodyAllData[bodyAllData.length - 2] : null;
-
-  let deltaHtml = '';
-  if (latest.weight_kg != null && prev?.weight_kg != null) {
-    const delta = parseFloat((latest.weight_kg - prev.weight_kg).toFixed(1));
-    if (delta > 0) {
-      deltaHtml = `<span style="color:var(--red);font-family:var(--mono);font-size:13px">↑ ${delta.toFixed(1)} kg</span>`;
-    } else if (delta < 0) {
-      deltaHtml = `<span style="color:var(--accent);font-family:var(--mono);font-size:13px">↓ ${Math.abs(delta).toFixed(1)} kg</span>`;
-    } else {
-      deltaHtml = `<span style="color:var(--text3);font-family:var(--mono);font-size:13px">= 0.0 kg</span>`;
-    }
-  }
-
-  const dateFormatted = latest.date
-    ? new Date(latest.date + 'T12:00:00').toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })
-    : '';
-
-  container.innerHTML = `
-    <div style="padding:16px 20px 0">
-      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Última pesagem</div>
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px">
-        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px">
-          <span style="font-family:var(--mono);font-size:42px;font-weight:600;color:var(--accent);line-height:1">${latest.weight_kg != null ? parseFloat(latest.weight_kg).toFixed(1) : '—'}</span>
-          <span style="font-family:var(--mono);font-size:13px;color:var(--text3)">kg</span>
-          ${deltaHtml}
-        </div>
-        <div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-bottom:16px">${dateFormatted}</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          ${bodyMetricCard('Body Fat', latest.body_fat_pct, '%', 'var(--orange)')}
-          ${bodyMetricCard('Músculo', latest.muscle_mass_kg, 'kg', 'var(--blue)')}
-          ${bodyMetricCard('Osso', latest.bone_mass_kg, 'kg', 'var(--text2)')}
-          ${bodyMetricCard('Água', latest.water_pct, '%', 'var(--blue)')}
-        </div>
-      </div>
-    </div>
-
-    <div style="padding:16px 20px 24px">
-      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Tendência</div>
-      <div id="body-period-chips" style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch">
-        <button class="sort-chip" data-period="week"  onclick="setBodyPeriod('week')">Semana</button>
-        <button class="sort-chip active" data-period="month" onclick="setBodyPeriod('month')">Mês</button>
-        <button class="sort-chip" data-period="3m"    onclick="setBodyPeriod('3m')">3M</button>
-        <button class="sort-chip" data-period="6m"    onclick="setBodyPeriod('6m')">6M</button>
-        <button class="sort-chip" data-period="1y"    onclick="setBodyPeriod('1y')">1A</button>
-        <button class="sort-chip" data-period="all"   onclick="setBodyPeriod('all')">Total</button>
-      </div>
-      <div id="body-chart-chips" style="display:flex;gap:6px;margin-bottom:12px">
-        <button class="sort-chip active" data-dataset="weight" onclick="toggleBodyDataset('weight')">Peso</button>
-        <button class="sort-chip" data-dataset="fat"    onclick="toggleBodyDataset('fat')">Body Fat</button>
-        <button class="sort-chip" data-dataset="lbm"    onclick="toggleBodyDataset('lbm')">LBM</button>
-      </div>
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px">
-        <div style="position:relative;height:180px">
-          <canvas id="body-chart"></canvas>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-function showBodyHistoricoChart() {
-  if (!document.getElementById('body-chart')) return;
-  if (bodyChartInstance) { bodyChartInstance.destroy(); bodyChartInstance = null; }
-  buildBodyChart(bodyFilterByPeriod(bodyAllData, bodyPeriod));
-}
-
-function bodyMetricCard(label, value, unit, color) {
-  const display = value != null ? parseFloat(value).toFixed(1) + unit : '—';
-  return `<div style="background:var(--surface3);border-radius:8px;padding:10px 12px">
-    <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:4px">${label}</div>
-    <div style="font-family:var(--mono);font-size:16px;font-weight:600;color:${color}">${display}</div>
-  </div>`;
-}
+// ── Período (estado partilhado secções 3/4) ───────────────────────────────────
 
 function bodyFilterByPeriod(rows, period) {
   if (period === 'all') return rows;
-  const today = new Date();
-  today.setHours(12, 0, 0, 0);
+  const today = new Date(); today.setHours(12, 0, 0, 0);
   const cutoff = new Date(today);
   if      (period === 'week')  cutoff.setDate(today.getDate() - 7);
   else if (period === 'month') cutoff.setMonth(today.getMonth() - 1);
@@ -294,144 +112,461 @@ function bodyFilterByPeriod(rows, period) {
   return rows.filter(r => r.date >= cutoffStr);
 }
 
-function setBodyPeriod(p) {
-  bodyPeriod = p;
-  document.querySelectorAll('#body-period-chips .sort-chip').forEach(c => {
-    c.classList.toggle('active', c.dataset.period === p);
-  });
-  if (bodyChartInstance) { bodyChartInstance.destroy(); bodyChartInstance = null; }
-  buildBodyChart(bodyFilterByPeriod(bodyAllData, p));
+// ── Load ──────────────────────────────────────────────────────────────────────
+
+async function loadBody() {
+  const gen = ++loadBodyGen;
+  const c = document.getElementById('body-container');
+  if (!c) return;
+
+  [bodyTrendChart, bodyLbmChart, bodyHrvChart].forEach(ch => { if (ch) ch.destroy(); });
+  bodyTrendChart = bodyLbmChart = bodyHrvChart = null;
+
+  c.innerHTML = '<div class="loading">A carregar...</div>';
+
+  const hasIcu = !!(icuId && icuKey);
+  const today  = new Date().toISOString().split('T')[0];
+  const back90 = icuDateOffset(-90);
+  const back14 = icuDateOffset(-14);
+
+  // 3 fetches em paralelo. ICU degrada de forma independente (catch → null);
+  // sem credenciais ICU, resolvem null sem rede.
+  const [bodyRes, wellness, activities] = await Promise.all([
+    db.from('body_comp').select('*').order('date', { ascending: true }),
+    hasIcu ? icuFetch(`/athlete/${icuId}/wellness?oldest=${back90}&newest=${today}`).catch(() => null)
+           : Promise.resolve(null),
+    hasIcu ? icuFetch(`/athlete/${icuId}/activities?oldest=${back14}&newest=${today}&fields=name,type,distance,moving_time,icu_training_load,start_date_local`).catch(() => null)
+           : Promise.resolve(null),
+  ]);
+  if (gen !== loadBodyGen) return;
+
+  bodyAsc      = (bodyRes && !bodyRes.error && bodyRes.data) ? bodyRes.data : [];
+  bodyWellness = tWellnessSorted(wellness);
+  bodyPeriod = 'month';
+  bodyTrendActive = { ctl: true, atl: false, weight: true, fat: false };
+
+  bodyTrendRows = buildBodyTrendRows(bodyWellness, bodyAsc);
+  bodyLbmRows   = bodyAsc
+    .filter(b => tNum(b.muscle_mass_kg) != null)
+    .map(b => ({ date: b.date, lbm: tNum(b.muscle_mass_kg) }));
+
+  c.innerHTML =
+      bodyFormaHtml(bodyWellness, hasIcu)
+    + bodyWeighInHtml(bodyAsc)
+    + bodyTrendSectionHtml()
+    + bodyLbmSectionHtml()
+    + bodyHrvSectionHtml(bodyWellness, hasIcu)
+    + bodyWeekSectionHtml(activities, hasIcu)
+    + bodyWellnessChipsHtml(bodyWellness, hasIcu);
+
+  // Charts construídos depois do innerHTML (canvas já no DOM).
+  buildBodyTrendChart();
+  buildBodyLbmChart();
+  buildBodyHrvChart();
 }
 
-function buildBodyChart(rows) {
-  const ctx = document.getElementById('body-chart');
-  if (!ctx) return;
-
-  const dense = rows.length > 60;
-
-  const labels  = rows.map(r => {
-    const d = new Date(r.date + 'T12:00:00');
-    return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+function buildBodyTrendRows(wSorted, asc) {
+  const map = new Map();
+  wSorted.forEach(w => {
+    const d = tWellnessDate(w); if (!d) return;
+    const row = map.get(d) || { date: d };
+    row.ctl = tNum(w.ctl);
+    row.atl = tNum(w.atl);
+    map.set(d, row);
   });
-  const weights = rows.map(r => r.weight_kg     != null ? parseFloat(r.weight_kg)     : null);
-  const fats    = rows.map(r => r.body_fat_pct   != null ? parseFloat(r.body_fat_pct)  : null);
-  const lbms    = rows.map(r => r.muscle_mass_kg != null ? parseFloat(r.muscle_mass_kg): null);
+  asc.forEach(b => {
+    const d = b.date; if (!d) return;
+    const row = map.get(d) || { date: d };
+    row.weight = tNum(b.weight_kg);
+    row.fat    = tNum(b.body_fat_pct);
+    map.set(d, row);
+  });
+  return [...map.values()].sort((a, b) => a.date.localeCompare(b.date));
+}
 
-  const ptRadius = dense ? 0 : 3;
+// ── Secção 1 — Forma actual (CTL / ATL / TSB) ─────────────────────────────────
 
-  bodyChartInstance = new Chart(ctx, {
+function bodyFormaHtml(wSorted, hasIcu) {
+  const header = tSecLabel('Forma actual');
+  const latest = wSorted.length ? wSorted[wSorted.length - 1] : null;
+
+  if (!latest) {
+    const msg = hasIcu ? 'Sem dados de forma.' : 'Configura o Intervals.icu nas Settings';
+    return `<div style="padding:16px 20px 0">${header}${tEmpty(msg)}</div>`;
+  }
+
+  const ctl = tNum(latest.ctl);
+  const atl = tNum(latest.atl);
+  const tsb = (ctl != null && atl != null) ? ctl - atl : null;
+  const ramp = tNum(latest.rampRate);
+
+  const d0 = v => v != null ? Math.round(v) : '—';
+  const tsbStr   = tsb != null ? (tsb > 0 ? '+' + Math.round(tsb) : Math.round(tsb)) : '—';
+  const tsbColor = tsb != null && tsb < 0 ? 'var(--red)' : 'var(--accent)';
+
+  const cell = (label, val, color) => `
+    <div class="macro-cell" style="cursor:default">
+      <div class="macro-cell-label">${label}</div>
+      <div class="macro-cell-valrow"><span class="macro-cell-val" style="color:${color};font-size:32px">${val}</span></div>
+    </div>`;
+
+  const rampStr = ramp != null
+    ? `Ramp rate ${ramp > 0 ? '+' : ''}${ramp.toFixed(1)}/sem`
+    : '';
+
+  return `<div style="padding:16px 20px 0">
+    ${header}
+    <div class="macro-grid" style="margin-top:0;border-top:none">
+      ${cell('Fitness', d0(ctl), 'var(--accent)')}
+      ${cell('Fadiga',  d0(atl), 'var(--orange)')}
+      ${cell('Forma',   tsbStr,  tsbColor)}
+    </div>
+    ${rampStr ? `<div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:10px">${rampStr}</div>` : ''}
+  </div>`;
+}
+
+// ── Secção 2 — Última pesagem (grid 2x2 .msc) ─────────────────────────────────
+
+function bodyPrevWeighIn(dateStr) {
+  const prior = bodyAsc.filter(r => r.date < dateStr && tNum(r.weight_kg) != null);
+  return prior.length ? prior[prior.length - 1] : null;
+}
+
+function bodyWeighInHtml(asc) {
+  const header = tSecLabel('Última pesagem');
+  const withWeight = asc.filter(b => tNum(b.weight_kg) != null);
+  const latest = withWeight.length ? withWeight[withWeight.length - 1] : null;
+
+  if (!latest) {
+    return `<div style="padding:18px 20px 0;margin-top:20px">${header}${tEmpty('Sem dados de composição corporal.')}</div>`;
+  }
+
+  const wNow = tNum(latest.weight_kg);
+  const prev = bodyPrevWeighIn(latest.date);
+  let deltaHtml = '';
+  if (wNow != null && prev && tNum(prev.weight_kg) != null) {
+    const delta = parseFloat((wNow - tNum(prev.weight_kg)).toFixed(1));
+    if (delta > 0)      deltaHtml = `<span style="font-family:var(--mono);font-size:10px;color:var(--red)">↑ ${delta.toFixed(1)} kg</span>`;
+    else if (delta < 0) deltaHtml = `<span style="font-family:var(--mono);font-size:10px;color:var(--accent)">↓ ${Math.abs(delta).toFixed(1)} kg</span>`;
+    else                deltaHtml = `<span style="font-family:var(--mono);font-size:10px;color:var(--text3)">= 0.0 kg</span>`;
+  }
+
+  const val = (v, unit) => {
+    const n = tNum(v);
+    return n != null ? `${n.toFixed(1)} <span style="font-size:11px;color:var(--text3)">${unit}</span>` : '—';
+  };
+  const dateStr = latest.date
+    ? new Date(latest.date + 'T12:00:00').toLocaleDateString('pt-PT', { day: 'numeric', month: 'long' })
+    : '';
+
+  return `<div style="padding:18px 20px 0;margin-top:20px">
+    ${header}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      ${tChip('Peso', val(latest.weight_kg, 'kg'), deltaHtml)}
+      ${tChip('Body Fat', val(latest.body_fat_pct, '%'))}
+      ${tChip('Músculo (LBM)', val(latest.muscle_mass_kg, 'kg'))}
+      ${tChip('Água', val(latest.water_pct, '%'))}
+    </div>
+    ${dateStr ? `<div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:8px">${dateStr}</div>` : ''}
+  </div>`;
+}
+
+// ── Secção 3 — Tendência (chart unificado CTL/ATL/Peso/BF%) ────────────────────
+
+function bodyPeriodChipsHtml() {
+  const P = [['week', 'Semana'], ['month', 'Mês'], ['3m', '3M'], ['6m', '6M'], ['1y', '1A'], ['all', 'Total']];
+  return `<div id="body-period-chips" style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch">
+    ${P.map(([k, l]) => `<button class="sort-chip${bodyPeriod === k ? ' active' : ''}" data-period="${k}" onclick="setBodyPeriod('${k}')">${l}</button>`).join('')}
+  </div>`;
+}
+
+function bodyTrendSectionHtml() {
+  const header = tSecLabel('Tendência');
+  if (!bodyTrendRows.length) {
+    return `<div style="padding:18px 20px 0;margin-top:20px">${header}${tEmpty('Sem dados de tendência.')}</div>`;
+  }
+  const DS = [['ctl', 'CTL'], ['atl', 'ATL'], ['weight', 'Peso'], ['fat', 'BF%']];
+  const chips = DS.map(([k, l]) =>
+    `<button class="sort-chip${bodyTrendActive[k] ? ' active' : ''}" data-ds="${k}" onclick="toggleTrendDataset('${k}')">${l}</button>`
+  ).join('');
+
+  return `<div class="treino-chart-section" style="padding:18px 20px 0;margin-top:20px">
+    ${header}
+    ${bodyPeriodChipsHtml()}
+    <div id="body-trend-chips" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">${chips}</div>
+    <div class="treino-chart"><div style="position:relative;height:200px"><canvas id="body-trend-chart"></canvas></div></div>
+  </div>`;
+}
+
+function setBodyPeriod(p) {
+  bodyPeriod = p;
+  document.querySelectorAll('#body-period-chips .sort-chip').forEach(c =>
+    c.classList.toggle('active', c.dataset.period === p));
+  buildBodyTrendChart();
+  buildBodyLbmChart();
+}
+
+function toggleTrendDataset(key) {
+  bodyTrendActive[key] = !bodyTrendActive[key];
+  document.querySelectorAll('#body-trend-chips .sort-chip').forEach(c =>
+    c.classList.toggle('active', bodyTrendActive[c.dataset.ds]));
+  buildBodyTrendChart();
+}
+
+function buildBodyTrendChart() {
+  const ctx = document.getElementById('body-trend-chart');
+  if (!ctx) return;
+  if (bodyTrendChart) { bodyTrendChart.destroy(); bodyTrendChart = null; }
+
+  const rows = bodyFilterByPeriod(bodyTrendRows, bodyPeriod);
+  const dense = rows.length > 60;
+  const ptR = dense ? 0 : 2;
+  const labels = rows.map(r => tDayLabel(r.date));
+
+  bodyTrendChart = new Chart(ctx, {
     type: 'line',
     data: {
       labels,
       datasets: [
-        {
-          label: 'Peso (kg)',
-          data: weights,
-          borderColor: chartTheme.accent,
-          backgroundColor: 'transparent',
-          borderWidth: 2,
-          pointRadius: ptRadius,
-          pointBackgroundColor: chartTheme.accent,
-          tension: 0.3,
-          hidden: !bodyActiveDatasets.weight,
-          yAxisID: 'y',
-          spanGaps: true,
-        },
-        {
-          label: 'Body Fat (%)',
-          data: fats,
-          borderColor: chartTheme.blue,
-          backgroundColor: 'transparent',
-          borderWidth: 2,
-          pointRadius: ptRadius,
-          pointBackgroundColor: chartTheme.blue,
-          tension: 0.3,
-          hidden: !bodyActiveDatasets.fat,
-          yAxisID: 'y3',
-          spanGaps: true,
-        },
-        {
-          label: 'LBM (kg)',
-          data: lbms,
-          borderColor: chartTheme.orange,
-          backgroundColor: 'transparent',
-          borderWidth: 2,
-          pointRadius: ptRadius,
-          pointBackgroundColor: chartTheme.orange,
-          tension: 0.3,
-          hidden: !bodyActiveDatasets.lbm,
-          yAxisID: 'y2',
-          spanGaps: true,
-        },
+        { label: 'CTL',  data: rows.map(r => r.ctl ?? null),    borderColor: chartTheme.accent, backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0,   tension: 0.3, spanGaps: true, hidden: !bodyTrendActive.ctl,    yAxisID: 'yForm' },
+        { label: 'ATL',  data: rows.map(r => r.atl ?? null),    borderColor: chartTheme.orange, backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0,   tension: 0.3, spanGaps: true, hidden: !bodyTrendActive.atl,    yAxisID: 'yForm' },
+        { label: 'Peso', data: rows.map(r => r.weight ?? null), borderColor: chartTheme.blue,   backgroundColor: 'transparent', borderWidth: 2, pointRadius: ptR, pointBackgroundColor: chartTheme.blue, tension: 0.3, spanGaps: true, hidden: !bodyTrendActive.weight, yAxisID: 'yWeight' },
+        { label: 'BF%',  data: rows.map(r => r.fat ?? null),    borderColor: chartTheme.red,    backgroundColor: 'transparent', borderWidth: 2, pointRadius: ptR, pointBackgroundColor: chartTheme.red,  tension: 0.3, spanGaps: true, hidden: !bodyTrendActive.fat,    yAxisID: 'yFat' },
       ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      animation: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? false : { duration: 400 },
+      animation: chartAnim(),
       plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: chartTheme.surface,
-          borderColor: '#2e2e2e',
-          borderWidth: 1,
-          titleColor: chartTheme.legend,
-          bodyColor: '#f0f0f0',
-        },
+        legend: { display: true, position: 'top', labels: { color: chartTheme.legend, font: { size: 11 }, boxWidth: 12 } },
+        tooltip: { backgroundColor: chartTheme.surface, borderColor: '#2e2e2e', borderWidth: 1, titleColor: chartTheme.legend, bodyColor: '#f0f0f0' },
       },
       scales: {
-        x: {
-          grid: { display: false },
-          ticks: {
-            color: chartTheme.tick,
-            font: { family: 'IBM Plex Mono', size: 10 },
-            maxRotation: 0,
-            autoSkip: true,
-            maxTicksLimit: 8,
-          },
-          border: { color: '#2e2e2e' },
-        },
-        y: {
-          position: 'left',
-          display: bodyActiveDatasets.weight,
-          grid: { color: chartTheme.grid },
-          ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } },
-          border: { color: '#2e2e2e' },
-        },
-        y2: {
-          position: 'right',
-          display: bodyActiveDatasets.lbm,
-          grid: { drawOnChartArea: false },
-          ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } },
-          border: { color: '#2e2e2e' },
-        },
-        y3: {
-          position: 'right',
-          display: bodyActiveDatasets.fat,
-          grid: { drawOnChartArea: false },
-          ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } },
-          border: { color: '#2e2e2e' },
-        },
+        x: { grid: { color: chartTheme.grid }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }, border: { color: '#2e2e2e' } },
+        yForm:   { position: 'left',  display: bodyTrendActive.ctl || bodyTrendActive.atl, suggestedMin: 0,  suggestedMax: 100, grid: { color: chartTheme.grid }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } }, border: { color: '#2e2e2e' } },
+        yWeight: { position: 'right', display: bodyTrendActive.weight,                     suggestedMin: 60, suggestedMax: 80,  grid: { drawOnChartArea: false }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } }, border: { color: '#2e2e2e' } },
+        yFat:    { position: 'right', display: bodyTrendActive.fat,                        suggestedMin: 10, suggestedMax: 25,  grid: { drawOnChartArea: false }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } }, border: { color: '#2e2e2e' } },
       },
     },
   });
 }
 
-function toggleBodyDataset(key) {
-  if (!bodyChartInstance) return;
-  bodyActiveDatasets[key] = !bodyActiveDatasets[key];
+// ── Secção 4 — LBM (Lean Body Mass) ───────────────────────────────────────────
 
-  document.querySelectorAll('#body-chart-chips .sort-chip').forEach(c => {
-    c.classList.toggle('active', bodyActiveDatasets[c.dataset.dataset]);
+function bodyLbmSectionHtml() {
+  const header = tSecLabel('LBM · Lean Body Mass');
+  if (!bodyLbmRows.length) {
+    return `<div style="padding:18px 20px 0;margin-top:20px">${header}${tEmpty('Sem dados de massa muscular.')}</div>`;
+  }
+  return `<div class="treino-chart-section" style="padding:18px 20px 0;margin-top:20px">
+    ${header}
+    <div class="treino-chart"><div style="position:relative;height:120px"><canvas id="body-lbm-chart"></canvas></div></div>
+  </div>`;
+}
+
+function buildBodyLbmChart() {
+  const ctx = document.getElementById('body-lbm-chart');
+  if (!ctx) return;
+  if (bodyLbmChart) { bodyLbmChart.destroy(); bodyLbmChart = null; }
+
+  const rows = bodyFilterByPeriod(bodyLbmRows, bodyPeriod);
+  const dense = rows.length > 60;
+
+  bodyLbmChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: rows.map(r => tDayLabel(r.date)),
+      datasets: [{
+        label: 'LBM (kg)',
+        data: rows.map(r => r.lbm),
+        borderColor: chartTheme.blue,
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        pointRadius: dense ? 0 : 2,
+        pointBackgroundColor: chartTheme.blue,
+        tension: 0.3,
+        spanGaps: true,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: chartAnim(),
+      plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor: chartTheme.surface, borderColor: '#2e2e2e', borderWidth: 1, titleColor: chartTheme.legend, bodyColor: '#f0f0f0' },
+      },
+      scales: {
+        x: { grid: { color: chartTheme.grid }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }, border: { color: '#2e2e2e' } },
+        y: { grid: { color: chartTheme.grid }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } }, border: { color: '#2e2e2e' } },
+      },
+    },
   });
+}
 
-  const [weightDs, fatDs, lbmDs] = bodyChartInstance.data.datasets;
-  weightDs.hidden = !bodyActiveDatasets.weight;
-  fatDs.hidden    = !bodyActiveDatasets.fat;
-  lbmDs.hidden    = !bodyActiveDatasets.lbm;
+// ── Secção 5 — HRV (30 dias) ──────────────────────────────────────────────────
 
-  bodyChartInstance.options.scales.y.display  = bodyActiveDatasets.weight;
-  bodyChartInstance.options.scales.y2.display = bodyActiveDatasets.lbm;
-  bodyChartInstance.options.scales.y3.display = bodyActiveDatasets.fat;
-  bodyChartInstance.update();
+function bodyHrvSectionHtml(wSorted, hasIcu) {
+  const header = tSecLabel('HRV · 30 dias');
+  const last30 = wSorted.slice(-30).filter(w => tNum(w.hrv) != null);
+  if (last30.length < 3) {
+    const msg = hasIcu ? 'Sem dados HRV suficientes' : 'Configura o Intervals.icu nas Settings';
+    return `<div style="padding:18px 20px 0;margin-top:20px">${header}${tEmpty(msg)}</div>`;
+  }
+  return `<div class="treino-chart-section" style="padding:18px 20px 0;margin-top:20px">
+    ${header}
+    <div class="treino-chart"><div style="position:relative;height:120px"><canvas id="body-hrv-chart"></canvas></div></div>
+  </div>`;
+}
+
+function buildBodyHrvChart() {
+  const ctx = document.getElementById('body-hrv-chart');
+  if (!ctx) return;
+  if (bodyHrvChart) { bodyHrvChart.destroy(); bodyHrvChart = null; }
+
+  const last30 = bodyWellness.slice(-30).filter(w => tNum(w.hrv) != null);
+  bodyHrvChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: last30.map(w => tDayLabel(tWellnessDate(w))),
+      datasets: [{
+        label: 'HRV',
+        data: last30.map(w => tNum(w.hrv)),
+        borderColor: chartTheme.blue,
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        pointRadius: 2,
+        pointBackgroundColor: chartTheme.blue,
+        tension: 0.3,
+        spanGaps: true,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: chartAnim(),
+      plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor: chartTheme.surface, borderColor: '#2e2e2e', borderWidth: 1, titleColor: chartTheme.legend, bodyColor: '#f0f0f0' },
+      },
+      scales: {
+        x: { grid: { color: chartTheme.grid }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 6 }, border: { color: '#2e2e2e' } },
+        y: { grid: { color: chartTheme.grid }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } }, border: { color: '#2e2e2e' } },
+      },
+    },
+  });
+}
+
+// ── Secção 6 — Resumo da semana ───────────────────────────────────────────────
+
+function tMondayOf(date) {
+  const x = new Date(date);
+  x.setHours(0, 0, 0, 0);
+  const day = (x.getDay() + 6) % 7; // 0 = segunda
+  x.setDate(x.getDate() - day);
+  return x;
+}
+
+function tWeekTotals(activities, start, end) {
+  const tot = { meters: 0, secs: 0, load: 0 };
+  activities.forEach(a => {
+    const ds = a.start_date_local || a.start_date;
+    if (!ds) return;
+    const d = new Date(ds);
+    if (d >= start && d < end) {
+      tot.meters += tNum(a.distance) || 0;
+      tot.secs   += tNum(a.moving_time) || 0;
+      tot.load   += tNum(a.icu_training_load) || 0;
+    }
+  });
+  return tot;
+}
+
+function tDeltaPct(cur, prev) {
+  if (prev == null || prev === 0) return null;
+  return (cur - prev) / prev * 100;
+}
+
+function tDeltaHtml(cur, prev) {
+  const pct = tDeltaPct(cur, prev);
+  if (pct == null) {
+    return `<span style="font-family:var(--mono);font-size:10px;color:var(--text3)">—</span>`;
+  }
+  const rounded = Math.round(pct);
+  if (rounded === 0) {
+    return `<span style="font-family:var(--mono);font-size:10px;color:var(--text3)">= 0%</span>`;
+  }
+  const up = rounded > 0;
+  const arrow = up ? '↑' : '↓';
+  const col = up ? 'var(--accent)' : 'var(--red)';
+  return `<span style="font-family:var(--mono);font-size:10px;color:${col}">${arrow} ${Math.abs(rounded)}%</span>`;
+}
+
+function bodyWeekSectionHtml(activities, hasIcu) {
+  const header = tSecLabel('Resumo da semana');
+
+  if (!Array.isArray(activities)) {
+    const msg = hasIcu ? 'Sem dados de actividades.' : 'Configura o Intervals.icu nas Settings';
+    return `<div style="padding:18px 20px 0;margin-top:20px">${header}${tEmpty(msg)}</div>`;
+  }
+
+  const now = new Date();
+  const thisMon = tMondayOf(now);
+  const lastMon = new Date(thisMon); lastMon.setDate(lastMon.getDate() - 7);
+  const nextMon = new Date(thisMon); nextMon.setDate(nextMon.getDate() + 7);
+
+  const cur  = tWeekTotals(activities, thisMon, nextMon);
+  const prev = tWeekTotals(activities, lastMon, thisMon);
+
+  const km = tChip(
+    'Distância',
+    `${(cur.meters / 1000).toFixed(1)} <span style="font-size:11px;color:var(--text3)">km</span>`,
+    tDeltaHtml(cur.meters, prev.meters),
+  );
+  const tempo = tChip('Tempo', tFmtHM(cur.secs), tDeltaHtml(cur.secs, prev.secs));
+  const carga = tChip('Carga', `${Math.round(cur.load)}`, tDeltaHtml(cur.load, prev.load));
+
+  return `<div style="padding:18px 20px 0;margin-top:20px">
+    ${header}
+    <div class="macro-secondary">${km}${tempo}${carga}</div>
+  </div>`;
+}
+
+// ── Secção 7 — Wellness (HRV + Sono) ──────────────────────────────────────────
+
+function bodyWellnessChipsHtml(wSorted, hasIcu) {
+  const header = tSecLabel('Wellness · 7 dias');
+  const last7 = wSorted.slice(-7);
+
+  if (!last7.length) {
+    const msg = hasIcu ? 'Sem dados de wellness.' : 'Configura o Intervals.icu nas Settings';
+    return `<div style="padding:18px 20px 24px">${header}${tEmpty(msg)}</div>`;
+  }
+
+  // HRV — último valor + seta vs média 7d.
+  const hrvVals = last7.map(w => tNum(w.hrv)).filter(v => v != null);
+  let hrvChipVal = '—';
+  if (hrvVals.length) {
+    const last = hrvVals[hrvVals.length - 1];
+    const avg = hrvVals.reduce((s, v) => s + v, 0) / hrvVals.length;
+    let arrow = '', col = 'var(--text)';
+    if (last > avg + 0.5)      { arrow = ' ↑'; col = 'var(--accent)'; }
+    else if (last < avg - 0.5) { arrow = ' ↓'; col = 'var(--red)'; }
+    hrvChipVal = `<span style="color:${col}">${Math.round(last)}${arrow}</span>`;
+  }
+
+  // Sono — média 7d em horas (sleepSecs / 3600).
+  const sleepHours = last7.map(w => (w.sleepSecs != null ? tNum(w.sleepSecs) / 3600 : null)).filter(v => v != null);
+  const sleepChipVal = sleepHours.length
+    ? (sleepHours.reduce((s, v) => s + v, 0) / sleepHours.length).toFixed(1) + 'h'
+    : '—';
+
+  return `<div style="padding:18px 20px 24px">
+    ${header}
+    <div class="macro-secondary">
+      ${tChip('HRV', hrvChipVal)}
+      ${tChip('Sono', sleepChipVal)}
+    </div>
+  </div>`;
 }

@@ -1,5 +1,5 @@
 // ── Treino — integração Intervals.icu ────────────────────────────────────────
-// Auth: HTTP Basic com a API key como utilizador e password vazio (btoa("KEY:")).
+// Auth: HTTP Basic com utilizador "API_KEY" e a key como password (btoa("API_KEY:" + key)).
 // Base URL: https://intervals.icu/api/v1
 
 let loadTreinoGen = 0;
@@ -8,7 +8,7 @@ let treinoActivities = [];
 const ICU_BASE = 'https://intervals.icu/api/v1';
 
 function icuHeaders() {
-  return { 'Authorization': 'Basic ' + btoa(icuKey + ':') };
+  return { 'Authorization': 'Basic ' + btoa('API_KEY:' + icuKey) };
 }
 
 function icuDateOffset(days) {

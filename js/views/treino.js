@@ -1,9 +1,16 @@
 // ── Treino — integração Intervals.icu ────────────────────────────────────────
 // Auth: HTTP Basic com utilizador "API_KEY" e a key como password (btoa("API_KEY:" + key)).
 // Base URL: https://intervals.icu/api/v1
+//
+// A view mostra métricas e charts (sem lista de actividades individuais):
+//   1. Forma actual (CTL / ATL / TSB) — último registo de wellness
+//   2. Chart CTL/ATL — 60 dias
+//   3. Chart HRV — 30 dias
+//   4. Resumo da semana (vs semana anterior) + chips de wellness
 
 let loadTreinoGen = 0;
-let treinoActivities = [];
+let treinoCtlChart = null;
+let treinoHrvChart = null;
 
 const ICU_BASE = 'https://intervals.icu/api/v1';
 
@@ -23,52 +30,52 @@ async function icuFetch(path) {
   return res.json();
 }
 
-// ── Helpers de formatação ──────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
 function tNum(v) {
   const n = parseFloat(v);
   return Number.isFinite(n) ? n : null;
 }
 
-function tFmtDur(secs) {
+function tFmtHM(secs) {
   const s = tNum(secs);
   if (s == null) return '—';
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  return `${h}:${String(m).padStart(2, '0')}`;
 }
 
-function tFmtPace(secs, meters) {
-  const s = tNum(secs), m = tNum(meters);
-  if (s == null || m == null || m <= 0) return null;
-  const perKm = s / (m / 1000);          // segundos por km
-  const min = Math.floor(perKm / 60);
-  const sec = Math.round(perKm % 60);
-  return `${min}:${String(sec).padStart(2, '0')} /km`;
+// Etiqueta dd/mm a partir de "YYYY-MM-DD" ou ISO.
+function tDayLabel(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr.length <= 10 ? dateStr + 'T12:00:00' : dateStr);
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
-function tActIcon(type) {
-  const t = (type || '').toLowerCase();
-  if (t.includes('run'))  return '🏃';
-  if (t.includes('ride') || t.includes('cycl') || t.includes('bike')) return '🚴';
-  if (t.includes('swim')) return '🏊';
-  if (t.includes('walk') || t.includes('hike')) return '🚶';
-  return '⚡';
+// Data (chave) de um registo de wellness — o id é "YYYY-MM-DD".
+function tWellnessDate(w) {
+  return w.id || w.date || '';
 }
 
-function tActField(a, ...keys) {
-  for (const k of keys) {
-    if (a[k] != null) return a[k];
-  }
-  return null;
+function tWellnessSorted(wellness) {
+  return (Array.isArray(wellness) ? wellness.slice() : [])
+    .sort((a, b) => tWellnessDate(a).localeCompare(tWellnessDate(b)));
 }
 
-// ── Load ────────────────────────────────────────────────────────────────────
+function tEmpty(msg) {
+  return `<div style="font-family:var(--mono);font-size:11px;color:var(--text3);padding:4px 0">${msg}</div>`;
+}
+
+// ── Load ─────────────────────────────────────────────────────────────────────
 
 async function loadTreino() {
   const gen = ++loadTreinoGen;
   const c = document.getElementById('treino-container');
   if (!c) return;
+
+  // Destruir charts antigos antes de re-render.
+  if (treinoCtlChart) { treinoCtlChart.destroy(); treinoCtlChart = null; }
+  if (treinoHrvChart) { treinoHrvChart.destroy(); treinoHrvChart = null; }
 
   if (!icuId || !icuKey) {
     c.innerHTML = `<div class="empty">
@@ -81,63 +88,58 @@ async function loadTreino() {
   c.innerHTML = '<div class="loading">A carregar...</div>';
 
   const today  = new Date().toISOString().split('T')[0];
+  const back60 = icuDateOffset(-60);
   const back14 = icuDateOffset(-14);
-  const back7  = icuDateOffset(-7);
 
-  let profile, activities, wellness;
-  try {
-    [profile, activities, wellness] = await Promise.all([
-      icuFetch(`/athlete/${icuId}/profile`),
-      icuFetch(`/athlete/${icuId}/activities?oldest=${back14}&newest=${today}`),
-      icuFetch(`/athlete/${icuId}/wellness?oldest=${back7}&newest=${today}`),
-    ]);
-  } catch (e) {
-    if (gen !== loadTreinoGen) return;
+  // Fetches em paralelo. Cada um falha de forma independente (catch → null)
+  // para que um erro numa secção não afecte as outras.
+  const [wellness, activities] = await Promise.all([
+    icuFetch(`/athlete/${icuId}/wellness?oldest=${back60}&newest=${today}`).catch(() => null),
+    icuFetch(`/athlete/${icuId}/activities?oldest=${back14}&newest=${today}&fields=name,type,distance,moving_time,icu_training_load,start_date_local`).catch(() => null),
+  ]);
+  if (gen !== loadTreinoGen) return;
+
+  if (wellness === null && activities === null) {
     c.innerHTML = `<div class="empty">
       <div class="empty-icon">⚠️</div>
       <div class="empty-text">Erro a ligar ao Intervals.icu.<br>Verifica o ID e a API key nas Settings.</div>
     </div>`;
     return;
   }
-  if (gen !== loadTreinoGen) return;
 
-  // Próximo treino — secção opcional, não bloqueia o resto se falhar.
-  let nextEvent = null;
-  try {
-    const events = await icuFetch(`/athlete/${icuId}/events?oldest=${today}&category=WORKOUT&limit=1`);
-    if (gen !== loadTreinoGen) return;
-    if (Array.isArray(events) && events.length) nextEvent = events[0];
-  } catch (e) { /* ignora — secção opcional */ }
-
-  treinoActivities = Array.isArray(activities) ? activities.slice() : [];
+  const wSorted = tWellnessSorted(wellness);
 
   c.innerHTML =
-      treinoFitnessHtml(profile, wellness)
-    + treinoNextHtml(nextEvent)
-    + treinoActivitiesHtml(treinoActivities)
-    + treinoWellnessHtml(wellness);
+      treinoFormaHtml(wSorted)
+    + treinoCtlSectionHtml(wSorted)
+    + treinoHrvSectionHtml(wSorted)
+    + treinoWeekSectionHtml(activities)
+    + treinoWellnessChipsHtml(wSorted);
+
+  // Charts são construídos depois do innerHTML (canvas já no DOM).
+  buildTreinoCtlChart(wSorted);
+  buildTreinoHrvChart(wSorted);
 }
 
-// ── Secção 1 — Fitness (CTL / ATL / TSB) ─────────────────────────────────────
+// ── Secção 1 — Forma actual ──────────────────────────────────────────────────
 
-function treinoLatestWellness(wellness) {
-  if (!Array.isArray(wellness) || !wellness.length) return {};
-  return wellness.reduce((acc, w) => (!acc.id || (w.id > acc.id) ? w : acc), wellness[0]);
-}
+function treinoFormaHtml(wSorted) {
+  const header = `<div class="treino-section-label">Forma actual</div>`;
+  const latest = wSorted.length ? wSorted[wSorted.length - 1] : null;
 
-function treinoFitnessHtml(profile, wellness) {
-  profile = profile || {};
-  const w = treinoLatestWellness(wellness);
+  if (!latest) {
+    return `<div style="padding:16px 20px 0">${header}${tEmpty('Sem dados de forma.')}</div>`;
+  }
 
-  const ctl = tNum(profile.ctl  ?? profile.fitness ?? w.ctl);
-  const atl = tNum(profile.atl  ?? profile.fatigue ?? w.atl);
-  let tsb   = tNum(profile.tsb  ?? profile.form);
-  if (tsb == null && ctl != null && atl != null) tsb = ctl - atl;
-  const ramp = tNum(profile.rampRate ?? w.rampRate);
+  const ctl = tNum(latest.ctl);
+  const atl = tNum(latest.atl);
+  let tsb = null;
+  if (ctl != null && atl != null) tsb = ctl - atl;
+  const ramp = tNum(latest.rampRate);
 
-  const tsbColor = tsb != null && tsb < 0 ? 'var(--red)' : 'var(--accent)';
   const d0 = v => v != null ? Math.round(v) : '—';
   const tsbStr = tsb != null ? (tsb > 0 ? '+' + Math.round(tsb) : Math.round(tsb)) : '—';
+  const tsbColor = tsb != null && tsb < 0 ? 'var(--red)' : 'var(--accent)';
 
   const cell = (label, val, color) => `
     <div class="macro-cell" style="cursor:default">
@@ -150,7 +152,7 @@ function treinoFitnessHtml(profile, wellness) {
     : '';
 
   return `<div style="padding:16px 20px 0">
-    <div class="treino-section-label">Fitness</div>
+    ${header}
     <div class="macro-grid" style="margin-top:0;border-top:none">
       ${cell('Fitness', d0(ctl), 'var(--accent)')}
       ${cell('Fadiga',  d0(atl), 'var(--orange)')}
@@ -160,183 +162,278 @@ function treinoFitnessHtml(profile, wellness) {
   </div>`;
 }
 
-// ── Secção 2 — Próximo treino ────────────────────────────────────────────────
+// ── Secção 2 — Chart CTL / ATL · 60 dias ─────────────────────────────────────
 
-function treinoNextHtml(ev) {
-  if (!ev) return '';
-
-  const name = ev.name || ev.workout_name || 'Treino planeado';
-  const dateStr = ev.start_date_local || ev.start_date || ev.date;
-  let dateLabel = '';
-  if (dateStr) {
-    const d = new Date(dateStr.length <= 10 ? dateStr + 'T12:00:00' : dateStr);
-    dateLabel = d.toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' });
+function treinoCtlSectionHtml(wSorted) {
+  const header = `<div class="treino-section-label">Fitness · 60 dias</div>`;
+  const hasData = wSorted.some(w => tNum(w.ctl) != null || tNum(w.atl) != null);
+  if (!hasData) {
+    return `<div style="padding:18px 20px 0">${header}${tEmpty('Sem dados de fitness.')}</div>`;
   }
-
-  const durSecs = tNum(ev.moving_time ?? ev.icu_training_load ?? ev.duration);
-  const durStr = ev.moving_time != null ? tFmtDur(ev.moving_time)
-               : (ev.duration != null ? tFmtDur(ev.duration) : null);
-
   return `<div style="padding:18px 20px 0">
-    <div class="treino-section-label">Próximo treino</div>
-    <div class="treino-card">
-      <div style="font-family:var(--sans);font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px">${name}</div>
-      <div style="font-family:var(--mono);font-size:11px;color:var(--text3);text-transform:capitalize">
-        ${dateLabel}${durStr ? ` · ${durStr}` : ''}
-      </div>
-    </div>
+    ${header}
+    <div class="treino-chart"><div style="position:relative;height:160px"><canvas id="treino-ctl-chart"></canvas></div></div>
   </div>`;
 }
 
-// ── Secção 3 — Actividades recentes (14 dias) ────────────────────────────────
+function buildTreinoCtlChart(wSorted) {
+  const ctx = document.getElementById('treino-ctl-chart');
+  if (!ctx) return;
 
-function treinoActivitiesHtml(activities) {
-  const header = `<div class="treino-section-label">Actividades · 14 dias</div>`;
+  const labels = wSorted.map(w => tDayLabel(tWellnessDate(w)));
+  const ctlData = wSorted.map(w => tNum(w.ctl));
+  const atlData = wSorted.map(w => tNum(w.atl));
 
-  if (!activities.length) {
-    return `<div style="padding:18px 20px 0">${header}
-      <div class="empty-meals">Sem actividades nos últimos 14 dias.</div>
-    </div>`;
-  }
-
-  // Mais recentes primeiro.
-  const sorted = activities.slice().sort((a, b) => {
-    const da = a.start_date_local || a.start_date || '';
-    const dbb = b.start_date_local || b.start_date || '';
-    return dbb.localeCompare(da);
+  treinoCtlChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Fitness (CTL)',
+          data: ctlData,
+          borderColor: '#4ade80',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.3,
+          spanGaps: true,
+        },
+        {
+          label: 'Fadiga (ATL)',
+          data: atlData,
+          borderColor: '#fb923c',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.3,
+          spanGaps: true,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1a1a',
+          borderColor: '#2e2e2e',
+          borderWidth: 1,
+          titleColor: '#bbb',
+          bodyColor: '#f0f0f0',
+        },
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            color: '#888',
+            font: { family: 'IBM Plex Mono', size: 10 },
+            maxRotation: 0,
+            autoSkip: false,
+            // Mostrar apenas 1 etiqueta em cada 7.
+            callback: function (val, index) {
+              return index % 7 === 0 ? this.getLabelForValue(val) : '';
+            },
+          },
+          border: { color: '#2e2e2e' },
+        },
+        y: {
+          grid: { color: '#1e1e1e' },
+          ticks: { color: '#888', font: { family: 'IBM Plex Mono', size: 10 } },
+          border: { color: '#2e2e2e' },
+        },
+      },
+    },
   });
-  treinoActivities = sorted;
-
-  const cards = sorted.map((a, i) => {
-    const icon = tActIcon(a.type);
-    const name = a.name || a.type || 'Actividade';
-    const dist = tNum(tActField(a, 'distance', 'icu_distance'));
-    const distStr = dist != null && dist > 0 ? (dist / 1000).toFixed(1) + ' km' : null;
-    const durStr = tFmtDur(tActField(a, 'moving_time', 'elapsed_time'));
-    const hr = tNum(tActField(a, 'average_heartrate', 'icu_average_hr'));
-    const load = tNum(tActField(a, 'icu_training_load', 'training_load'));
-
-    const meta = [];
-    if (distStr) meta.push(distStr);
-    if (durStr !== '—') meta.push(durStr);
-    if (hr != null) meta.push(`${Math.round(hr)} bpm`);
-    if (load != null) meta.push(`TL ${Math.round(load)}`);
-
-    return `<div class="treino-act" onclick="openTreinoDetail(${i})">
-      <div class="treino-act-icon">${icon}</div>
-      <div class="treino-act-body">
-        <div class="treino-act-name">${name}</div>
-        <div class="treino-act-meta">${meta.join(' · ')}</div>
-      </div>
-      <div style="color:var(--text3);font-size:18px">›</div>
-    </div>`;
-  }).join('');
-
-  return `<div style="padding:18px 20px 0">${header}${cards}</div>`;
 }
 
-function openTreinoDetail(idx) {
-  const a = treinoActivities[idx];
-  if (!a) return;
+// ── Secção 3 — Chart HRV · 30 dias ───────────────────────────────────────────
 
-  let overlay = document.getElementById('treino-detail-overlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.id = 'treino-detail-overlay';
-    overlay.className = 'sheet-overlay';
-    overlay.innerHTML = `
-      <div class="sheet" style="max-height:80dvh">
-        <div class="sheet-handle"></div>
-        <div class="sheet-header">
-          <div id="treino-detail-title" class="sheet-title"></div>
-          <div class="sheet-close" id="treino-detail-close">×</div>
-        </div>
-        <div id="treino-detail-body"></div>
-      </div>`;
-    document.body.appendChild(overlay);
-    overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('open'); };
-    document.getElementById('treino-detail-close').onclick = () => overlay.classList.remove('open');
+function treinoHrvSectionHtml(wSorted) {
+  const header = `<div class="treino-section-label">HRV · 30 dias</div>`;
+  const last30 = wSorted.slice(-30);
+  const withHrv = last30.filter(w => tNum(w.hrv) != null);
+
+  if (withHrv.length < 3) {
+    return `<div style="padding:18px 20px 0">${header}${tEmpty('Sem dados HRV suficientes')}</div>`;
+  }
+  return `<div style="padding:18px 20px 0">
+    ${header}
+    <div class="treino-chart"><div style="position:relative;height:120px"><canvas id="treino-hrv-chart"></canvas></div></div>
+  </div>`;
+}
+
+function buildTreinoHrvChart(wSorted) {
+  const ctx = document.getElementById('treino-hrv-chart');
+  if (!ctx) return;
+
+  const last30 = wSorted.slice(-30).filter(w => tNum(w.hrv) != null);
+  const labels = last30.map(w => tDayLabel(tWellnessDate(w)));
+  const hrvData = last30.map(w => tNum(w.hrv));
+
+  treinoHrvChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'HRV',
+        data: hrvData,
+        borderColor: '#60a5fa',
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        pointRadius: 2,
+        pointBackgroundColor: '#60a5fa',
+        tension: 0.3,
+        spanGaps: true,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1a1a',
+          borderColor: '#2e2e2e',
+          borderWidth: 1,
+          titleColor: '#bbb',
+          bodyColor: '#f0f0f0',
+        },
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            color: '#888',
+            font: { family: 'IBM Plex Mono', size: 10 },
+            maxRotation: 0,
+            autoSkip: true,
+            maxTicksLimit: 6,
+          },
+          border: { color: '#2e2e2e' },
+        },
+        y: {
+          grid: { color: '#1e1e1e' },
+          ticks: { color: '#888', font: { family: 'IBM Plex Mono', size: 10 } },
+          border: { color: '#2e2e2e' },
+        },
+      },
+    },
+  });
+}
+
+// ── Secção 4 — Resumo da semana ──────────────────────────────────────────────
+
+function tMondayOf(date) {
+  const x = new Date(date);
+  x.setHours(0, 0, 0, 0);
+  const day = (x.getDay() + 6) % 7; // 0 = segunda
+  x.setDate(x.getDate() - day);
+  return x;
+}
+
+function tWeekTotals(activities, start, end) {
+  // [start, end)
+  const tot = { meters: 0, secs: 0, load: 0 };
+  activities.forEach(a => {
+    const ds = a.start_date_local || a.start_date;
+    if (!ds) return;
+    const d = new Date(ds);
+    if (d >= start && d < end) {
+      tot.meters += tNum(a.distance) || 0;
+      tot.secs   += tNum(a.moving_time) || 0;
+      tot.load   += tNum(a.icu_training_load) || 0;
+    }
+  });
+  return tot;
+}
+
+function tDeltaPct(cur, prev) {
+  if (prev == null || prev === 0) return null;
+  return (cur - prev) / prev * 100;
+}
+
+function tDeltaHtml(cur, prev) {
+  const pct = tDeltaPct(cur, prev);
+  if (pct == null) return `<span style="font-family:var(--mono);font-size:10px;color:var(--text3)">vs sem. ant. —</span>`;
+  const arrow = pct > 0 ? '↑' : (pct < 0 ? '↓' : '=');
+  return `<span style="font-family:var(--mono);font-size:10px;color:var(--text3)">${arrow} ${Math.abs(Math.round(pct))}%</span>`;
+}
+
+function treinoWeekSectionHtml(activities) {
+  const header = `<div class="treino-section-label">Resumo da semana</div>`;
+
+  if (!Array.isArray(activities)) {
+    return `<div style="padding:18px 20px 0">${header}${tEmpty('Sem dados de actividades.')}</div>`;
   }
 
-  document.getElementById('treino-detail-title').textContent =
-    `${tActIcon(a.type)} ${a.name || a.type || 'Actividade'}`;
+  const now = new Date();
+  const thisMon = tMondayOf(now);
+  const lastMon = new Date(thisMon); lastMon.setDate(lastMon.getDate() - 7);
+  const nextMon = new Date(thisMon); nextMon.setDate(nextMon.getDate() + 7);
 
-  const dist = tNum(tActField(a, 'distance', 'icu_distance'));
-  const pace = tFmtPace(tActField(a, 'moving_time', 'elapsed_time'), dist);
-  const elev = tNum(tActField(a, 'total_elevation_gain', 'icu_elevation_gain'));
-  const desc = a.description || '';
+  const cur  = tWeekTotals(activities, thisMon, nextMon);
+  const prev = tWeekTotals(activities, lastMon, thisMon);
 
-  const row = (label, val) => val == null || val === ''
-    ? ''
-    : `<div style="display:flex;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border)">
-         <span style="font-family:var(--mono);font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">${label}</span>
-         <span style="font-family:var(--mono);font-size:13px;color:var(--text2)">${val}</span>
-       </div>`;
+  const chip = (name, valHtml, deltaHtml) => `<div class="msc">
+    <span class="msc-name">${name}</span>
+    <span class="msc-val" style="font-size:15px">${valHtml}</span>
+    ${deltaHtml}
+  </div>`;
 
-  const body = document.getElementById('treino-detail-body');
-  body.innerHTML =
-      row('Pace médio', pace)
-    + row('Elevação', elev != null ? Math.round(elev) + ' m' : null)
-    + (desc
-        ? `<div style="padding:14px 20px;font-family:var(--sans);font-size:13px;line-height:1.5;color:var(--text2);white-space:pre-wrap">${desc}</div>`
-        : (!pace && elev == null
-            ? `<div class="empty-meals">Sem detalhes adicionais.</div>`
-            : ''));
+  const km = chip('Distância', `${(cur.meters / 1000).toFixed(1)} <span style="font-size:11px;color:var(--text3)">km</span>`, tDeltaHtml(cur.meters, prev.meters));
+  const tempo = chip('Tempo', tFmtHM(cur.secs), tDeltaHtml(cur.secs, prev.secs));
+  const carga = chip('Carga', `${Math.round(cur.load)}`, tDeltaHtml(cur.load, prev.load));
 
-  overlay.classList.add('open');
+  return `<div style="padding:18px 20px 0">
+    ${header}
+    <div class="macro-secondary">${km}${tempo}${carga}</div>
+  </div>`;
 }
 
-// ── Secção 4 — Wellness (7 dias) ─────────────────────────────────────────────
+// ── Wellness chips (HRV + Sono) ──────────────────────────────────────────────
 
-function treinoWellnessHtml(wellness) {
-  const rows = (Array.isArray(wellness) ? wellness : [])
-    .slice()
-    .sort((a, b) => (a.id || '').toString().localeCompare((b.id || '').toString()));
-
+function treinoWellnessChipsHtml(wSorted) {
   const header = `<div class="treino-section-label">Wellness · 7 dias</div>`;
+  const last7 = wSorted.slice(-7);
 
-  if (!rows.length) {
-    return `<div style="padding:18px 20px 24px">${header}
-      <div class="empty-meals">Sem dados de wellness.</div>
-    </div>`;
+  if (!last7.length) {
+    return `<div style="padding:18px 20px 24px">${header}${tEmpty('Sem dados de wellness.')}</div>`;
   }
 
   // HRV — último valor + seta vs média 7d.
-  const hrvVals = rows.map(r => tNum(r.hrv)).filter(v => v != null);
-  let hrvChip = '—';
+  const hrvVals = last7.map(w => tNum(w.hrv)).filter(v => v != null);
+  let hrvChipVal = '—';
   if (hrvVals.length) {
     const last = hrvVals[hrvVals.length - 1];
     const avg = hrvVals.reduce((s, v) => s + v, 0) / hrvVals.length;
     let arrow = '', col = 'var(--text2)';
     if (last > avg + 0.5)      { arrow = ' ↑'; col = 'var(--accent)'; }
     else if (last < avg - 0.5) { arrow = ' ↓'; col = 'var(--red)'; }
-    hrvChip = `<span style="color:${col}">${Math.round(last)}${arrow}</span>`;
+    hrvChipVal = `<span style="color:${col}">${Math.round(last)}${arrow}</span>`;
   }
 
-  // Sono — média 7d em horas.
-  const sleepHours = rows.map(r => {
-    if (r.sleepSecs != null) return tNum(r.sleepSecs) / 3600;
-    if (r.sleep != null)     return tNum(r.sleep);          // já em horas
+  // Sono — média 7d em horas (sleepSecs / 3600).
+  const sleepHours = last7.map(w => {
+    if (w.sleepSecs != null) return tNum(w.sleepSecs) / 3600;
     return null;
   }).filter(v => v != null);
-  const sleepChip = sleepHours.length
+  const sleepChipVal = sleepHours.length
     ? (sleepHours.reduce((s, v) => s + v, 0) / sleepHours.length).toFixed(1) + 'h'
     : '—';
-
-  // Peso — último valor em kg.
-  const weights = rows.map(r => tNum(r.weight)).filter(v => v != null);
-  const weightChip = weights.length ? weights[weights.length - 1].toFixed(1) + ' kg' : '—';
 
   const chip = (name, val) => `<div class="msc">
     <span class="msc-name">${name}</span>
     <span class="msc-val">${val}</span>
   </div>`;
 
-  return `<div style="padding:18px 20px 24px">${header}
+  return `<div style="padding:18px 20px 24px">
+    ${header}
     <div class="macro-secondary">
-      ${chip('HRV', hrvChip)}
-      ${chip('Sono', sleepChip)}
-      ${chip('Peso', weightChip)}
+      ${chip('HRV', hrvChipVal)}
+      ${chip('Sono', sleepChipVal)}
     </div>
   </div>`;
 }

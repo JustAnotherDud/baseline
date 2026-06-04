@@ -8,19 +8,19 @@
 let loadBodyGen = 0;
 
 // Instâncias de chart (destruídas antes de cada rebuild).
-let bodyTrendChart = null;
-let bodyLbmChart   = null;
-let bodyHrvChart   = null;
+let bodyFormChart = null;
+let bodyCompChart = null;
+let bodyHrvChart  = null;
 
-// Estado partilhado (período é comum às secções 3 e 4).
+// Estado partilhado (o período é comum aos dois charts de histórico).
 let bodyPeriod = 'month';                                      // week|month|3m|6m|1y|all
-let bodyTrendActive = { ctl: true, atl: false, weight: true, fat: false };
+let bodyFormActive = { ctl: true, atl: true };                 // Chart 1 — Forma
+let bodyCompActive = { weight: true, fat: false, lbm: false }; // Chart 2 — Composição
 
 // Dados.
 let bodyAsc       = [];   // body_comp ascendente por data
 let bodyWellness  = [];   // wellness ICU ordenado ascendente
-let bodyTrendRows = [];   // merge wellness + body_comp por data: {date, ctl, atl, weight, fat}
-let bodyLbmRows   = [];   // {date, lbm}
+let bodyTrendRows = [];   // merge wellness + body_comp por data: {date, ctl, atl, weight, fat, lbm}
 
 const ICU_BASE = 'https://intervals.icu/api/v1';
 
@@ -119,8 +119,8 @@ async function loadBody() {
   const c = document.getElementById('body-container');
   if (!c) return;
 
-  [bodyTrendChart, bodyLbmChart, bodyHrvChart].forEach(ch => { if (ch) ch.destroy(); });
-  bodyTrendChart = bodyLbmChart = bodyHrvChart = null;
+  [bodyFormChart, bodyCompChart, bodyHrvChart].forEach(ch => { if (ch) ch.destroy(); });
+  bodyFormChart = bodyCompChart = bodyHrvChart = null;
 
   c.innerHTML = '<div class="loading">A carregar...</div>';
 
@@ -143,25 +143,23 @@ async function loadBody() {
   bodyAsc      = (bodyRes && !bodyRes.error && bodyRes.data) ? bodyRes.data : [];
   bodyWellness = tWellnessSorted(wellness);
   bodyPeriod = 'month';
-  bodyTrendActive = { ctl: true, atl: false, weight: true, fat: false };
+  bodyFormActive = { ctl: true, atl: true };
+  bodyCompActive = { weight: true, fat: false, lbm: false };
 
   bodyTrendRows = buildBodyTrendRows(bodyWellness, bodyAsc);
-  bodyLbmRows   = bodyAsc
-    .filter(b => tNum(b.muscle_mass_kg) != null)
-    .map(b => ({ date: b.date, lbm: tNum(b.muscle_mass_kg) }));
 
   c.innerHTML =
       bodyFormaHtml(bodyWellness, hasIcu)
     + bodyWeighInHtml(bodyAsc)
-    + bodyTrendSectionHtml()
-    + bodyLbmSectionHtml()
+    + bodyFormChartSectionHtml(hasIcu)
+    + bodyCompChartSectionHtml()
     + bodyHrvSectionHtml(bodyWellness, hasIcu)
     + bodyWeekSectionHtml(activities, hasIcu)
     + bodyWellnessChipsHtml(bodyWellness, hasIcu);
 
   // Charts construídos depois do innerHTML (canvas já no DOM).
-  buildBodyTrendChart();
-  buildBodyLbmChart();
+  buildBodyFormChart();
+  buildBodyCompChart();
   buildBodyHrvChart();
 }
 
@@ -179,6 +177,7 @@ function buildBodyTrendRows(wSorted, asc) {
     const row = map.get(d) || { date: d };
     row.weight = tNum(b.weight_kg);
     row.fat    = tNum(b.body_fat_pct);
+    row.lbm    = tNum(b.muscle_mass_kg);
     map.set(d, row);
   });
   return [...map.values()].sort((a, b) => a.date.localeCompare(b.date));
@@ -271,7 +270,7 @@ function bodyWeighInHtml(asc) {
   </div>`;
 }
 
-// ── Secção 3 — Tendência (chart unificado CTL/ATL/Peso/BF%) ────────────────────
+// ── Período (chips partilhados pelos dois charts de histórico) ─────────────────
 
 function bodyPeriodChipsHtml() {
   const P = [['week', 'Semana'], ['month', 'Mês'], ['3m', '3M'], ['6m', '6M'], ['1y', '1A'], ['all', 'Total']];
@@ -280,58 +279,63 @@ function bodyPeriodChipsHtml() {
   </div>`;
 }
 
-function bodyTrendSectionHtml() {
-  const header = tSecLabel('Tendência');
-  if (!bodyTrendRows.length) {
-    return `<div style="padding:18px 20px 0;margin-top:20px">${header}${tEmpty('Sem dados de tendência.')}</div>`;
-  }
-  const DS = [['ctl', 'CTL'], ['atl', 'ATL'], ['weight', 'Peso'], ['fat', 'BF%']];
-  const chips = DS.map(([k, l]) =>
-    `<button class="sort-chip${bodyTrendActive[k] ? ' active' : ''}" data-ds="${k}" onclick="toggleTrendDataset('${k}')">${l}</button>`
-  ).join('');
-
-  return `<div class="treino-chart-section" style="padding:18px 20px 0;margin-top:20px">
-    ${header}
-    ${bodyPeriodChipsHtml()}
-    <div id="body-trend-chips" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">${chips}</div>
-    <div class="treino-chart"><div style="position:relative;height:200px"><canvas id="body-trend-chart"></canvas></div></div>
-  </div>`;
-}
-
 function setBodyPeriod(p) {
   bodyPeriod = p;
   document.querySelectorAll('#body-period-chips .sort-chip').forEach(c =>
     c.classList.toggle('active', c.dataset.period === p));
-  buildBodyTrendChart();
-  buildBodyLbmChart();
+  // Destruir e recriar ambos os charts de histórico no novo período.
+  buildBodyFormChart();
+  buildBodyCompChart();
 }
 
-function toggleTrendDataset(key) {
-  bodyTrendActive[key] = !bodyTrendActive[key];
-  document.querySelectorAll('#body-trend-chips .sort-chip').forEach(c =>
-    c.classList.toggle('active', bodyTrendActive[c.dataset.ds]));
-  buildBodyTrendChart();
+// ── Chart 1 — Forma · 60 dias (CTL / ATL, eixo único) ─────────────────────────
+
+function bodyFormChartSectionHtml(hasIcu) {
+  const header = tSecLabel('Forma · 60 dias');
+  const hasForm = bodyTrendRows.some(r => r.ctl != null || r.atl != null);
+
+  // Os chips de período vivem aqui mas controlam os dois charts.
+  let body;
+  if (hasForm) {
+    const DS = [['ctl', 'CTL'], ['atl', 'ATL']];
+    const chips = DS.map(([k, l]) =>
+      `<button class="sort-chip${bodyFormActive[k] ? ' active' : ''}" data-ds="${k}" onclick="toggleFormDataset('${k}')">${l}</button>`
+    ).join('');
+    body = `<div id="body-form-chips" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">${chips}</div>
+      <div class="treino-chart"><div style="position:relative;height:160px"><canvas id="body-form-chart"></canvas></div></div>`;
+  } else {
+    body = tEmpty(hasIcu ? 'Sem dados de forma.' : 'Configura o Intervals.icu nas Settings');
+  }
+
+  return `<div class="treino-chart-section" style="padding:18px 20px 0;margin-top:20px">
+    ${header}
+    ${bodyPeriodChipsHtml()}
+    ${body}
+  </div>`;
 }
 
-function buildBodyTrendChart() {
-  const ctx = document.getElementById('body-trend-chart');
+function toggleFormDataset(key) {
+  bodyFormActive[key] = !bodyFormActive[key];
+  document.querySelectorAll('#body-form-chips .sort-chip').forEach(c =>
+    c.classList.toggle('active', bodyFormActive[c.dataset.ds]));
+  buildBodyFormChart();
+}
+
+function buildBodyFormChart() {
+  const ctx = document.getElementById('body-form-chart');
   if (!ctx) return;
-  if (bodyTrendChart) { bodyTrendChart.destroy(); bodyTrendChart = null; }
+  if (bodyFormChart) { bodyFormChart.destroy(); bodyFormChart = null; }
 
   const rows = bodyFilterByPeriod(bodyTrendRows, bodyPeriod);
-  const dense = rows.length > 60;
-  const ptR = dense ? 0 : 2;
   const labels = rows.map(r => tDayLabel(r.date));
 
-  bodyTrendChart = new Chart(ctx, {
+  bodyFormChart = new Chart(ctx, {
     type: 'line',
     data: {
       labels,
       datasets: [
-        { label: 'CTL',  data: rows.map(r => r.ctl ?? null),    borderColor: chartTheme.accent, backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0,   tension: 0.3, spanGaps: true, hidden: !bodyTrendActive.ctl,    yAxisID: 'yForm' },
-        { label: 'ATL',  data: rows.map(r => r.atl ?? null),    borderColor: chartTheme.orange, backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0,   tension: 0.3, spanGaps: true, hidden: !bodyTrendActive.atl,    yAxisID: 'yForm' },
-        { label: 'Peso', data: rows.map(r => r.weight ?? null), borderColor: chartTheme.blue,   backgroundColor: 'transparent', borderWidth: 2, pointRadius: ptR, pointBackgroundColor: chartTheme.blue, tension: 0.3, spanGaps: true, hidden: !bodyTrendActive.weight, yAxisID: 'yWeight' },
-        { label: 'BF%',  data: rows.map(r => r.fat ?? null),    borderColor: chartTheme.red,    backgroundColor: 'transparent', borderWidth: 2, pointRadius: ptR, pointBackgroundColor: chartTheme.red,  tension: 0.3, spanGaps: true, hidden: !bodyTrendActive.fat,    yAxisID: 'yFat' },
+        { label: 'CTL', data: rows.map(r => r.ctl ?? null), borderColor: chartTheme.accent, backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, tension: 0.3, spanGaps: true, hidden: !bodyFormActive.ctl, yAxisID: 'y' },
+        { label: 'ATL', data: rows.map(r => r.atl ?? null), borderColor: chartTheme.orange, backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, tension: 0.3, spanGaps: true, hidden: !bodyFormActive.atl, yAxisID: 'y' },
       ],
     },
     options: {
@@ -344,62 +348,71 @@ function buildBodyTrendChart() {
       },
       scales: {
         x: { grid: { color: chartTheme.grid }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }, border: { color: '#2e2e2e' } },
-        yForm:   { position: 'left',  display: bodyTrendActive.ctl || bodyTrendActive.atl, suggestedMin: 0,  suggestedMax: 100, grid: { color: chartTheme.grid }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } }, border: { color: '#2e2e2e' } },
-        yWeight: { position: 'right', display: bodyTrendActive.weight,                     suggestedMin: 60, suggestedMax: 80,  grid: { drawOnChartArea: false }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } }, border: { color: '#2e2e2e' } },
-        yFat:    { position: 'right', display: bodyTrendActive.fat,                        suggestedMin: 10, suggestedMax: 25,  grid: { drawOnChartArea: false }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } }, border: { color: '#2e2e2e' } },
+        y: { position: 'left', suggestedMin: 0, suggestedMax: 60, grid: { color: chartTheme.grid }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } }, border: { color: '#2e2e2e' } },
       },
     },
   });
 }
 
-// ── Secção 4 — LBM (Lean Body Mass) ───────────────────────────────────────────
+// ── Chart 2 — Composição · Histórico (Peso / BF% / LBM, dois eixos) ───────────
 
-function bodyLbmSectionHtml() {
-  const header = tSecLabel('LBM · Lean Body Mass');
-  if (!bodyLbmRows.length) {
-    return `<div style="padding:18px 20px 0;margin-top:20px">${header}${tEmpty('Sem dados de massa muscular.')}</div>`;
+function bodyCompChartSectionHtml() {
+  const header = tSecLabel('Composição · Histórico');
+  const hasComp = bodyTrendRows.some(r => r.weight != null || r.fat != null || r.lbm != null);
+  if (!hasComp) {
+    return `<div style="padding:18px 20px 0;margin-top:20px">${header}${tEmpty('Sem dados de composição.')}</div>`;
   }
+  const DS = [['weight', 'Peso'], ['fat', 'BF%'], ['lbm', 'LBM']];
+  const chips = DS.map(([k, l]) =>
+    `<button class="sort-chip${bodyCompActive[k] ? ' active' : ''}" data-ds="${k}" onclick="toggleCompDataset('${k}')">${l}</button>`
+  ).join('');
+
   return `<div class="treino-chart-section" style="padding:18px 20px 0;margin-top:20px">
     ${header}
-    <div class="treino-chart"><div style="position:relative;height:120px"><canvas id="body-lbm-chart"></canvas></div></div>
+    <div id="body-comp-chips" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">${chips}</div>
+    <div class="treino-chart"><div style="position:relative;height:200px"><canvas id="body-comp-chart"></canvas></div></div>
   </div>`;
 }
 
-function buildBodyLbmChart() {
-  const ctx = document.getElementById('body-lbm-chart');
+function toggleCompDataset(key) {
+  bodyCompActive[key] = !bodyCompActive[key];
+  document.querySelectorAll('#body-comp-chips .sort-chip').forEach(c =>
+    c.classList.toggle('active', bodyCompActive[c.dataset.ds]));
+  buildBodyCompChart();
+}
+
+function buildBodyCompChart() {
+  const ctx = document.getElementById('body-comp-chart');
   if (!ctx) return;
-  if (bodyLbmChart) { bodyLbmChart.destroy(); bodyLbmChart = null; }
+  if (bodyCompChart) { bodyCompChart.destroy(); bodyCompChart = null; }
 
-  const rows = bodyFilterByPeriod(bodyLbmRows, bodyPeriod);
+  const rows = bodyFilterByPeriod(bodyTrendRows, bodyPeriod);
   const dense = rows.length > 60;
+  const ptR = dense ? 0 : 2;
+  const labels = rows.map(r => tDayLabel(r.date));
 
-  bodyLbmChart = new Chart(ctx, {
+  bodyCompChart = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: rows.map(r => tDayLabel(r.date)),
-      datasets: [{
-        label: 'LBM (kg)',
-        data: rows.map(r => r.lbm),
-        borderColor: chartTheme.blue,
-        backgroundColor: 'transparent',
-        borderWidth: 2,
-        pointRadius: dense ? 0 : 2,
-        pointBackgroundColor: chartTheme.blue,
-        tension: 0.3,
-        spanGaps: true,
-      }],
+      labels,
+      datasets: [
+        { label: 'Peso', data: rows.map(r => r.weight ?? null), borderColor: chartTheme.blue,   backgroundColor: 'transparent', borderWidth: 2, pointRadius: ptR, pointBackgroundColor: chartTheme.blue,   tension: 0.3, spanGaps: true, hidden: !bodyCompActive.weight, yAxisID: 'yWeight' },
+        { label: 'BF%',  data: rows.map(r => r.fat ?? null),    borderColor: chartTheme.red,    backgroundColor: 'transparent', borderWidth: 2, pointRadius: ptR, pointBackgroundColor: chartTheme.red,    tension: 0.3, spanGaps: true, hidden: !bodyCompActive.fat,    yAxisID: 'yFat' },
+        { label: 'LBM', data: rows.map(r => r.lbm ?? null),     borderColor: chartTheme.orange, backgroundColor: 'transparent', borderWidth: 2, pointRadius: ptR, pointBackgroundColor: chartTheme.orange, tension: 0.3, spanGaps: true, hidden: !bodyCompActive.lbm,    yAxisID: 'yWeight' },
+      ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       animation: chartAnim(),
       plugins: {
-        legend: { display: false },
+        legend: { display: true, position: 'top', labels: { color: chartTheme.legend, font: { size: 11 }, boxWidth: 12 } },
         tooltip: { backgroundColor: chartTheme.surface, borderColor: '#2e2e2e', borderWidth: 1, titleColor: chartTheme.legend, bodyColor: '#f0f0f0' },
       },
       scales: {
         x: { grid: { color: chartTheme.grid }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }, border: { color: '#2e2e2e' } },
-        y: { grid: { color: chartTheme.grid }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } }, border: { color: '#2e2e2e' } },
+        yWeight: { position: 'left',  display: bodyCompActive.weight || bodyCompActive.lbm, suggestedMin: 60, suggestedMax: 80, grid: { color: chartTheme.grid }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } }, border: { color: '#2e2e2e' } },
+        yFat:    { position: 'right', display: bodyCompActive.fat,                          suggestedMin: 10, suggestedMax: 25, grid: { drawOnChartArea: false }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } }, border: { color: '#2e2e2e' } },
       },
     },
   });

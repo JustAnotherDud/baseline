@@ -306,6 +306,22 @@
     <!-- CONFIGURAÇÃO -->
     <div style="padding:16px 20px;margin-top:8px">
       <div class="target-section-title" style="color:var(--red);margin-bottom:12px">Configuração</div>
+      <div class="target-section">
+        <div class="target-section-title">Intervals.icu</div>
+        <div class="settings-row">
+          <span class="settings-label">Athlete ID</span>
+          <span class="settings-value" id="settings-icu-id">—</span>
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">API Key</span>
+          <span class="settings-value" id="settings-icu-key">—</span>
+        </div>
+      </div>
+      <div style="padding: 0 20px 12px">
+        <button class="btn btn-secondary" onclick="editIcuSettings()">
+          Configurar Intervals.icu
+        </button>
+      </div>
       <button class="btn btn-secondary" onclick="clearCacheAndReload()" style="margin-bottom:10px">Limpar cache e recarregar</button>
       <button class="btn btn-danger" onclick="resetSetup()">Redefinir ligação Supabase</button>
     </div>
@@ -597,6 +613,6 @@
 <script src="js/views/stats.js?v=20260603-5"></script>
 <script src="js/views/body.js?v=20260528"></script>
 <script src="js/views/treino.js?v=20260603-7"></script>
-<script src="js/app.js?v=20260603-7"></script>
+<script src="js/app.js?v=20260603-8"></script>
 </body>
 </html>

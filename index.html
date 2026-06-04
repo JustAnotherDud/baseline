@@ -2,7 +2,7 @@
 <html lang="pt">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="theme-color" content="#0f0f0f">
@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="css/styles.css?v=20260604-5">
+  <link rel="stylesheet" href="css/styles.css?v=20260604-9">
 </head>
 <body>
 
@@ -28,11 +28,11 @@
   <div class="setup-form">
     <label>
       <span class="lt">Project URL</span>
-      <input type="url" id="setup-url" placeholder="https://xxx.supabase.co" autocomplete="off">
+      <input type="url" id="setup-url" placeholder="https://xxx.supabase.co" autocomplete="off" aria-label="Project URL">
     </label>
     <label>
       <span class="lt">Publishable Key</span>
-      <input type="text" id="setup-key" placeholder="sb_publishable_..." autocomplete="off">
+      <input type="text" id="setup-key" placeholder="sb_publishable_..." autocomplete="off" aria-label="Publishable Key">
     </label>
     <label>
       <span class="lt">Intervals.icu ID</span>
@@ -133,7 +133,7 @@
     <!-- Sub-tab: Alimentos -->
     <div id="foods-panel">
       <div class="search-wrap">
-        <input type="search" id="foods-search" placeholder="Pesquisar..." oninput="filterFoods()" autocomplete="off">
+        <input type="search" id="foods-search" placeholder="Pesquisar..." oninput="filterFoods()" autocomplete="off" aria-label="Pesquisar alimentos">
       </div>
       <div class="sort-chips">
         <button class="sort-chip active" data-sort="name"     onclick="setSortFoods('name')">Nome A→Z</button>
@@ -391,7 +391,7 @@
     <div id="log-db">
       <div id="log-stage-search" class="active">
         <div class="form-body" style="padding-top:12px;padding-bottom:8px;gap:8px">
-          <input type="search" id="log-q" placeholder="Pesquisar na base de dados..." oninput="searchDB()" autocomplete="off">
+          <input type="search" id="log-q" placeholder="Pesquisar na base de dados..." oninput="searchDB()" autocomplete="off" aria-label="Pesquisar na base de dados">
           <button class="btn btn-secondary" style="padding:10px;font-size:13px" onclick="openAddFoodFromLog('')">+ Criar novo alimento</button>
         </div>
         <div style="display:flex;gap:8px;padding:0 20px 12px">
@@ -536,7 +536,7 @@
 </div>
 
 
-<div id="toast"></div>
+<div id="toast" aria-live="polite"></div>
 
 <script src="js/config.js?v=20260526"></script>
 <script src="js/nutrition.js?v=20260526"></script>

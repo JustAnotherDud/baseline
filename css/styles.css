@@ -406,6 +406,7 @@ input[type="number"] { font-family: var(--mono); }
 
 /* ── DESKTOP SCALING ── */
 @media (min-width: 768px) {
+  html { zoom: 1.5; }
   body { font-size: 17px; }
   .view-title { font-size: 18px; }
   .view-sub { font-size: 14px; }

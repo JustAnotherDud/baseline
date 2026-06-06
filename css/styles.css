@@ -406,8 +406,14 @@ input[type="number"] { font-family: var(--mono); }
 
 /* ── DESKTOP SCALING ── */
 @media (min-width: 768px) {
-  html { zoom: 1.5; }
-  body { font-size: 17px; }
+  body {
+    transform: scale(1.5);
+    transform-origin: top left;
+    width: calc(100% / 1.5);
+    height: calc(100% / 1.5);
+    overflow-y: auto;
+    font-size: 17px;
+  }
   .view-title { font-size: 18px; }
   .view-sub { font-size: 14px; }
   .mbt { height: 6px; }

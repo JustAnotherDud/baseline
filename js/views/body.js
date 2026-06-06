@@ -339,6 +339,7 @@ function buildBodyFormChart() {
       ],
     },
     options: {
+      devicePixelRatio: window.devicePixelRatio * (window.outerWidth / window.innerWidth || 1.5),
       responsive: true,
       maintainAspectRatio: false,
       animation: chartAnim(),
@@ -416,6 +417,7 @@ function buildBodyCompChart() {
       ],
     },
     options: {
+      devicePixelRatio: window.devicePixelRatio * (window.outerWidth / window.innerWidth || 1.5),
       responsive: true,
       maintainAspectRatio: false,
       animation: chartAnim(),

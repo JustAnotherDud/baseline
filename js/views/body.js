@@ -14,8 +14,8 @@ let bodyHrvChart  = null;
 
 // Estado partilhado (o período é comum aos dois charts de histórico).
 let bodyPeriod = 'month';                                      // week|month|3m|6m|1y|all
-let bodyFormActive = { ctl: true, atl: true };                 // Chart 1 — Forma
-let bodyCompActive = { weight: true, fat: false, lbm: false }; // Chart 2 — Composição
+let bodyFormActive = { ctl: true, atl: true };                // Chart 1 — Forma
+let bodyCompActive = { weight: true, fat: true, lbm: true };  // Chart 2 — Composição
 
 // Dados.
 let bodyAsc       = [];   // body_comp ascendente por data
@@ -144,7 +144,7 @@ async function loadBody() {
   bodyWellness = tWellnessSorted(wellness);
   bodyPeriod = 'month';
   bodyFormActive = { ctl: true, atl: true };
-  bodyCompActive = { weight: true, fat: false, lbm: false };
+  bodyCompActive = { weight: true, fat: true, lbm: true };
 
   bodyTrendRows = buildBodyTrendRows(bodyWellness, bodyAsc);
 
@@ -344,7 +344,21 @@ function buildBodyFormChart() {
       animation: chartAnim(),
       plugins: {
         legend: { display: true, position: 'top', labels: { color: chartTheme.legend, font: { size: 11 }, boxWidth: 12 } },
-        tooltip: { backgroundColor: chartTheme.surface, borderColor: '#2e2e2e', borderWidth: 1, titleColor: chartTheme.legend, bodyColor: '#f0f0f0' },
+        tooltip: {
+          enabled: true,
+          mode: 'index',
+          intersect: false,
+          backgroundColor: chartTheme.surface, borderColor: '#2e2e2e', borderWidth: 1, titleColor: chartTheme.legend, bodyColor: '#f0f0f0',
+          callbacks: {
+            label(ctx) {
+              const v = ctx.parsed.y;
+              if (v == null) return null;
+              const labels = { CTL: 'Fitness (CTL)', ATL: 'Fadiga (ATL)' };
+              const name = labels[ctx.dataset.label] || ctx.dataset.label;
+              return `${name}: ${v.toFixed(1)}`;
+            },
+          },
+        },
       },
       scales: {
         x: { grid: { color: chartTheme.grid }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }, border: { color: '#2e2e2e' } },
@@ -407,12 +421,25 @@ function buildBodyCompChart() {
       animation: chartAnim(),
       plugins: {
         legend: { display: true, position: 'top', labels: { color: chartTheme.legend, font: { size: 11 }, boxWidth: 12 } },
-        tooltip: { backgroundColor: chartTheme.surface, borderColor: '#2e2e2e', borderWidth: 1, titleColor: chartTheme.legend, bodyColor: '#f0f0f0' },
+        tooltip: {
+          enabled: true,
+          mode: 'index',
+          intersect: false,
+          backgroundColor: chartTheme.surface, borderColor: '#2e2e2e', borderWidth: 1, titleColor: chartTheme.legend, bodyColor: '#f0f0f0',
+          callbacks: {
+            label(ctx) {
+              const v = ctx.parsed.y;
+              if (v == null) return null;
+              const fmt = { 'Peso': `Peso: ${v.toFixed(1)} kg`, 'BF%': `BF%: ${v.toFixed(1)}%`, 'LBM': `LBM: ${v.toFixed(1)} kg` };
+              return fmt[ctx.dataset.label] || `${ctx.dataset.label}: ${v.toFixed(1)}`;
+            },
+          },
+        },
       },
       scales: {
         x: { grid: { color: chartTheme.grid }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }, border: { color: '#2e2e2e' } },
-        yWeight: { position: 'left',  display: bodyCompActive.weight || bodyCompActive.lbm, suggestedMin: 60, suggestedMax: 80, grid: { color: chartTheme.grid }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } }, border: { color: '#2e2e2e' } },
-        yFat:    { position: 'right', display: bodyCompActive.fat,                          suggestedMin: 10, suggestedMax: 25, grid: { drawOnChartArea: false }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } }, border: { color: '#2e2e2e' } },
+        yWeight: { position: 'left',  display: bodyCompActive.weight || bodyCompActive.lbm, suggestedMin: 65, suggestedMax: 78, grid: { color: chartTheme.grid }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } }, border: { color: '#2e2e2e' } },
+        yFat:    { position: 'right', display: bodyCompActive.fat,                          suggestedMin: 10, suggestedMax: 22, grid: { drawOnChartArea: false }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } }, border: { color: '#2e2e2e' } },
       },
     },
   });

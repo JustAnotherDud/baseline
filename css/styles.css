@@ -406,44 +406,34 @@ input[type="number"] { font-family: var(--mono); }
 
 /* ── DESKTOP SCALING ── */
 @media (min-width: 768px) {
-  body { font-size: 17px; }
-  #app {
-    transform: scale(1.5);
-    transform-origin: top left;
-    width: calc(100% / 1.5);
-    height: calc(100% / 1.5);
-  }
-  nav {
-    transform: scale(1.5);
-    transform-origin: bottom left;
-    width: calc(100% / 1.5);
-    position: fixed;
-    bottom: 0;
-    left: 0;
-  }
+  body { font-size: 25px; }
+  .kcal-num { font-size: 78px; }
+  .macro-cell-val { font-size: 33px; }
+  .view-date { font-size: 27px; }
   .view-title { font-size: 18px; }
   .view-sub { font-size: 14px; }
   .mbt { height: 6px; }
-  .meal-name { font-size: 13px; }
+  .meal-name { font-size: 16px; }
   .meal-macros { font-size: 12px; }
   .meal-kcal { font-size: 15px; }
-  .macro-cell-label { font-size: 11px; }
-  .macro-cell-val { font-size: 26px; }
-  .macro-cell-tgt { font-size: 12px; }
+  .macro-cell-label { font-size: 13px; }
+  .macro-cell-tgt { font-size: 13px; }
   .macro-cell-rem { font-size: 12px; }
   .macro-cell .seg-bar-labels span { font-size: 11px; }
-  .entry-name { font-size: 16px; }
-  .entry-detail { font-size: 13px; }
-  .entry-kcal { font-size: 13px; }
+  .entry-name { font-size: 19px; }
+  .entry-detail { font-size: 16px; }
+  .entry-kcal { font-size: 18px; }
   .fi-name { font-size: 16px; }
   .fi-detail { font-size: 14px; }
   .fi-kcal { font-size: 14px; }
-  .nav-label { font-size: 13px; }
+  nav { height: calc(96px + var(--safe-b)); }
+  .nav-btn svg { width: 33px; height: 33px; }
+  .nav-label { font-size: 15px; }
   .lt { font-size: 13px; }
   input, select { font-size: 16px; padding: 14px 16px; }
-  .btn { font-size: 16px; padding: 16px; }
+  .btn { font-size: 22px; padding: 21px; }
   .meal-tab { font-size: 15px; padding: 9px 18px; }
-  .sheet-title { font-size: 13px; }
+  .sheet-title { font-size: 16px; }
   .sr-name { font-size: 16px; }
   .sr-detail { font-size: 13px; }
   .sr-kcal { font-size: 14px; }
@@ -457,6 +447,7 @@ input[type="number"] { font-family: var(--mono); }
   .setup-title { font-size: 32px; }
   .setup-sub { font-size: 16px; }
   .setup-logo { font-size: 13px; }
+  .meal-card { border-radius: 18px; }
   .macro-summary { padding: 20px 24px; }
   .view-header { padding: 22px 24px 14px; }
   .meal-header-left { padding: 14px 0 12px 24px; }

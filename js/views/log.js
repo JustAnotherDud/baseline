@@ -175,6 +175,7 @@ function selectMealFromSelector(mealKey) {
 // ── LOG MEALS SHEET (Refeição chip) ─────────────────────────────────────────
 
 async function openLogMeals() {
+  pushSheetState();
   let overlay = document.getElementById('log-meals-overlay');
   if (!overlay) {
     overlay = document.createElement('div');

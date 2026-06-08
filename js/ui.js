@@ -8,6 +8,7 @@ function toast(msg) {
 function overlayClose(e, id) { if(e.target.id===id) document.getElementById(id).classList.remove('open'); }
 
 function openLog(mode) {
+  pushSheetState();
   if (!mealManuallySelected) {
     selectedMeal = getMealByHour();
     updateMealSelectorLabel(selectedMeal);
@@ -39,6 +40,7 @@ function closeLog() {
 }
 
 function openAddFood() {
+  pushSheetState();
   editingFoodId=null;
   document.getElementById('food-sheet-title').textContent='Novo alimento';
   document.getElementById('del-food-btn').style.display='none';
@@ -54,6 +56,7 @@ function closeAddFood() {
 }
 
 async function openEditEntry(id) {
+  pushSheetState();
   if (!db) return;
   const { data, error } = await db.from('diary').select('*').eq('id', id).single();
   if (error || !data) return;
@@ -141,6 +144,7 @@ function closeEditEntry() {
 }
 
 async function openDatePicker(selectedVal, onSelect, opts = {}) {
+  pushSheetState();
   const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
                   'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const DAYS   = ['S','T','Q','Q','S','S','D'];
@@ -240,6 +244,7 @@ async function openDatePicker(selectedVal, onSelect, opts = {}) {
 }
 
 function openNutrientSheet(entries, nutrient) {
+  pushSheetState();
   let overlay = document.getElementById('nutri-overlay');
   if (!overlay) {
     overlay = document.createElement('div');
@@ -347,6 +352,7 @@ function openNutrientSheet(entries, nutrient) {
 }
 
 function openMealBreakdown(mealKey, allEntries) {
+  pushSheetState();
   const mealLabel = (typeof MEALS !== 'undefined' && MEALS[mealKey]) || mealKey;
   const mes = allEntries.filter(e => e.meal === mealKey);
   let selectedMacro = null;
@@ -585,6 +591,7 @@ function updateEditPreview() {
 }
 
 function openMoveMealSheet(entryId, currentMeal) {
+  pushSheetState();
   let overlay = document.getElementById('move-meal-overlay');
   if (!overlay) {
     overlay = document.createElement('div');

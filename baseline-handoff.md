@@ -36,7 +36,7 @@ Sem build step, sem bundler, sem framework.
 | `icu_id` | Athlete ID do Intervals.icu (ex.: `i123456`) |
 | `icu_key` | API key do Intervals.icu |
 
-Sem RLS no Supabase (projecto pessoal — acesso único). As credenciais ICU são opcionais: sem elas, a view Treino mostra um empty state a pedir configuração.
+**RLS activo** em todas as 9 tabelas com políticas permissivas `anon_all` (projecto pessoal — acesso único via publishable key). As credenciais ICU são opcionais: sem elas, a view Body mostra empty states nas secções de Treino a pedir configuração.
 
 ---
 
@@ -82,9 +82,11 @@ baseline/
 │       │                         updatePhaseBadge(), onTargetsDateChange(),
 │       │                         updateTargetsDateLabel()
 │       ├── stats.js            — loadStats(), setStatsPeriod()
-│       ├── body.js             — loadBody(), switchBodyTab(), renderBodyDia(),
-│       │                         renderBodyHistorico(), buildBodyChart() (Chart.js)
-│       └── treino.js           — loadTreino() + secções/charts Intervals.icu
+│       └── body.js             — loadBody() — view unificada Body Comp + Treino (Intervals.icu)
+│                                 Secções: Forma actual (CTL/ATL/TSB) · Última pesagem ·
+│                                 Chart Forma (CTL/ATL) · Chart Composição (Peso/BF/LBM) ·
+│                                 HRV · Resumo da semana · Wellness chips
+│                                 Charts: bodyFormChart · bodyCompChart · bodyHrvChart
 └── baseline-handoff.md         — este ficheiro
 ```
 
@@ -102,7 +104,6 @@ baseline/
 <script src="js/views/targets.js?v=…"></script>
 <script src="js/views/stats.js?v=…"></script>
 <script src="js/views/body.js?v=…"></script>
-<script src="js/views/treino.js?v=…"></script>
 <script src="js/app.js?v=…"></script>   <!-- último — chama init() -->
 ```
 
@@ -196,14 +197,14 @@ Lida pela view Body. Uma linha por data de pesagem.
 ## 4. Navegação e views
 
 ### Bottom nav (4 itens)
-`#nav-today` · `#nav-foods` · `#nav-treino` · `#nav-mais`
-→ **Diário · Comida · Treino · Mais**
+`#nav-today` · `#nav-foods` · `#nav-body` · `#nav-mais`
+→ **Diário · Comida · Body · Mais**
 
-A função `go(view)` troca a `.view` activa, marca o `.nav-btn` correspondente (se existir — views internas como Body/Targets/Stats/Settings não têm botão de nav) e dispara o loader (`loadToday`, `loadFoods/loadMeals`, `loadBody`, `loadTreino`, `loadStats`, `loadSettingsView`).
+A função `go(view)` troca a `.view` activa, marca o `.nav-btn` correspondente (se existir — views internas como Targets/Stats/Settings não têm botão de nav) e dispara o loader (`loadToday`, `loadFoods/loadMeals`, `loadBody`, `loadStats`, `loadSettingsView`).
 
 ### View **Mais** (`#view-mais`)
 Lista de atalhos para as views sem botão de nav próprio:
-- **Body Comp** → `go('body')` *(Body está em Mais temporariamente)*
+- **Treino** → `go('treino')` *(integração Intervals.icu — CTL/ATL/HRV/resumo semanal)*
 - **Targets** → `go('targets')`
 - **Estatísticas** → `go('stats')`
 - **Settings** → `go('settings')`
@@ -226,13 +227,18 @@ Lista de atalhos para as views sem botão de nav próprio:
 - **Sub-tab Alimentos:** pesquisa multi-termo (vírgula) + por marca; sort chips Nome / Kcal / P-C-F por kcal; FAB `+` cria alimento.
 - **Sub-tab Refeições:** lista de templates, criar/aplicar.
 
-### `#view-treino` — Treino *(Intervals.icu)*
-Ver secção 5.
+### `#view-treino` — Treino *(Intervals.icu — acessível via Mais)*
+Ver secção 5. Esta view é agora acessível a partir de `#view-mais`; `body.js` contém toda a lógica.
 
-### `#view-body` — Body Comp
-- Sub-tabs **Dia** / **Histórico**.
-- Dia: pesagem da data + delta vs pesagem anterior + cards (BF/Músculo/Osso/Água) + resumo nutricional do dia.
-- Histórico: última pesagem + chart Chart.js (Peso / Body Fat / LBM) com períodos Semana/Mês/3M/6M/1A/Total.
+### `#view-body` — Body + Treino (view unificada em scroll)
+Secções em scroll único:
+1. **Forma actual** — CTL / ATL / TSB + ramp rate (Intervals.icu)
+2. **Última pesagem** — Peso/BF/LBM/Água + delta vs pesagem anterior (Supabase `body_comp`)
+3. **Chart Forma** — CTL/ATL linha dupla, período partilhado
+4. **Chart Composição** — Peso / BF% / LBM, eixo duplo (yWeight esq. / yFat dir.), período partilhado
+5. **HRV · 30 dias** — linha azul
+6. **Resumo da semana** — km / tempo / carga TL, delta vs semana anterior
+7. **Wellness · 7 dias** — HRV (último + seta) + Sono (média)
 
 ### `#view-targets` — Targets *(read-only)*
 - Date picker (sem dots — `opts.showScores: false`).
@@ -256,9 +262,9 @@ Ver secção 5.
 
 ---
 
-## 5. Integração Intervals.icu (view Treino)
+## 5. Integração Intervals.icu (view Body — secções de Treino)
 
-Ficheiro: `js/views/treino.js`. A view mostra **métricas e charts** — não lista actividades individuais.
+Ficheiro: `js/views/body.js` (fundido com Body Comp). As secções de treino mostram **métricas e charts** — não lista actividades individuais.
 
 ### Autenticação
 HTTP Basic com utilizador literal `API_KEY` e a key como password:
@@ -405,7 +411,13 @@ Criar `<div class="sheet-overlay">` dinamicamente uma vez (cache por `id`), `app
 - Configuração ICU no setup e nas Settings
 
 **Pendente / ideias**
-- Mover Body Comp de "Mais" para um lugar permanente na nav
-- Próximo treino planeado (events) na view Treino
+- Hash router (back button Android)
+- Lock de refeições 🔐
+- Sheet animation (slide up)
+- Emojis automáticos nos alimentos
+- E-ink display (Orange Pi Zero 2W + Waveshare)
+- Tap Resumo da Semana → detalhe por tipo de actividade
+- DESIGN.md via `/impeccable document`
+- Próximo treino planeado (events ICU)
 - Export do diário (CSV/JSON)
 - Notificações PWA (Service Worker)

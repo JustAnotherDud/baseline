@@ -1,8 +1,16 @@
-let toastT;
+let toastT, toastHideT;
 function toast(msg) {
-  const el=document.getElementById('toast');
-  el.textContent=msg; el.classList.add('show');
-  clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),2400);
+  const el = document.getElementById('toast');
+  clearTimeout(toastT);
+  clearTimeout(toastHideT);
+  el.classList.remove('hiding');
+  el.textContent = msg;
+  el.classList.add('show');
+  toastT = setTimeout(() => {
+    el.classList.add('hiding');
+    el.classList.remove('show');
+    toastHideT = setTimeout(() => el.classList.remove('hiding'), 280);
+  }, 2400);
 }
 
 function overlayClose(e, id) { if(e.target.id===id) document.getElementById(id).classList.remove('open'); }

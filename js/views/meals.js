@@ -46,6 +46,7 @@ async function deleteMeal(id) {
 // ── CREATE MEAL SHEET ────────────────────────────────────────────────────────
 
 function openCreateMeal(prefillName, prefillItems) {
+  pushSheetState();
   mealItems = [];
   let overlay = document.getElementById('meal-create-overlay');
   if (!overlay) {
@@ -259,6 +260,7 @@ let _applyMealItems = null; // items loaded for the current apply sheet
 let openApplyMealGen = 0;
 
 async function openApplyMeal(templateId, templateName) {
+  pushSheetState();
   const gen = ++openApplyMealGen;
   let overlay = document.getElementById('apply-meal-overlay');
   if (!overlay) {

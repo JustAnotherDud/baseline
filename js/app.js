@@ -22,8 +22,19 @@ function init() {
     setDateLabel();
     updateLogDateLabel();
     loadTargetsForm();
-    loadToday();
+    const _initialView = location.hash.replace('#', '') || 'today';
+    history.replaceState({ view: _initialView }, '', '#' + _initialView);
+    go(_initialView, false);
     loadFoods();
+    window.addEventListener('popstate', () => {
+      const _openSheet = document.querySelector('.sheet-overlay.open');
+      if (_openSheet) {
+        _openSheet.classList.remove('open');
+      } else {
+        const _view = location.hash.replace('#', '') || 'today';
+        go(_view, false);
+      }
+    });
   } else {
     document.getElementById('setup-screen').style.display = 'flex';
     document.getElementById('app').style.display = 'none';
@@ -50,7 +61,11 @@ function resetSetup() {
 
 let currentFoodsTab = 'foods'; // 'foods' | 'meals'
 
-function go(view) {
+function pushSheetState() {
+  history.pushState({ sheet: true }, '', location.hash);
+}
+
+function go(view, _pushState = true) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('view-'+view).classList.add('active');
@@ -64,6 +79,9 @@ function go(view) {
   if (view==='body') loadBody();
   if (view==='settings') loadSettingsView();
   if (view==='stats')    loadStats();
+  if (_pushState) {
+    history.pushState({ view }, '', '#' + view);
+  }
 }
 
 
@@ -109,6 +127,7 @@ async function loadSettingsView() {
 }
 
 function editIcuSettings() {
+  pushSheetState();
   let overlay = document.getElementById('icu-settings-overlay');
   if (!overlay) {
     overlay = document.createElement('div');

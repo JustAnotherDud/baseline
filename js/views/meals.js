@@ -133,7 +133,7 @@ function renderMcItems() {
   container.innerHTML = mealItems.map(item => `
     <div class="mc-item" id="mc-item-${item.id}">
       <div class="mc-item-header">
-        <div class="mc-item-name">${item.food_name || '<span style="color:var(--text3)">Sem alimento</span>'}</div>
+        <div class="mc-item-name">${item.food_name ? escHtml(item.food_name) : '<span style="color:var(--text3)">Sem alimento</span>'}</div>
         <button class="meal-tpl-del" onclick="mcRemoveItem(${item.id})">✕</button>
       </div>
       ${item.food_id ? `
@@ -171,7 +171,7 @@ async function mcSearchFood(itemId, q) {
   // (JSON contains double-quotes that would break onclick="..." attributes)
   res.innerHTML = data.map((f, idx) =>
     `<div class="mc-food-option" data-idx="${idx}">
-      <div style="font-size:13px;color:var(--text)">${f.name}</div>
+      <div style="font-size:13px;color:var(--text)">${escHtml(f.name)}</div>
       <div style="font-family:var(--mono);font-size:11px;color:var(--text3)">${f.calories_per_100g} kcal · P${f.protein_per_100g} C${f.carbs_per_100g} F${f.fat_per_100g}</div>
     </div>`
   ).join('');
@@ -330,7 +330,7 @@ async function openApplyMeal(templateId, templateName) {
 
   itemsEl.innerHTML = items.map(i => `
     <div class="apply-meal-item">
-      <div class="apply-meal-item-name">${i.food_name}</div>
+      <div class="apply-meal-item-name">${escHtml(i.food_name)}</div>
       <div class="apply-meal-item-detail">${i.grams}g · ${Math.round(+(i.calories||0))} kcal · P${r(i.protein)}g C${r(i.carbs)}g F${r(i.fat)}g</div>
     </div>`).join('')
     + `<div class="apply-meal-total">${Math.round(totalKcal)} kcal total</div>`;

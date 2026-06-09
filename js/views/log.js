@@ -60,7 +60,7 @@ function buildFoodItem(food) {
   const item = document.createElement('div');
   item.className = 'sr-item';
   item.innerHTML = `
-      <div><div class="sr-name">${highlightFoodKeywords(food.name)}</div><div class="sr-detail">${food.brand?food.brand+' · ':''}${food.calories_per_100g} kcal · P${food.protein_per_100g} C${food.carbs_per_100g} F${food.fat_per_100g}</div></div>
+      <div><div class="sr-name">${highlightFoodKeywords(food.name)}</div><div class="sr-detail">${food.brand?escHtml(food.brand)+' · ':''}${food.calories_per_100g} kcal · P${food.protein_per_100g} C${food.carbs_per_100g} F${food.fat_per_100g}</div></div>
       <div class="sr-kcal">${food.calories_per_100g}<br><span style="font-size:9px;color:var(--text3)">kcal/100g</span></div>`;
   item.onclick = () => pickFood(food.id);
   return item;
@@ -101,7 +101,7 @@ function toggleFoodGroup(name, items, wrapper) {
       const item = document.createElement('div');
       item.className = 'food-brand-item';
       item.innerHTML = `
-        <span class="food-brand-name">${food.brand || 'Genérico'}</span>
+        <span class="food-brand-name">${food.brand ? escHtml(food.brand) : 'Genérico'}</span>
         <span class="food-brand-kcal">${Math.round(food.calories_per_100g)} kcal</span>
       `;
       item.onclick = () => pickFood(food.id);
@@ -126,8 +126,8 @@ async function pickFood(id) {
     : '';
 
   document.getElementById('log-food-card').innerHTML=`
-    <div class="food-card-name">${data.name}</div>
-    <div class="food-card-sub">${data.brand?data.brand+' · ':''}${data.calories_per_100g} kcal/100g · P${data.protein_per_100g}g C${data.carbs_per_100g}g F${data.fat_per_100g}g</div>
+    <div class="food-card-name">${escHtml(data.name)}</div>
+    <div class="food-card-sub">${data.brand?escHtml(data.brand)+' · ':''}${data.calories_per_100g} kcal/100g · P${data.protein_per_100g}g C${data.carbs_per_100g}g F${data.fat_per_100g}g</div>
     ${servingBtn}`;
 
   const doseBtn = document.getElementById('dose-btn');

@@ -94,7 +94,10 @@ async function openEditEntry(id) {
         <label><span class="lt">Calorias (kcal)</span><input type="number" id="eq-calories" inputmode="decimal" placeholder="0"></label>
         <label><span class="lt">Proteína (g)</span><input type="number" id="eq-protein" inputmode="decimal" placeholder="0"></label>
         <label><span class="lt">Hidratos (g)</span><input type="number" id="eq-carbs" inputmode="decimal" placeholder="0"></label>
-        <label><span class="lt">Gordura (g)</span><input type="number" id="eq-fat" inputmode="decimal" placeholder="0"></label>`;
+        <label><span class="lt">Gordura (g)</span><input type="number" id="eq-fat" inputmode="decimal" placeholder="0"></label>
+        <input type="hidden" id="eq-satfat">
+        <input type="hidden" id="eq-sugar">
+        <input type="hidden" id="eq-fiber">`;
       previewEl.after(qf);
     }
     qf.style.display = 'block';
@@ -103,6 +106,10 @@ async function openEditEntry(id) {
     document.getElementById('eq-protein').value  = data.protein  ?? '';
     document.getElementById('eq-carbs').value    = data.carbs    ?? '';
     document.getElementById('eq-fat').value      = data.fat      ?? '';
+    // Preservar satfat/sugar/fibra (sem input visível) — senão saveEditEntry zera-os.
+    document.getElementById('eq-satfat').value = data.saturated_fat || 0;
+    document.getElementById('eq-sugar').value  = data.sugar         || 0;
+    document.getElementById('eq-fiber').value  = data.fiber         || 0;
 
     document.getElementById('sheet-edit').classList.add('open');
     setTimeout(() => document.getElementById('eq-calories').focus(), 300);

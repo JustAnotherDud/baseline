@@ -19,9 +19,11 @@ async function searchDB() {
   if (!data||!data.length) {
     const q2 = document.getElementById('log-q').value.trim();
     const q2h = q2.replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+    // Para o onclick: escapar \ e ' senão um nome com apóstrofe (ex: "d'água") parte a string JS.
+    const q2js = q2h.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
     res.innerHTML = `<div style="padding:12px 20px">
       <div style="font-size:13px;color:var(--text3);margin-bottom:10px">Sem resultados para "${q2h}"</div>
-      <button class="btn btn-secondary" style="font-size:13px;padding:10px" onclick="openAddFoodFromLog('${q2h}')">+ Criar "${q2h}"</button>
+      <button class="btn btn-secondary" style="font-size:13px;padding:10px" onclick="openAddFoodFromLog('${q2js}')">+ Criar "${q2h}"</button>
     </div>`;
     return;
   }

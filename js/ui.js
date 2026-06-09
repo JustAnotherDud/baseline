@@ -1,3 +1,14 @@
+// Escape de strings (nomes/brands de alimentos) interpoladas raw em innerHTML.
+// NOTA: highlightFoodKeywords() já escapa internamente — não duplicar lá.
+function escHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 let toastT, toastHideT;
 function toast(msg) {
   const el = document.getElementById('toast');

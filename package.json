@@ -1,0 +1,8 @@
+{
+  "name": "baseline",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "bump": "node bump.js"
+  }
+}

@@ -436,7 +436,7 @@ function openMealBreakdown(mealKey, allEntries) {
     };
   }
 
-  // ── Donut SVG (P/H/G in kcal space) ─────────────────────────────────────
+  // ── Donut SVG (G/C/P in kcal space) ─────────────────────────────────────
   function buildMealDonut(protein, carbs, fat, kcal) {
     const p_kcal = protein * 4;
     const h_kcal = carbs   * 4;
@@ -448,9 +448,9 @@ function openMealBreakdown(mealKey, allEntries) {
       font-family="var(--mono)" font-size="16" font-weight="600" fill="var(--text)">${Math.round(kcal)}</text>`;
 
     const slices = [
-      { kcal: p_kcal, color: 'var(--blue)',   macro: 'protein', label: 'P' },
-      { kcal: h_kcal, color: 'var(--yellow)', macro: 'carbs',   label: 'H' },
       { kcal: g_kcal, color: 'var(--orange)', macro: 'fat',     label: 'G' },
+      { kcal: h_kcal, color: 'var(--yellow)', macro: 'carbs',   label: 'C' },
+      { kcal: p_kcal, color: 'var(--blue)',   macro: 'protein', label: 'P' },
     ].filter(s => s.kcal > 0);
 
     if (slices.length === 0) {
@@ -500,16 +500,16 @@ function openMealBreakdown(mealKey, allEntries) {
 
   const legendHTML = `<div class="meal-donut-legend">
     <div class="meal-donut-legend-item">
-      <span class="meal-donut-dot" style="background:var(--blue)"></span>
-      <span>P ${Math.round(totalProt * 10) / 10}g ${pct(p_kcal)}%</span>
+      <span class="meal-donut-dot" style="background:var(--orange)"></span>
+      <span>G ${Math.round(totalFat * 10) / 10}g ${pct(g_kcal)}%</span>
     </div>
     <div class="meal-donut-legend-item">
       <span class="meal-donut-dot" style="background:var(--yellow)"></span>
       <span>C ${Math.round(totalCarbs * 10) / 10}g ${pct(h_kcal)}%</span>
     </div>
     <div class="meal-donut-legend-item">
-      <span class="meal-donut-dot" style="background:var(--orange)"></span>
-      <span>F ${Math.round(totalFat * 10) / 10}g ${pct(g_kcal)}%</span>
+      <span class="meal-donut-dot" style="background:var(--blue)"></span>
+      <span>P ${Math.round(totalProt * 10) / 10}g ${pct(p_kcal)}%</span>
     </div>
   </div>`;
 

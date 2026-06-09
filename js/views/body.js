@@ -151,14 +151,14 @@ async function loadBody() {
 
   c.innerHTML = '<div class="loading">A carregar...</div>';
 
-  const hasIcu = !!(icuId && icuKey);
+  const hasIcu = !!(icuId && icuKey && icuEnabled);
   const today  = new Date().toISOString().split('T')[0];
   const back90 = icuDateOffset(-90);
   const back14 = icuDateOffset(-14);
 
   // 4 fetches em paralelo. ICU/Hevy degradam de forma independente (catch → null);
   // sem credenciais, resolvem null sem rede.
-  const hevyPromise = hevyKey ? Promise.all([
+  const hevyPromise = (hevyKey && hevyEnabled) ? Promise.all([
     hevyFetch('/v1/workouts?page=1&pageSize=10').catch(() => null),
     hevyFetch('/v1/workouts?page=2&pageSize=10').catch(() => null),
   ]).then(([p1, p2]) => ({
@@ -607,7 +607,7 @@ function bodyWeekSectionHtml(activities, hasIcu) {
   // Cartão Ginásio (Hevy) — só com key configurada. Volume nas duas janelas de
   // 7 dias para o delta; bodyGymCurrent já é a janela [hoje-6, hoje].
   let gymCard = '';
-  if (hevyKey) {
+  if (hevyKey && hevyEnabled) {
     const gymPrev = bodyHevyWorkouts.filter(w => {
       const d = new Date(w.start_time);
       return d >= prevStart && d < periodStart;

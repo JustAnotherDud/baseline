@@ -21,6 +21,8 @@ let bodyAsc       = [];   // body_comp ascendente por data
 let bodyWellness  = [];   // wellness ICU ordenado ascendente
 let bodyTrendRows = [];   // merge wellness + body_comp por data: {date, ctl, atl, weight, fat, lbm}
 let bodyRecentActivities = [];   // activities ICU dos últimos 14 dias (sheet de detalhe)
+let bodyHevyWorkouts = [];       // workouts Hevy dos últimos 14 dias
+let bodyGymCurrent   = [];       // sessões de ginásio na janela [hoje-7, hoje)
 
 const ICU_BASE = 'https://intervals.icu/api/v1';
 
@@ -100,6 +102,28 @@ async function icuFetch(path) {
   return res.json();
 }
 
+// ── Hevy fetch ─────────────────────────────────────────────────────────────────
+
+async function hevyFetch(path) {
+  if (!hevyKey) throw new Error('Hevy key not configured');
+  const res = await fetch(`https://api.hevyapp.com${path}`, {
+    headers: { 'api-key': hevyKey },
+  });
+  if (!res.ok) throw new Error(`Hevy ${res.status}`);
+  return res.json();
+}
+
+// Volume de um treino Hevy (kg): soma weight×reps das sets normais.
+function calcGymVolume(workout) {
+  let vol = 0;
+  (workout.exercises || []).forEach(ex => {
+    (ex.sets || [])
+      .filter(s => s.type === 'normal' && s.weight && s.reps)
+      .forEach(s => { vol += s.weight * s.reps; });
+  });
+  return vol;
+}
+
 // ── Período (estado partilhado secções 3/4) ───────────────────────────────────
 
 function bodyFilterByPeriod(rows, period) {
@@ -132,20 +156,37 @@ async function loadBody() {
   const back90 = icuDateOffset(-90);
   const back14 = icuDateOffset(-14);
 
-  // 3 fetches em paralelo. ICU degrada de forma independente (catch → null);
-  // sem credenciais ICU, resolvem null sem rede.
-  const [bodyRes, wellness, activities] = await Promise.all([
+  // 4 fetches em paralelo. ICU/Hevy degradam de forma independente (catch → null);
+  // sem credenciais, resolvem null sem rede.
+  const hevyPromise = hevyKey
+    ? hevyFetch('/v1/workouts?page=1&pageSize=20').catch(() => null)
+    : Promise.resolve(null);
+
+  const [bodyRes, wellness, activities, hevyData] = await Promise.all([
     db.from('body_comp').select('*').order('date', { ascending: true }),
     hasIcu ? icuFetch(`/athlete/${icuId}/wellness?oldest=${back90}&newest=${today}`).catch(() => null)
            : Promise.resolve(null),
     hasIcu ? icuFetch(`/athlete/${icuId}/activities?oldest=${back14}&newest=${today}&fields=name,type,distance,moving_time,icu_training_load,start_date_local`).catch(() => null)
            : Promise.resolve(null),
+    hevyPromise,
   ]);
   if (gen !== loadBodyGen) return;
 
   bodyAsc      = (bodyRes && !bodyRes.error && bodyRes.data) ? bodyRes.data : [];
   bodyWellness = tWellnessSorted(wellness);
   bodyRecentActivities = Array.isArray(activities) ? activities : [];
+
+  // Hevy — normalizar (array directo ou {workouts:[...]}), filtrar 14 dias e a
+  // janela [hoje-7, hoje) para o cartão/sheets. Falha silenciosa → arrays vazios.
+  const rawWorkouts = Array.isArray(hevyData) ? hevyData : (hevyData?.workouts || []);
+  const todayMid = new Date(); todayMid.setHours(0, 0, 0, 0);
+  const hevy14 = new Date(todayMid); hevy14.setDate(todayMid.getDate() - 14);
+  const hevy7  = new Date(todayMid); hevy7.setDate(todayMid.getDate() - 7);
+  bodyHevyWorkouts = rawWorkouts.filter(w => w.startTime && new Date(w.startTime) >= hevy14);
+  bodyGymCurrent = bodyHevyWorkouts.filter(w => {
+    const d = new Date(w.startTime);
+    return d >= hevy7 && d < todayMid;
+  });
   bodyPeriod = 'month';
   bodyFormActive = { ctl: true, atl: true };
   bodyCompActive = { weight: true, fat: true, lbm: true };
@@ -551,16 +592,46 @@ function bodyWeekSectionHtml(activities, hasIcu) {
   const carga = tChip('Carga', `${Math.round(cur.load)}`, tDeltaHtml(cur.load, prev.load),
     { onclick: "openActivityDetailSheet('load')" });
 
+  // Cartão Ginásio (Hevy) — só com key configurada. Volume nas duas janelas de
+  // 7 dias para o delta; bodyGymCurrent já é a janela [hoje-7, hoje).
+  let gymCard = '';
+  if (hevyKey) {
+    const gymPrev = bodyHevyWorkouts.filter(w => {
+      const d = new Date(w.startTime);
+      return d >= prevStart && d < periodStart;
+    });
+    const gymVolCurrent = bodyGymCurrent.reduce((s, w) => s + calcGymVolume(w), 0);
+    const gymVolPrev    = gymPrev.reduce((s, w) => s + calcGymVolume(w), 0);
+    const gymDeltaPct = gymVolPrev > 0
+      ? Math.round(((gymVolCurrent - gymVolPrev) / gymVolPrev) * 100)
+      : null;
+    const gymVolT = (gymVolCurrent / 1000).toFixed(1);
+
+    let gymSub;
+    if (gymDeltaPct !== null) {
+      const up = gymDeltaPct >= 0;
+      gymSub = `<span style="font-family:var(--mono);font-size:10px;color:${up ? 'var(--accent)' : 'var(--red)'}">${up ? '↑' : '↓'} ${Math.abs(gymDeltaPct)}% vol</span>`;
+    } else {
+      gymSub = `<span style="font-family:var(--mono);font-size:10px;color:var(--text3)">${gymVolT} t</span>`;
+    }
+    gymCard = tChip(
+      'Ginásio',
+      `${bodyGymCurrent.length} <span style="font-size:11px;color:var(--text3)">sess</span>`,
+      gymSub,
+      { onclick: 'openGymDetailSheet()' },
+    );
+  }
+
   return `<div style="padding:18px 20px 0;margin-top:20px">
     ${header}
-    <div class="macro-secondary">${km}${tempo}${carga}</div>
+    <div class="macro-secondary">${km}${tempo}${carga}${gymCard}</div>
   </div>`;
 }
 
 function formatActivityTime(secs) {
   const h = Math.floor(secs / 3600);
   const m = Math.floor((secs % 3600) / 60);
-  return h > 0 ? `${h}:${String(m).padStart(2, '0')}` : `${m} min`;
+  return `${h}:${String(m).padStart(2, '0')}`;
 }
 
 // Sheet de detalhe das actividades por trás de cada card do resumo (tap).
@@ -586,12 +657,15 @@ function openActivityDetailSheet(metric) {
 
   const cfg = METRIC_CONFIG[metric];
 
-  // Mesma janela rolling [hoje-7, hoje) do resumo, para bater certo com a card.
+  // Só actividades com nome e tipo desportivo (exclui WeightTraining/sem-tipo —
+  // o ginásio vem do Hevy, mostrado em secção própria). Mesma janela [hoje-7, hoje).
+  const ICU_RUNNING_TYPES = ['Run', 'VirtualRun', 'TrailRun', 'Ride', 'VirtualRide', 'Walk', 'Swim'];
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const periodStart = new Date(today); periodStart.setDate(today.getDate() - 7);
 
   const activities = bodyRecentActivities
     .filter(a => {
+      if (!a.name || !ICU_RUNNING_TYPES.includes(a.type)) return false;
       const ds = a.start_date_local || a.start_date;
       if (!ds) return false;
       const d = new Date(ds);
@@ -616,6 +690,30 @@ function openActivityDetailSheet(metric) {
       </div>`;
   }).join('');
 
+  // Secção de ginásio (Hevy) para Tempo/Carga — valor muted para distinguir do ICU.
+  const gymRows = ((metric === 'time' || metric === 'load') && bodyGymCurrent.length > 0)
+    ? `<div class="act-detail-sep">🏋️ Ginásio</div>` +
+      bodyGymCurrent
+        .slice()
+        .sort((a, b) => new Date(b.startTime) - new Date(a.startTime))
+        .map(w => {
+          const dateStr = new Date(w.startTime)
+            .toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' });
+          const val = metric === 'time'
+            ? formatActivityTime(Math.round((new Date(w.endTime) - new Date(w.startTime)) / 1000))
+            : String(Math.round(calcGymVolume(w) / 100));
+          return `
+            <div class="act-detail-row">
+              <span class="act-detail-icon">🏋️</span>
+              <div class="act-detail-info">
+                <span class="act-detail-name">${w.title || 'Ginásio'}</span>
+                <span class="act-detail-date">${dateStr}</span>
+              </div>
+              <span class="act-detail-val act-detail-val--muted">${val}</span>
+            </div>`;
+        }).join('')
+    : '';
+
   let overlay = document.getElementById('act-detail-overlay');
   if (!overlay) {
     overlay = document.createElement('div');
@@ -638,7 +736,59 @@ function openActivityDetailSheet(metric) {
   }
 
   document.getElementById('act-detail-title').textContent = cfg.label;
-  document.getElementById('act-detail-list').innerHTML = rows ||
+  document.getElementById('act-detail-list').innerHTML = (rows + gymRows) ||
     '<p style="padding:16px;color:var(--text3)">Sem actividades neste período.</p>';
+  overlay.classList.add('open');
+}
+
+// Sheet de detalhe das sessões de ginásio (Hevy) — mesma janela [hoje-7, hoje).
+function openGymDetailSheet() {
+  pushSheetState();
+
+  const sessions = bodyGymCurrent
+    .slice()
+    .sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+
+  const rows = sessions.map(w => {
+    const dateStr = new Date(w.startTime)
+      .toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' });
+    const durSecs = Math.round((new Date(w.endTime) - new Date(w.startTime)) / 1000);
+    const vol = calcGymVolume(w);
+    const exCount = (w.exercises || []).length;
+    return `
+      <div class="act-detail-row act-detail-row--gym">
+        <span class="act-detail-icon">🏋️</span>
+        <div class="act-detail-info">
+          <span class="act-detail-name">${w.title || 'Ginásio'}</span>
+          <span class="act-detail-date">${dateStr} · ${exCount} ex.</span>
+        </div>
+        <div class="act-detail-gym-meta">
+          <span class="act-detail-val act-detail-val--highlight">${formatActivityTime(durSecs)}</span>
+          <span class="act-detail-gym-vol">${(vol / 1000).toFixed(1)} t</span>
+        </div>
+      </div>`;
+  }).join('') || '<p style="padding:16px;color:var(--text3)">Sem sessões neste período.</p>';
+
+  let overlay = document.getElementById('gym-detail-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'gym-detail-overlay';
+    overlay.className = 'sheet-overlay';
+    overlay.innerHTML = `
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <span class="sheet-title">Ginásio · 7 dias</span>
+          <div class="sheet-close" onclick="document.getElementById('gym-detail-overlay').classList.remove('open')">×</div>
+        </div>
+        <div id="gym-detail-list" class="act-detail-list"></div>
+      </div>`;
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) overlay.classList.remove('open');
+    });
+    document.body.appendChild(overlay);
+  }
+
+  document.getElementById('gym-detail-list').innerHTML = rows;
   overlay.classList.add('open');
 }

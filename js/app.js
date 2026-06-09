@@ -2,6 +2,7 @@ const { createClient } = supabase;
 let db = null;
 let icuId = null;
 let icuKey = null;
+let hevyKey = '';
 let currentDate = new Date().toISOString().split('T')[0];
 let selectedMeal = 'breakfast';
 let selectedFood = null;
@@ -15,6 +16,7 @@ function init() {
   const key = localStorage.getItem('nt_key');
   icuId  = localStorage.getItem('icu_id')  || null;
   icuKey = localStorage.getItem('icu_key') || null;
+  hevyKey = localStorage.getItem('hevy_key') || '';
   if (url && key) {
     db = createClient(url, key);
     document.getElementById('setup-screen').style.display = 'none';
@@ -124,6 +126,9 @@ async function loadSettingsView() {
   const savedKey = localStorage.getItem('icu_key');
   if (icuIdEl)  icuIdEl.textContent  = savedId ? savedId : '—';
   if (icuKeyEl) icuKeyEl.textContent = savedKey ? '••••••' : '—';
+
+  const hevyEl = document.getElementById('hevy-key-display');
+  if (hevyEl) hevyEl.textContent = hevyKey ? '••••••' + hevyKey.slice(-4) : 'Não configurado';
 }
 
 function editIcuSettings() {
@@ -173,6 +178,48 @@ function saveIcuSettings() {
   toast('Intervals.icu guardado');
   loadSettingsView();
   loadBody();
+}
+
+function editHevySettings() {
+  pushSheetState();
+  let overlay = document.getElementById('hevy-settings-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'hevy-settings-overlay';
+    overlay.className = 'sheet-overlay';
+    overlay.innerHTML = `
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <span class="sheet-title">Hevy</span>
+          <div class="sheet-close" onclick="document.getElementById('hevy-settings-overlay').classList.remove('open')">×</div>
+        </div>
+        <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:14px">
+          <label>
+            <span class="lt">API Key</span>
+            <input type="password" id="hevy-key-input" placeholder="••••••••" autocomplete="off">
+          </label>
+          <button class="btn btn-primary" onclick="saveHevySettings()">Guardar</button>
+        </div>
+      </div>`;
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) overlay.classList.remove('open');
+    });
+    document.body.appendChild(overlay);
+  }
+  const input = document.getElementById('hevy-key-input');
+  if (input) input.value = hevyKey || '';
+  overlay.classList.add('open');
+}
+
+function saveHevySettings() {
+  const key = document.getElementById('hevy-key-input')?.value?.trim() || '';
+  if (key) localStorage.setItem('hevy_key', key); else localStorage.removeItem('hevy_key');
+  hevyKey = key;
+  document.getElementById('hevy-settings-overlay')?.classList.remove('open');
+  toast('Hevy guardado');
+  loadSettingsView();
+  if (typeof loadBody === 'function') loadBody();
 }
 
 async function clearCacheAndReload() {

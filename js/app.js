@@ -3,6 +3,8 @@ let db = null;
 let icuId = null;
 let icuKey = null;
 let hevyKey = '';
+let icuEnabled = true;
+let hevyEnabled = true;
 let currentDate = new Date().toISOString().split('T')[0];
 let selectedMeal = 'breakfast';
 let selectedFood = null;
@@ -17,6 +19,8 @@ function init() {
   icuId  = localStorage.getItem('icu_id')  || null;
   icuKey = localStorage.getItem('icu_key') || null;
   hevyKey = localStorage.getItem('hevy_key') || '';
+  icuEnabled = localStorage.getItem('icu_enabled') !== 'false';
+  hevyEnabled = localStorage.getItem('hevy_enabled') !== 'false';
   if (url && key) {
     db = createClient(url, key);
     document.getElementById('setup-screen').style.display = 'none';
@@ -129,6 +133,17 @@ async function loadSettingsView() {
 
   const hevyEl = document.getElementById('hevy-key-display');
   if (hevyEl) hevyEl.textContent = hevyKey ? '••••••' + hevyKey.slice(-4) : 'Não configurado';
+
+  const icuBtn = document.getElementById('icu-toggle-btn');
+  if (icuBtn) {
+    icuBtn.textContent = icuEnabled ? 'ON' : 'OFF';
+    icuBtn.style.color = icuEnabled ? 'var(--accent)' : 'var(--text3)';
+  }
+  const hevyBtn = document.getElementById('hevy-toggle-btn');
+  if (hevyBtn) {
+    hevyBtn.textContent = hevyEnabled ? 'ON' : 'OFF';
+    hevyBtn.style.color = hevyEnabled ? 'var(--accent)' : 'var(--text3)';
+  }
 }
 
 function editIcuSettings() {
@@ -218,6 +233,20 @@ function saveHevySettings() {
   hevyKey = key;
   document.getElementById('hevy-settings-overlay')?.classList.remove('open');
   toast('Hevy guardado');
+  loadSettingsView();
+  if (typeof loadBody === 'function') loadBody();
+}
+
+function toggleIcu() {
+  icuEnabled = !icuEnabled;
+  localStorage.setItem('icu_enabled', icuEnabled);
+  loadSettingsView();
+  if (typeof loadBody === 'function') loadBody();
+}
+
+function toggleHevy() {
+  hevyEnabled = !hevyEnabled;
+  localStorage.setItem('hevy_enabled', hevyEnabled);
   loadSettingsView();
   if (typeof loadBody === 'function') loadBody();
 }

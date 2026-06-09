@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="css/styles.css?v=20260609h">
+  <link rel="stylesheet" href="css/styles.css?v=20260609j">
 </head>
 <body>
 
@@ -238,10 +238,6 @@
     <div class="target-section">
       <div class="target-section-title">Perfil</div>
       <div class="settings-row">
-        <span class="settings-label">Nome</span>
-        <span class="settings-value">dud</span>
-      </div>
-      <div class="settings-row">
         <span class="settings-label">Fase activa</span>
         <span class="settings-value" id="settings-phase-num">—</span>
       </div>
@@ -256,7 +252,7 @@
       <div class="target-section-title">App</div>
       <div class="settings-row">
         <span class="settings-label">Versão</span>
-        <span class="settings-value">v1.2.0</span>
+        <span class="settings-value">v2.0.0</span>
       </div>
     </div>
 
@@ -264,7 +260,10 @@
     <div style="padding:16px 20px;margin-top:8px">
       <div class="target-section-title" style="color:var(--red);margin-bottom:12px">Configuração</div>
       <div class="target-section">
-        <div class="target-section-title">Intervals.icu</div>
+        <div class="settings-section-header">
+          <span class="settings-section-label">Intervals.icu</span>
+          <button id="icu-toggle-btn" onclick="toggleIcu()" class="integration-toggle"></button>
+        </div>
         <div class="settings-row">
           <span class="settings-label">Athlete ID</span>
           <span class="settings-value" id="settings-icu-id">—</span>
@@ -280,7 +279,10 @@
         </button>
       </div>
       <div class="target-section">
-        <div class="target-section-title">Hevy</div>
+        <div class="settings-section-header">
+          <span class="settings-section-label">Hevy</span>
+          <button id="hevy-toggle-btn" onclick="toggleHevy()" class="integration-toggle"></button>
+        </div>
         <div class="settings-row">
           <span class="settings-label">API Key</span>
           <span class="settings-value" id="hevy-key-display">Não configurado</span>
@@ -560,7 +562,7 @@
 <script src="js/views/meals.js?v=20260608"></script>
 <script src="js/views/targets.js?v=20260602"></script>
 <script src="js/views/stats.js?v=20260603-5"></script>
-<script src="js/views/body.js?v=20260609i"></script>
-<script src="js/app.js?v=20260609e"></script>
+<script src="js/views/body.js?v=20260609j"></script>
+<script src="js/app.js?v=20260609j"></script>
 </body>
 </html>

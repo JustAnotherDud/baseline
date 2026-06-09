@@ -251,24 +251,25 @@ function bodyFormaHtml(wSorted, hasIcu) {
   const tsbStr   = tsb != null ? (tsb > 0 ? '+' + Math.round(tsb) : Math.round(tsb)) : '—';
   const tsbColor = tsb != null && tsb < 0 ? 'var(--red)' : 'var(--accent)';
 
-  const cell = (label, val, color) => `
-    <div class="macro-cell" style="cursor:default">
-      <div class="macro-cell-label">${label}</div>
-      <div class="macro-cell-valrow"><span class="macro-cell-val" style="color:${color};font-size:32px">${val}</span></div>
-    </div>`;
+  const colVal = (v, color) => `<span style="color:${color}">${v}</span>`;
 
-  const rampStr = ramp != null
-    ? `Ramp rate ${ramp > 0 ? '+' : ''}${ramp.toFixed(1)}/sem`
-    : '';
+  let rampVal;
+  if (ramp != null) {
+    const rampColor = ramp > 0 ? 'var(--accent)' : (ramp < 0 ? 'var(--red)' : 'var(--text2)');
+    rampVal = colVal(`${ramp > 0 ? '+' : ''}${ramp.toFixed(1)}`, rampColor)
+      + `<span style="font-size:11px;color:var(--text3)">/sem</span>`;
+  } else {
+    rampVal = colVal('—', 'var(--text2)');
+  }
 
   return `<div style="padding:16px 20px 0">
     ${header}
-    <div class="macro-grid" style="margin-top:0;border-top:none">
-      ${cell('Fitness', d0(ctl), 'var(--accent)')}
-      ${cell('Fadiga',  d0(atl), 'var(--orange)')}
-      ${cell('Forma',   tsbStr,  tsbColor)}
+    <div class="stat-row-4">
+      ${tChip('Fitness', colVal(d0(ctl), 'var(--accent)'))}
+      ${tChip('Fadiga',  colVal(d0(atl), 'var(--orange)'))}
+      ${tChip('Forma',   colVal(tsbStr, tsbColor))}
+      ${tChip('Ramp',    rampVal)}
     </div>
-    ${rampStr ? `<div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:10px">${rampStr}</div>` : ''}
   </div>`;
 }
 
@@ -302,17 +303,24 @@ function bodyWeighInHtml(asc) {
     const n = tNum(v);
     return n != null ? `${n.toFixed(1)} <span style="font-size:11px;color:var(--text3)">${unit}</span>` : '—';
   };
+
+  // Massa gorda (kg) = peso × %gordura / 100. Sem delta — só valor.
+  const bf = tNum(latest.body_fat_pct);
+  const mgVal = (wNow != null && bf != null)
+    ? `${(wNow * bf / 100).toFixed(1)} <span style="font-size:11px;color:var(--text3)">kg</span>`
+    : '—';
+
   const dateStr = latest.date
     ? new Date(latest.date + 'T12:00:00').toLocaleDateString('pt-PT', { day: 'numeric', month: 'long' })
     : '';
 
   return `<div style="padding:18px 20px 0;margin-top:20px">
     ${header}
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div class="stat-row-4">
       ${tChip('Peso', val(latest.weight_kg, 'kg'), deltaHtml)}
       ${tChip('Body Fat', val(latest.body_fat_pct, '%'))}
-      ${tChip('Músculo (LBM)', val(latest.muscle_mass_kg, 'kg'))}
-      ${tChip('Água', val(latest.water_pct, '%'))}
+      ${tChip('LBM', val(latest.muscle_mass_kg, 'kg'))}
+      ${tChip('Massa Gorda', mgVal)}
     </div>
     ${dateStr ? `<div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:8px">${dateStr}</div>` : ''}
   </div>`;

@@ -1,4 +1,6 @@
 let loadTotalsGen = 0;
+let lastSearchResults = [];
+let expandedGroups = new Set();
 
 async function searchDB() {
   const q = document.getElementById('log-q').value.trim().toLowerCase();
@@ -23,11 +25,90 @@ async function searchDB() {
     </div>`;
     return;
   }
-  res.innerHTML = data.map(f=>`
-    <div class="sr-item" onclick="pickFood(${f.id})">
-      <div><div class="sr-name">${highlightFoodKeywords(f.name)}</div><div class="sr-detail">${f.brand?f.brand+' · ':''}${f.calories_per_100g} kcal · P${f.protein_per_100g} C${f.carbs_per_100g} F${f.fat_per_100g}</div></div>
-      <div class="sr-kcal">${f.calories_per_100g}<br><span style="font-size:9px;color:var(--text3)">kcal/100g</span></div>
-    </div>`).join('');
+  lastSearchResults = data;
+  renderSearchResults(data);
+}
+
+function groupFoodResults(foods) {
+  const map = {};
+  foods.forEach(f => {
+    if (!map[f.name]) map[f.name] = [];
+    map[f.name].push(f);
+  });
+  return map; // { "Iogurte Grego": [food1, food2, food3], ... }
+}
+
+function renderSearchResults(foods) {
+  expandedGroups = new Set(); // reset expansão a cada render de nova pesquisa
+  const container = document.getElementById('log-results');
+  container.innerHTML = '';
+
+  const groups = groupFoodResults(foods);
+
+  Object.entries(groups).forEach(([name, items]) => {
+    if (items.length === 1) {
+      container.appendChild(buildFoodItem(items[0]));
+    } else {
+      container.appendChild(buildFoodGroup(name, items));
+    }
+  });
+}
+
+function buildFoodItem(food) {
+  const item = document.createElement('div');
+  item.className = 'sr-item';
+  item.innerHTML = `
+      <div><div class="sr-name">${highlightFoodKeywords(food.name)}</div><div class="sr-detail">${food.brand?food.brand+' · ':''}${food.calories_per_100g} kcal · P${food.protein_per_100g} C${food.carbs_per_100g} F${food.fat_per_100g}</div></div>
+      <div class="sr-kcal">${food.calories_per_100g}<br><span style="font-size:9px;color:var(--text3)">kcal/100g</span></div>`;
+  item.onclick = () => pickFood(food.id);
+  return item;
+}
+
+function buildFoodGroup(name, items) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'food-group';
+
+  // Header do grupo
+  const header = document.createElement('div');
+  header.className = 'food-group-header';
+  header.innerHTML = `
+    <span class="food-group-name">${highlightFoodKeywords(name)}</span>
+    <div class="food-group-meta">
+      <span class="food-group-count">${items.length} marcas</span>
+      <span class="food-group-chevron">›</span>
+    </div>
+  `;
+  header.onclick = () => toggleFoodGroup(name, items, wrapper);
+  wrapper.appendChild(header);
+
+  return wrapper;
+}
+
+function toggleFoodGroup(name, items, wrapper) {
+  const chevron = wrapper.querySelector('.food-group-chevron');
+  const existing = wrapper.querySelector('.food-group-brands');
+
+  if (existing) {
+    existing.remove();
+    chevron.classList.remove('open');
+    expandedGroups.delete(name);
+  } else {
+    const brandsEl = document.createElement('div');
+    brandsEl.className = 'food-group-brands';
+    items.forEach(food => {
+      const item = document.createElement('div');
+      item.className = 'food-brand-item';
+      item.innerHTML = `
+        <span class="food-brand-name">${food.brand || 'Genérico'}</span>
+        <span class="food-brand-kcal">${Math.round(food.calories_per_100g)} kcal</span>
+      `;
+      item.onclick = () => pickFood(food.id);
+      brandsEl.appendChild(item);
+    });
+    wrapper.appendChild(brandsEl);
+    chevron.classList.add('open');
+    expandedGroups.add(name);
+  }
 }
 
 async function pickFood(id) {

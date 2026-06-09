@@ -268,6 +268,73 @@ input[type="number"] { font-family: var(--mono); }
 .sr-detail { font-size: 12px; color: var(--text2); margin-top: 2px; font-family: var(--mono); }
 .sr-kcal { font-family: var(--mono); font-size: 12px; color: var(--text2); white-space: nowrap; }
 
+.food-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+}
+
+.food-group-name {
+  font-size: 15px;
+  color: var(--text);
+}
+
+.food-group-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.food-group-count {
+  font-size: 11px;
+  color: var(--text3);
+  background: var(--surface2);
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+
+.food-group-chevron {
+  color: var(--text3);
+  font-size: 16px;
+  transition: transform 0.2s ease;
+  display: inline-block;
+}
+
+.food-group-chevron.open {
+  transform: rotate(90deg);
+}
+
+.food-group-brands {
+  background: var(--surface);
+}
+
+.food-brand-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 16px 11px 28px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.food-brand-item:active {
+  background: var(--surface2);
+}
+
+.food-brand-name {
+  font-size: 14px;
+  color: var(--text2);
+}
+
+.food-brand-kcal {
+  font-size: 13px;
+  color: var(--text3);
+  font-family: var(--mono);
+}
+
 /* ── FOOD LIST ── */
 .food-item {
   padding: 14px 20px; border-bottom: 1px solid var(--border);

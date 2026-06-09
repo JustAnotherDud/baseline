@@ -2,8 +2,8 @@
 // View única em scroll que funde body_comp (peso/BF/músculo/água) com as
 // métricas de forma do Intervals.icu (CTL/ATL/TSB, HRV, sono, carga semanal).
 //
-// Secções: 1 Forma actual · 2 Última pesagem · 3 Tendência (chart unificado)
-//          4 LBM · 5 HRV · 6 Resumo da semana · 7 Wellness
+// Secções: 1 Forma actual · 2 Última pesagem · 3 Chart Forma · 4 Chart Composição
+//          5 HRV · 30 dias · 6 Últimos 7 dias
 
 let loadBodyGen = 0;
 
@@ -154,8 +154,7 @@ async function loadBody() {
     + bodyFormChartSectionHtml(hasIcu)
     + bodyCompChartSectionHtml()
     + bodyHrvSectionHtml(bodyWellness, hasIcu)
-    + bodyWeekSectionHtml(activities, hasIcu)
-    + bodyWellnessChipsHtml(bodyWellness, hasIcu);
+    + bodyWeekSectionHtml(activities, hasIcu);
 
   // Charts construídos depois do innerHTML (canvas já no DOM).
   buildBodyFormChart();
@@ -411,7 +410,8 @@ function buildBodyCompChart() {
   const lbmData    = rows.map(r => r.lbm ?? null);
 
   // Escala dinâmica com padding — cada métrica no seu próprio eixo (Peso/LBM/BF%)
-  // para que nenhuma comprima as outras. yLBM é invisível (só posiciona a linha).
+  // para que nenhuma comprima as outras. yWeight/yLBM partilham o lado esquerdo:
+  // mostra a escala do que estiver activo (Peso tem prioridade quando ambos).
   const pesoValues = weightData.filter(v => v != null);
   const pMin = Math.min(...pesoValues), pMax = Math.max(...pesoValues);
   const pPad = Math.max((pMax - pMin) * 0.3, 1);
@@ -460,16 +460,17 @@ function buildBodyCompChart() {
         x: { grid: { color: chartTheme.grid }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }, border: { color: '#2e2e2e' } },
         yWeight: {
           type: 'linear', position: 'left',
-          display: bodyCompActive.weight || bodyCompActive.lbm,
+          display: bodyCompActive.weight,
           min: pesoValues.length ? Math.floor(pMin - pPad) : undefined,
           max: pesoValues.length ? Math.ceil(pMax + pPad) : undefined,
           grid: { color: chartTheme.grid }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } }, border: { color: '#2e2e2e' },
         },
         yLBM: {
-          type: 'linear', position: 'right', display: false,
+          type: 'linear', position: 'left',
+          display: bodyCompActive.lbm && !bodyCompActive.weight,
           min: lbmValues.length ? Math.floor(lMin - lPad) : undefined,
           max: lbmValues.length ? Math.ceil(lMax + lPad) : undefined,
-          grid: { drawOnChartArea: false },
+          grid: { drawOnChartArea: false }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } }, border: { color: '#2e2e2e' },
         },
         yFat: {
           type: 'linear', position: 'right',
@@ -601,43 +602,5 @@ function bodyWeekSectionHtml(activities, hasIcu) {
   return `<div style="padding:18px 20px 0;margin-top:20px">
     ${header}
     <div class="macro-secondary">${km}${tempo}${carga}</div>
-  </div>`;
-}
-
-// ── Secção 7 — Wellness (HRV + Sono) ──────────────────────────────────────────
-
-function bodyWellnessChipsHtml(wSorted, hasIcu) {
-  const header = tSecLabel('Wellness · 7 dias');
-  const last7 = wSorted.slice(-7);
-
-  if (!last7.length) {
-    const msg = hasIcu ? 'Sem dados de wellness.' : 'Configura o Intervals.icu nas Settings';
-    return `<div style="padding:18px 20px 24px">${header}${tEmpty(msg)}</div>`;
-  }
-
-  // HRV — último valor + seta vs média 7d.
-  const hrvVals = last7.map(w => tNum(w.hrv)).filter(v => v != null);
-  let hrvChipVal = '—';
-  if (hrvVals.length) {
-    const last = hrvVals[hrvVals.length - 1];
-    const avg = hrvVals.reduce((s, v) => s + v, 0) / hrvVals.length;
-    let arrow = '', col = 'var(--text)';
-    if (last > avg + 0.5)      { arrow = ' ↑'; col = 'var(--accent)'; }
-    else if (last < avg - 0.5) { arrow = ' ↓'; col = 'var(--red)'; }
-    hrvChipVal = `<span style="color:${col}">${Math.round(last)}${arrow}</span>`;
-  }
-
-  // Sono — média 7d em horas (sleepSecs / 3600).
-  const sleepHours = last7.map(w => (w.sleepSecs != null ? tNum(w.sleepSecs) / 3600 : null)).filter(v => v != null);
-  const sleepChipVal = sleepHours.length
-    ? (sleepHours.reduce((s, v) => s + v, 0) / sleepHours.length).toFixed(1) + 'h'
-    : '—';
-
-  return `<div style="padding:18px 20px 24px">
-    ${header}
-    <div class="macro-secondary">
-      ${tChip('HRV', hrvChipVal)}
-      ${tChip('Sono', sleepChipVal)}
-    </div>
   </div>`;
 }

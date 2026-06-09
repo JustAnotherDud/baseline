@@ -118,8 +118,8 @@ function calcGymVolume(workout) {
   let vol = 0;
   (workout.exercises || []).forEach(ex => {
     (ex.sets || [])
-      .filter(s => s.type === 'normal' && s.weight && s.reps)
-      .forEach(s => { vol += s.weight * s.reps; });
+      .filter(s => s.type === 'normal' && s.weight_kg && s.reps)
+      .forEach(s => { vol += s.weight_kg * s.reps; });
   });
   return vol;
 }

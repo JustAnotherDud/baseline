@@ -76,7 +76,7 @@ function go(view, _pushState = true) {
     if (currentFoodsTab === 'foods') loadFoods();
     else loadMeals();
   }
-  if (view==='body') loadBody();
+  if (view==='forma') loadBody();
   if (view==='settings') loadSettingsView();
   if (view==='stats')    loadStats();
   if (_pushState) {

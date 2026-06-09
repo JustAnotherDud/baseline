@@ -406,14 +406,39 @@ function buildBodyCompChart() {
   const ptR = dense ? 0 : 2;
   const labels = rows.map(r => tDayLabel(r.date));
 
+  const weightData = rows.map(r => r.weight ?? null);
+  const fatData    = rows.map(r => r.fat ?? null);
+  const lbmData    = rows.map(r => r.lbm ?? null);
+
+  // Escala dinâmica com padding — evita comprimir as variações ao escalar desde 0.
+  const yWeightScale = { position: 'left', display: bodyCompActive.weight || bodyCompActive.lbm, grid: { color: chartTheme.grid }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } }, border: { color: '#2e2e2e' } };
+  const weightValues = [...weightData, ...lbmData].filter(v => v != null);
+  if (weightValues.length) {
+    const wMin = Math.min(...weightValues);
+    const wMax = Math.max(...weightValues);
+    const wPad = Math.max((wMax - wMin) * 0.3, 1);
+    yWeightScale.min = Math.floor(wMin - wPad);
+    yWeightScale.max = Math.ceil(wMax + wPad);
+  }
+
+  const yFatScale = { position: 'right', display: bodyCompActive.fat, grid: { drawOnChartArea: false }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } }, border: { color: '#2e2e2e' } };
+  const fatValues = fatData.filter(v => v != null);
+  if (fatValues.length) {
+    const fMin = Math.min(...fatValues);
+    const fMax = Math.max(...fatValues);
+    const fPad = Math.max((fMax - fMin) * 0.3, 0.5);
+    yFatScale.min = parseFloat((fMin - fPad).toFixed(1));
+    yFatScale.max = parseFloat((fMax + fPad).toFixed(1));
+  }
+
   bodyCompChart = new Chart(ctx, {
     type: 'line',
     data: {
       labels,
       datasets: [
-        { label: 'Peso', data: rows.map(r => r.weight ?? null), borderColor: chartTheme.blue,   backgroundColor: 'transparent', borderWidth: 2, pointRadius: ptR, pointBackgroundColor: chartTheme.blue,   tension: 0.3, spanGaps: true, hidden: !bodyCompActive.weight, yAxisID: 'yWeight' },
-        { label: 'BF%',  data: rows.map(r => r.fat ?? null),    borderColor: chartTheme.red,    backgroundColor: 'transparent', borderWidth: 2, pointRadius: ptR, pointBackgroundColor: chartTheme.red,    tension: 0.3, spanGaps: true, hidden: !bodyCompActive.fat,    yAxisID: 'yFat' },
-        { label: 'LBM', data: rows.map(r => r.lbm ?? null),     borderColor: chartTheme.orange, backgroundColor: 'transparent', borderWidth: 2, pointRadius: ptR, pointBackgroundColor: chartTheme.orange, tension: 0.3, spanGaps: true, hidden: !bodyCompActive.lbm,    yAxisID: 'yWeight' },
+        { label: 'Peso', data: weightData, borderColor: chartTheme.blue,   backgroundColor: 'transparent', borderWidth: 2, pointRadius: ptR, pointBackgroundColor: chartTheme.blue,   tension: 0.3, spanGaps: true, hidden: !bodyCompActive.weight, yAxisID: 'yWeight' },
+        { label: 'BF%',  data: fatData,    borderColor: chartTheme.red,    backgroundColor: 'transparent', borderWidth: 2, pointRadius: ptR, pointBackgroundColor: chartTheme.red,    tension: 0.3, spanGaps: true, hidden: !bodyCompActive.fat,    yAxisID: 'yFat' },
+        { label: 'LBM', data: lbmData,     borderColor: chartTheme.orange, backgroundColor: 'transparent', borderWidth: 2, pointRadius: ptR, pointBackgroundColor: chartTheme.orange, tension: 0.3, spanGaps: true, hidden: !bodyCompActive.lbm,    yAxisID: 'yWeight' },
       ],
     },
     options: {
@@ -440,8 +465,8 @@ function buildBodyCompChart() {
       },
       scales: {
         x: { grid: { color: chartTheme.grid }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }, border: { color: '#2e2e2e' } },
-        yWeight: { position: 'left',  display: bodyCompActive.weight || bodyCompActive.lbm, suggestedMin: 65, suggestedMax: 78, grid: { color: chartTheme.grid }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } }, border: { color: '#2e2e2e' } },
-        yFat:    { position: 'right', display: bodyCompActive.fat,                          suggestedMin: 10, suggestedMax: 22, grid: { drawOnChartArea: false }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } }, border: { color: '#2e2e2e' } },
+        yWeight: yWeightScale,
+        yFat:    yFatScale,
       },
     },
   });
@@ -502,14 +527,6 @@ function buildBodyHrvChart() {
 
 // ── Secção 6 — Resumo da semana ───────────────────────────────────────────────
 
-function tMondayOf(date) {
-  const x = new Date(date);
-  x.setHours(0, 0, 0, 0);
-  const day = (x.getDay() + 6) % 7; // 0 = segunda
-  x.setDate(x.getDate() - day);
-  return x;
-}
-
 function tWeekTotals(activities, start, end) {
   const tot = { meters: 0, secs: 0, load: 0 };
   activities.forEach(a => {
@@ -546,20 +563,21 @@ function tDeltaHtml(cur, prev) {
 }
 
 function bodyWeekSectionHtml(activities, hasIcu) {
-  const header = tSecLabel('Resumo da semana');
+  const header = tSecLabel('Resumo · 7 dias');
 
   if (!Array.isArray(activities)) {
     const msg = hasIcu ? 'Sem dados de actividades.' : 'Configura o Intervals.icu nas Settings';
     return `<div style="padding:18px 20px 0;margin-top:20px">${header}${tEmpty(msg)}</div>`;
   }
 
-  const now = new Date();
-  const thisMon = tMondayOf(now);
-  const lastMon = new Date(thisMon); lastMon.setDate(lastMon.getDate() - 7);
-  const nextMon = new Date(thisMon); nextMon.setDate(nextMon.getDate() + 7);
+  // Rolling 7 dias, hoje excluído. Janelas com fim exclusivo (tWeekTotals usa d < end):
+  // actual = [hoje-7, hoje) → ontem-6 a ontem · anterior = [hoje-14, hoje-7) → ontem-13 a ontem-7
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const periodStart = new Date(today); periodStart.setDate(today.getDate() - 7);
+  const prevStart   = new Date(today); prevStart.setDate(today.getDate() - 14);
 
-  const cur  = tWeekTotals(activities, thisMon, nextMon);
-  const prev = tWeekTotals(activities, lastMon, thisMon);
+  const cur  = tWeekTotals(activities, periodStart, today);
+  const prev = tWeekTotals(activities, prevStart, periodStart);
 
   const km = tChip(
     'Distância',

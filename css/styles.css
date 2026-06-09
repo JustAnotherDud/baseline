@@ -140,6 +140,9 @@ body {
 .msc-val { font-family: var(--sans); font-size: 12px; font-weight: 600; color: var(--text2); }
 .msc-tap { cursor: pointer; }
 .msc-tap:active { background: var(--surface3); }
+/* Grid de 4 cards display-only (Forma actual, Última pesagem) */
+.stat-row-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.stat-row-4 > .msc { min-width: 0; }
 
 /* ── ACTIVITY DETAIL SHEET (resumo 7 dias) ── */
 .act-detail-list {

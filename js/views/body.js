@@ -158,9 +158,15 @@ async function loadBody() {
 
   // 4 fetches em paralelo. ICU/Hevy degradam de forma independente (catch → null);
   // sem credenciais, resolvem null sem rede.
-  const hevyPromise = hevyKey
-    ? hevyFetch('/v1/workouts?page=1&pageSize=20').catch(() => null)
-    : Promise.resolve(null);
+  const hevyPromise = hevyKey ? Promise.all([
+    hevyFetch('/v1/workouts?page=1&pageSize=10').catch(() => null),
+    hevyFetch('/v1/workouts?page=2&pageSize=10').catch(() => null),
+  ]).then(([p1, p2]) => ({
+    workouts: [
+      ...(Array.isArray(p1) ? p1 : (p1?.workouts || [])),
+      ...(Array.isArray(p2) ? p2 : (p2?.workouts || [])),
+    ],
+  })).catch(() => null) : Promise.resolve(null);
 
   const [bodyRes, wellness, activities, hevyData] = await Promise.all([
     db.from('body_comp').select('*').order('date', { ascending: true }),
@@ -182,9 +188,9 @@ async function loadBody() {
   const todayMid = new Date(); todayMid.setHours(0, 0, 0, 0);
   const hevy14 = new Date(todayMid); hevy14.setDate(todayMid.getDate() - 14);
   const hevy7  = new Date(todayMid); hevy7.setDate(todayMid.getDate() - 7);
-  bodyHevyWorkouts = rawWorkouts.filter(w => w.startTime && new Date(w.startTime) >= hevy14);
+  bodyHevyWorkouts = rawWorkouts.filter(w => w.start_time && new Date(w.start_time) >= hevy14);
   bodyGymCurrent = bodyHevyWorkouts.filter(w => {
-    const d = new Date(w.startTime);
+    const d = new Date(w.start_time);
     return d >= hevy7 && d < todayMid;
   });
   bodyPeriod = 'month';
@@ -597,7 +603,7 @@ function bodyWeekSectionHtml(activities, hasIcu) {
   let gymCard = '';
   if (hevyKey) {
     const gymPrev = bodyHevyWorkouts.filter(w => {
-      const d = new Date(w.startTime);
+      const d = new Date(w.start_time);
       return d >= prevStart && d < periodStart;
     });
     const gymVolCurrent = bodyGymCurrent.reduce((s, w) => s + calcGymVolume(w), 0);
@@ -695,12 +701,12 @@ function openActivityDetailSheet(metric) {
     ? `<div class="act-detail-sep">🏋️ Ginásio</div>` +
       bodyGymCurrent
         .slice()
-        .sort((a, b) => new Date(b.startTime) - new Date(a.startTime))
+        .sort((a, b) => new Date(b.start_time) - new Date(a.start_time))
         .map(w => {
-          const dateStr = new Date(w.startTime)
+          const dateStr = new Date(w.start_time)
             .toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' });
           const val = metric === 'time'
-            ? formatActivityTime(Math.round((new Date(w.endTime) - new Date(w.startTime)) / 1000))
+            ? formatActivityTime(Math.round((new Date(w.end_time) - new Date(w.start_time)) / 1000))
             : String(Math.round(calcGymVolume(w) / 100));
           return `
             <div class="act-detail-row">
@@ -747,12 +753,12 @@ function openGymDetailSheet() {
 
   const sessions = bodyGymCurrent
     .slice()
-    .sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+    .sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
 
   const rows = sessions.map(w => {
-    const dateStr = new Date(w.startTime)
+    const dateStr = new Date(w.start_time)
       .toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' });
-    const durSecs = Math.round((new Date(w.endTime) - new Date(w.startTime)) / 1000);
+    const durSecs = Math.round((new Date(w.end_time) - new Date(w.start_time)) / 1000);
     const vol = calcGymVolume(w);
     const exCount = (w.exercises || []).length;
     return `

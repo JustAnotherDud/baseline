@@ -22,7 +22,7 @@ let bodyWellness  = [];   // wellness ICU ordenado ascendente
 let bodyTrendRows = [];   // merge wellness + body_comp por data: {date, ctl, atl, weight, fat, lbm}
 let bodyRecentActivities = [];   // activities ICU dos últimos 14 dias (sheet de detalhe)
 let bodyHevyWorkouts = [];       // workouts Hevy dos últimos 14 dias
-let bodyGymCurrent   = [];       // sessões de ginásio na janela [hoje-7, hoje)
+let bodyGymCurrent   = [];       // sessões de ginásio na janela [hoje-6, hoje]
 
 const ICU_BASE = 'https://intervals.icu/api/v1';
 
@@ -183,16 +183,13 @@ async function loadBody() {
   bodyRecentActivities = Array.isArray(activities) ? activities : [];
 
   // Hevy — normalizar (array directo ou {workouts:[...]}), filtrar 14 dias e a
-  // janela [hoje-7, hoje) para o cartão/sheets. Falha silenciosa → arrays vazios.
+  // janela [hoje-6, hoje] (7 dias, hoje incluído). Falha silenciosa → arrays vazios.
   const rawWorkouts = Array.isArray(hevyData) ? hevyData : (hevyData?.workouts || []);
   const todayMid = new Date(); todayMid.setHours(0, 0, 0, 0);
   const hevy14 = new Date(todayMid); hevy14.setDate(todayMid.getDate() - 14);
-  const hevy7  = new Date(todayMid); hevy7.setDate(todayMid.getDate() - 7);
+  const hevy7  = new Date(todayMid); hevy7.setDate(todayMid.getDate() - 6);
   bodyHevyWorkouts = rawWorkouts.filter(w => w.start_time && new Date(w.start_time) >= hevy14);
-  bodyGymCurrent = bodyHevyWorkouts.filter(w => {
-    const d = new Date(w.start_time);
-    return d >= hevy7 && d < todayMid;
-  });
+  bodyGymCurrent = bodyHevyWorkouts.filter(w => new Date(w.start_time) >= hevy7);
   bodyPeriod = 'month';
   bodyFormActive = { ctl: true, atl: true };
   bodyCompActive = { weight: true, fat: true, lbm: true };
@@ -347,7 +344,7 @@ function setBodyPeriod(p) {
 // ── Chart 1 — Forma · 60 dias (CTL / ATL, eixo único) ─────────────────────────
 
 function bodyFormChartSectionHtml(hasIcu) {
-  const header = tSecLabel('Forma · 60 dias');
+  const header = tSecLabel('Fitness');
   const hasForm = bodyTrendRows.some(r => r.ctl != null || r.atl != null);
 
   // Os chips de período vivem aqui mas controlam os dois charts.
@@ -428,7 +425,7 @@ function buildBodyFormChart() {
 // ── Chart 2 — Composição · Histórico (Peso / BF% / LBM, dois eixos) ───────────
 
 function bodyCompChartSectionHtml() {
-  const header = tSecLabel('Composição · Histórico');
+  const header = tSecLabel('Composição');
   const hasComp = bodyTrendRows.some(r => r.weight != null || r.fat != null || r.lbm != null);
   if (!hasComp) {
     return `<div style="padding:18px 20px 0;margin-top:20px">${header}${tEmpty('Sem dados de composição.')}</div>`;
@@ -586,13 +583,14 @@ function bodyWeekSectionHtml(activities, hasIcu) {
     return `<div style="padding:18px 20px 0;margin-top:20px">${header}${tEmpty(msg)}</div>`;
   }
 
-  // Rolling 7 dias, hoje excluído. Janelas com fim exclusivo (tWeekTotals usa d < end):
-  // actual = [hoje-7, hoje) → ontem-6 a ontem · anterior = [hoje-14, hoje-7) → ontem-13 a ontem-7
+  // Rolling 7 dias, hoje incluído. Janelas com fim exclusivo (tWeekTotals usa d < end):
+  // actual = [hoje-6, amanhã) → hoje-6 a hoje · anterior = [hoje-13, hoje-6) → hoje-13 a hoje-7
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const periodStart = new Date(today); periodStart.setDate(today.getDate() - 7);
-  const prevStart   = new Date(today); prevStart.setDate(today.getDate() - 14);
+  const tomorrow    = new Date(today); tomorrow.setDate(today.getDate() + 1);
+  const periodStart = new Date(today); periodStart.setDate(today.getDate() - 6);
+  const prevStart   = new Date(today); prevStart.setDate(today.getDate() - 13);
 
-  const cur  = tWeekTotals(activities, periodStart, today);
+  const cur  = tWeekTotals(activities, periodStart, tomorrow);
   const prev = tWeekTotals(activities, prevStart, periodStart);
 
   const km = tChip(
@@ -607,7 +605,7 @@ function bodyWeekSectionHtml(activities, hasIcu) {
     { onclick: "openActivityDetailSheet('load')" });
 
   // Cartão Ginásio (Hevy) — só com key configurada. Volume nas duas janelas de
-  // 7 dias para o delta; bodyGymCurrent já é a janela [hoje-7, hoje).
+  // 7 dias para o delta; bodyGymCurrent já é a janela [hoje-6, hoje].
   let gymCard = '';
   if (hevyKey) {
     const gymPrev = bodyHevyWorkouts.filter(w => {
@@ -672,10 +670,10 @@ function openActivityDetailSheet(metric) {
   const cfg = METRIC_CONFIG[metric];
 
   // Só actividades com nome e tipo desportivo (exclui WeightTraining/sem-tipo —
-  // o ginásio vem do Hevy, mostrado em secção própria). Mesma janela [hoje-7, hoje).
+  // o ginásio vem do Hevy, mostrado em secção própria). Mesma janela [hoje-6, hoje].
   const ICU_RUNNING_TYPES = ['Run', 'VirtualRun', 'TrailRun', 'Ride', 'VirtualRide', 'Walk', 'Swim'];
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const periodStart = new Date(today); periodStart.setDate(today.getDate() - 7);
+  const periodStart = new Date(today); periodStart.setDate(today.getDate() - 6);
 
   const activities = bodyRecentActivities
     .filter(a => {
@@ -683,7 +681,7 @@ function openActivityDetailSheet(metric) {
       const ds = a.start_date_local || a.start_date;
       if (!ds) return false;
       const d = new Date(ds);
-      return d >= periodStart && d < today;
+      return d >= periodStart;
     })
     .sort((a, b) => (b.start_date_local || '').localeCompare(a.start_date_local || ''));
 
@@ -755,7 +753,7 @@ function openActivityDetailSheet(metric) {
   overlay.classList.add('open');
 }
 
-// Sheet de detalhe das sessões de ginásio (Hevy) — mesma janela [hoje-7, hoje).
+// Sheet de detalhe das sessões de ginásio (Hevy) — mesma janela [hoje-6, hoje].
 function openGymDetailSheet() {
   pushSheetState();
 

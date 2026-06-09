@@ -23,6 +23,7 @@ let bodyTrendRows = [];   // merge wellness + body_comp por data: {date, ctl, at
 let bodyRecentActivities = [];   // activities ICU dos últimos 14 dias (sheet de detalhe)
 let bodyHevyWorkouts = [];       // workouts Hevy dos últimos 14 dias
 let bodyGymCurrent   = [];       // sessões de ginásio na janela [hoje-6, hoje]
+let bodyWeightGainIsGood = false; // fase surplus → subir peso é o objectivo (cor do delta)
 
 const ICU_BASE = 'https://intervals.icu/api/v1';
 
@@ -168,19 +169,27 @@ async function loadBody() {
     ],
   })).catch(() => null) : Promise.resolve(null);
 
-  const [bodyRes, wellness, activities, hevyData] = await Promise.all([
+  const phasePromise = getActivePhase(today).catch(() => null);
+
+  const [bodyRes, wellness, activities, hevyData, activePhase] = await Promise.all([
     db.from('body_comp').select('*').order('date', { ascending: true }),
     hasIcu ? icuFetch(`/athlete/${icuId}/wellness?oldest=${back90}&newest=${today}`).catch(() => null)
            : Promise.resolve(null),
     hasIcu ? icuFetch(`/athlete/${icuId}/activities?oldest=${back14}&newest=${today}&fields=name,type,distance,moving_time,icu_training_load,start_date_local`).catch(() => null)
            : Promise.resolve(null),
     hevyPromise,
+    phasePromise,
   ]);
   if (gen !== loadBodyGen) return;
 
   bodyAsc      = (bodyRes && !bodyRes.error && bodyRes.data) ? bodyRes.data : [];
   bodyWellness = tWellnessSorted(wellness);
   bodyRecentActivities = Array.isArray(activities) ? activities : [];
+
+  // Fase surplus → subir peso é bom (delta verde); cut/manutenção → subir peso é mau.
+  bodyWeightGainIsGood = activePhase?.objetivo
+    ? activePhase.objetivo.toLowerCase().includes('surplus')
+    : false;
 
   // Hevy — normalizar (array directo ou {workouts:[...]}), filtrar 14 dias e a
   // janela [hoje-6, hoje] (7 dias, hoje incluído). Falha silenciosa → arrays vazios.
@@ -291,9 +300,13 @@ function bodyWeighInHtml(asc) {
   let deltaHtml = '';
   if (wNow != null && prev && tNum(prev.weight_kg) != null) {
     const delta = parseFloat((wNow - tNum(prev.weight_kg)).toFixed(1));
-    if (delta > 0)      deltaHtml = `<span style="font-family:var(--mono);font-size:10px;color:var(--red)">↑ ${delta.toFixed(1)} kg</span>`;
-    else if (delta < 0) deltaHtml = `<span style="font-family:var(--mono);font-size:10px;color:var(--accent)">↓ ${Math.abs(delta).toFixed(1)} kg</span>`;
-    else                deltaHtml = `<span style="font-family:var(--mono);font-size:10px;color:var(--text3)">= 0.0 kg</span>`;
+    // Cor phase-aware: em surplus subir é bom (accent), descer é mau (red); cut é o inverso.
+    const deltaColor = delta === 0 ? 'var(--text3)'
+      : (delta > 0) === bodyWeightGainIsGood ? 'var(--accent)'
+      : 'var(--red)';
+    if (delta > 0)      deltaHtml = `<span style="font-family:var(--mono);font-size:10px;color:${deltaColor}">↑ ${delta.toFixed(1)} kg</span>`;
+    else if (delta < 0) deltaHtml = `<span style="font-family:var(--mono);font-size:10px;color:${deltaColor}">↓ ${Math.abs(delta).toFixed(1)} kg</span>`;
+    else                deltaHtml = `<span style="font-family:var(--mono);font-size:10px;color:${deltaColor}">= 0.0 kg</span>`;
   }
 
   const val = (v, unit) => {

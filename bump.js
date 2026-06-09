@@ -1,4 +1,3 @@
-// bump.js
 const fs = require('fs');
 const today = new Date();
 const v = today.getFullYear().toString() +
@@ -6,6 +5,24 @@ const v = today.getFullYear().toString() +
   String(today.getDate()).padStart(2,'0');
 
 let html = fs.readFileSync('index.html', 'utf8');
-html = html.replace(/\?v=\d{8}[a-z]*/g, `?v=${v}`);
+
+// Detectar versão mais alta actual
+const matches = [...html.matchAll(/\?v=(\d{8})([a-z]*)/g)];
+let newV = v;
+if (matches.length) {
+  const current = matches
+    .map(m => m[1] + m[2])
+    .sort().pop();
+  const curDate = current.slice(0, 8);
+  const curSuffix = current.slice(8);
+  if (curDate === v) {
+    const next = curSuffix
+      ? String.fromCharCode(curSuffix.charCodeAt(0) + 1)
+      : 'b';
+    newV = v + next;
+  }
+}
+
+html = html.replace(/\?v=\d{8}[a-z]*/g, `?v=${newV}`);
 fs.writeFileSync('index.html', html);
-console.log(`Bumped all ?v= to ${v}`);
+console.log(`Bumped all ?v= to ${newV}`);

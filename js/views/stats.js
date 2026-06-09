@@ -115,9 +115,9 @@ async function loadStats() {
 
     const avgRows = [
       { label: 'Calorias', unit: 'kcal', key: 'calories', nutrient: 'calories' },
-      { label: 'PROT',  unit: 'g',    key: 'protein',  nutrient: 'protein'  },
-      { label: 'CARBS', unit: 'g',    key: 'carbs',    nutrient: 'carbs'    },
       { label: 'FAT',   unit: 'g',    key: 'fat',      nutrient: 'fat'      },
+      { label: 'CARBS', unit: 'g',    key: 'carbs',    nutrient: 'carbs'    },
+      { label: 'PROT',  unit: 'g',    key: 'protein',  nutrient: 'protein'  },
     ].map(({ label, unit, key, nutrient }) => {
       const actual = avg[key];
       const target = tgt[key];

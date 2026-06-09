@@ -8,4 +8,5 @@ const MEALS = {
   supper:      'Ceia',
 };
 
+// TODO: dead code — verificar se pode ser removido (referenciado por getTargets() em nutrition.js)
 let cachedTargets = { calories: 2300, fat: 65, carbs: 254, fiber: 30, protein: 175 };

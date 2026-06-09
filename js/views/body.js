@@ -3,14 +3,13 @@
 // métricas de forma do Intervals.icu (CTL/ATL/TSB, HRV, sono, carga semanal).
 //
 // Secções: 1 Forma actual · 2 Última pesagem · 3 Chart Forma · 4 Chart Composição
-//          5 HRV · 30 dias · 6 Últimos 7 dias
+//          5 Últimos 7 dias
 
 let loadBodyGen = 0;
 
 // Instâncias de chart (destruídas antes de cada rebuild).
 let bodyFormChart = null;
 let bodyCompChart = null;
-let bodyHrvChart  = null;
 
 // Estado partilhado (o período é comum aos dois charts de histórico).
 let bodyPeriod = 'month';                                      // week|month|3m|6m|1y|all
@@ -21,6 +20,7 @@ let bodyCompActive = { weight: true, fat: true, lbm: true };  // Chart 2 — Com
 let bodyAsc       = [];   // body_comp ascendente por data
 let bodyWellness  = [];   // wellness ICU ordenado ascendente
 let bodyTrendRows = [];   // merge wellness + body_comp por data: {date, ctl, atl, weight, fat, lbm}
+let bodyRecentActivities = [];   // activities ICU dos últimos 14 dias (sheet de detalhe)
 
 const ICU_BASE = 'https://intervals.icu/api/v1';
 
@@ -73,8 +73,11 @@ function tEmpty(msg) {
 }
 
 // Chip estilo .msc: label mono 9px uppercase + valor 16px/600 + linha extra.
-function tChip(label, valHtml, extraHtml) {
-  return `<div class="msc">
+// opts.onclick → torna o chip clicável (classe .msc-tap + handler).
+function tChip(label, valHtml, extraHtml, opts = {}) {
+  const cls = opts.onclick ? ' msc-tap' : '';
+  const onclick = opts.onclick ? ` onclick="${opts.onclick}"` : '';
+  return `<div class="msc${cls}"${onclick}>
     <span style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">${label}</span>
     <span style="font-size:16px;font-weight:600">${valHtml}</span>
     ${extraHtml || ''}
@@ -119,8 +122,8 @@ async function loadBody() {
   const c = document.getElementById('body-container');
   if (!c) return;
 
-  [bodyFormChart, bodyCompChart, bodyHrvChart].forEach(ch => { if (ch) ch.destroy(); });
-  bodyFormChart = bodyCompChart = bodyHrvChart = null;
+  [bodyFormChart, bodyCompChart].forEach(ch => { if (ch) ch.destroy(); });
+  bodyFormChart = bodyCompChart = null;
 
   c.innerHTML = '<div class="loading">A carregar...</div>';
 
@@ -142,6 +145,7 @@ async function loadBody() {
 
   bodyAsc      = (bodyRes && !bodyRes.error && bodyRes.data) ? bodyRes.data : [];
   bodyWellness = tWellnessSorted(wellness);
+  bodyRecentActivities = Array.isArray(activities) ? activities : [];
   bodyPeriod = 'month';
   bodyFormActive = { ctl: true, atl: true };
   bodyCompActive = { weight: true, fat: true, lbm: true };
@@ -153,13 +157,11 @@ async function loadBody() {
     + bodyWeighInHtml(bodyAsc)
     + bodyFormChartSectionHtml(hasIcu)
     + bodyCompChartSectionHtml()
-    + bodyHrvSectionHtml(bodyWellness, hasIcu)
     + bodyWeekSectionHtml(activities, hasIcu);
 
   // Charts construídos depois do innerHTML (canvas já no DOM).
   buildBodyFormChart();
   buildBodyCompChart();
-  buildBodyHrvChart();
 }
 
 function buildBodyTrendRows(wSorted, asc) {
@@ -484,60 +486,7 @@ function buildBodyCompChart() {
   });
 }
 
-// ── Secção 5 — HRV (30 dias) ──────────────────────────────────────────────────
-
-function bodyHrvSectionHtml(wSorted, hasIcu) {
-  const header = tSecLabel('HRV · 30 dias');
-  const last30 = wSorted.slice(-30).filter(w => tNum(w.hrv) != null);
-  if (last30.length < 3) {
-    const msg = hasIcu ? 'Sem dados HRV suficientes' : 'Configura o Intervals.icu nas Settings';
-    return `<div style="padding:18px 20px 0;margin-top:20px">${header}${tEmpty(msg)}</div>`;
-  }
-  return `<div class="treino-chart-section" style="padding:18px 20px 0;margin-top:20px">
-    ${header}
-    <div class="treino-chart"><div style="position:relative;height:120px"><canvas id="body-hrv-chart"></canvas></div></div>
-  </div>`;
-}
-
-function buildBodyHrvChart() {
-  const ctx = document.getElementById('body-hrv-chart');
-  if (!ctx) return;
-  if (bodyHrvChart) { bodyHrvChart.destroy(); bodyHrvChart = null; }
-
-  const last30 = bodyWellness.slice(-30).filter(w => tNum(w.hrv) != null);
-  bodyHrvChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: last30.map(w => tDayLabel(tWellnessDate(w))),
-      datasets: [{
-        label: 'HRV',
-        data: last30.map(w => tNum(w.hrv)),
-        borderColor: chartTheme.blue,
-        backgroundColor: 'transparent',
-        borderWidth: 2,
-        pointRadius: 2,
-        pointBackgroundColor: chartTheme.blue,
-        tension: 0.3,
-        spanGaps: true,
-      }],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: chartAnim(),
-      plugins: {
-        legend: { display: false },
-        tooltip: { backgroundColor: chartTheme.surface, borderColor: '#2e2e2e', borderWidth: 1, titleColor: chartTheme.legend, bodyColor: '#f0f0f0' },
-      },
-      scales: {
-        x: { grid: { color: chartTheme.grid }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 6 }, border: { color: '#2e2e2e' } },
-        y: { grid: { color: chartTheme.grid }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } }, border: { color: '#2e2e2e' } },
-      },
-    },
-  });
-}
-
-// ── Secção 6 — Resumo da semana ───────────────────────────────────────────────
+// ── Secção 5 — Últimos 7 dias ─────────────────────────────────────────────────
 
 function tWeekTotals(activities, start, end) {
   const tot = { meters: 0, secs: 0, load: 0 };
@@ -595,12 +544,101 @@ function bodyWeekSectionHtml(activities, hasIcu) {
     'Distância',
     `${(cur.meters / 1000).toFixed(1)} <span style="font-size:11px;color:var(--text3)">km</span>`,
     tDeltaHtml(cur.meters, prev.meters),
+    { onclick: "openActivityDetailSheet('distance')" },
   );
-  const tempo = tChip('Tempo', tFmtHM(cur.secs), tDeltaHtml(cur.secs, prev.secs));
-  const carga = tChip('Carga', `${Math.round(cur.load)}`, tDeltaHtml(cur.load, prev.load));
+  const tempo = tChip('Tempo', tFmtHM(cur.secs), tDeltaHtml(cur.secs, prev.secs),
+    { onclick: "openActivityDetailSheet('time')" });
+  const carga = tChip('Carga', `${Math.round(cur.load)}`, tDeltaHtml(cur.load, prev.load),
+    { onclick: "openActivityDetailSheet('load')" });
 
   return `<div style="padding:18px 20px 0;margin-top:20px">
     ${header}
     <div class="macro-secondary">${km}${tempo}${carga}</div>
   </div>`;
+}
+
+function formatActivityTime(secs) {
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}` : `${m} min`;
+}
+
+// Sheet de detalhe das actividades por trás de cada card do resumo (tap).
+function openActivityDetailSheet(metric) {
+  pushSheetState();
+
+  const METRIC_CONFIG = {
+    distance: { label: 'Distância · 7 dias', unit: 'km',
+                getValue: a => a.distance ? (a.distance / 1000).toFixed(1) : null },
+    time:     { label: 'Tempo · 7 dias',     unit: '',
+                getValue: a => a.moving_time ? formatActivityTime(a.moving_time) : null },
+    load:     { label: 'Carga · 7 dias',     unit: '',
+                getValue: a => a.icu_training_load ? Math.round(a.icu_training_load) : null },
+  };
+
+  const TYPE_EMOJI = {
+    Run: '🏃', VirtualRun: '🏃',
+    WeightTraining: '🏋️', Strength: '🏋️',
+    Ride: '🚴', VirtualRide: '🚴',
+    Walk: '🚶', Hike: '🚶',
+    Swim: '🏊',
+  };
+
+  const cfg = METRIC_CONFIG[metric];
+
+  // Mesma janela rolling [hoje-7, hoje) do resumo, para bater certo com a card.
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const periodStart = new Date(today); periodStart.setDate(today.getDate() - 7);
+
+  const activities = bodyRecentActivities
+    .filter(a => {
+      const ds = a.start_date_local || a.start_date;
+      if (!ds) return false;
+      const d = new Date(ds);
+      return d >= periodStart && d < today;
+    })
+    .sort((a, b) => (b.start_date_local || '').localeCompare(a.start_date_local || ''));
+
+  const rows = activities.map(a => {
+    const val = cfg.getValue(a);
+    const emoji = TYPE_EMOJI[a.type] || '🎯';
+    const dateStr = a.start_date_local
+      ? new Date(a.start_date_local).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' })
+      : '';
+    return `
+      <div class="act-detail-row">
+        <span class="act-detail-icon">${emoji}</span>
+        <div class="act-detail-info">
+          <span class="act-detail-name">${a.name || a.type}</span>
+          <span class="act-detail-date">${dateStr}</span>
+        </div>
+        <span class="act-detail-val${val ? ' act-detail-val--highlight' : ''}">${val ? val + (cfg.unit ? ' ' + cfg.unit : '') : '—'}</span>
+      </div>`;
+  }).join('');
+
+  let overlay = document.getElementById('act-detail-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'act-detail-overlay';
+    overlay.className = 'sheet-overlay';
+    overlay.innerHTML = `
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <span id="act-detail-title" class="sheet-title"></span>
+          <div class="sheet-close" id="act-detail-close">×</div>
+        </div>
+        <div id="act-detail-list" class="act-detail-list"></div>
+      </div>`;
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) overlay.classList.remove('open');
+    });
+    document.body.appendChild(overlay);
+    document.getElementById('act-detail-close').onclick = () => overlay.classList.remove('open');
+  }
+
+  document.getElementById('act-detail-title').textContent = cfg.label;
+  document.getElementById('act-detail-list').innerHTML = rows ||
+    '<p style="padding:16px;color:var(--text3)">Sem actividades neste período.</p>';
+  overlay.classList.add('open');
 }

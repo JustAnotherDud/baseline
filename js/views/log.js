@@ -2,11 +2,21 @@ let loadTotalsGen = 0;
 let lastSearchResults = [];
 let expandedGroups = new Set();
 
+// Debounce da pesquisa: 1 query depois de o utilizador parar de escrever,
+// em vez de 1 por tecla. Input vazio limpa imediatamente (sem esperar).
+let _searchDebT = null;
+function searchDBDebounced() {
+  const q = document.getElementById('log-q').value.trim();
+  clearTimeout(_searchDebT);
+  if (q.length < 1) { searchDB(); return; }   // limpar é instantâneo
+  _searchDebT = setTimeout(searchDB, 300);
+}
+
 async function searchDB() {
   const q = document.getElementById('log-q').value.trim().toLowerCase();
   const res = document.getElementById('log-results');
   if (q.length<1) { res.innerHTML='<div class="loading">Começa a escrever para pesquisar</div>'; return; }
-  const { data, error } = await db.from('foods').select('*').ilike('name',`%${q}%`).limit(25);
+  const { data, error } = await db.from('foods').select('id,name,brand,calories_per_100g,protein_per_100g,carbs_per_100g,fat_per_100g').ilike('name',`%${q}%`).limit(25);
   if (error) {
     console.error('searchDB error:', error.message);
     res.innerHTML = '';
@@ -168,19 +178,26 @@ function backToSearch() {
   if (infoEl) infoEl.textContent = '';
 }
 
+let _savingQuick = false;
 async function saveQuick() {
-  const name = document.getElementById('q-name').value.trim();
-  if (!name) { toast('Indica o nome'); return; }
-  const {error} = await db.from('diary').insert({
-    date:currentDate, meal:selectedMeal, food_name:name, grams:null,
-    calories: parseFloat(document.getElementById('q-kcal').value)||0,
-    fat:      parseFloat(document.getElementById('q-fat').value)||0,
-    carbs:    parseFloat(document.getElementById('q-carb').value)||0,
-    fiber:    parseFloat(document.getElementById('q-fiber').value)||0,
-    protein:  parseFloat(document.getElementById('q-prot').value)||0
-  });
-  if (error) { toast('Erro ao guardar'); return; }
-  toast('Registado'); closeLog(); clearQuick(); go('today');
+  if (_savingQuick) return;
+  _savingQuick = true;
+  try {
+    const name = document.getElementById('q-name').value.trim();
+    if (!name) { toast('Indica o nome'); return; }
+    const {error} = await db.from('diary').insert({
+      date:currentDate, meal:selectedMeal, food_name:name, grams:null,
+      calories: parseFloat(document.getElementById('q-kcal').value)||0,
+      fat:      parseFloat(document.getElementById('q-fat').value)||0,
+      carbs:    parseFloat(document.getElementById('q-carb').value)||0,
+      fiber:    parseFloat(document.getElementById('q-fiber').value)||0,
+      protein:  parseFloat(document.getElementById('q-prot').value)||0
+    });
+    if (error) { toast('Erro ao guardar'); return; }
+    toast('Registado'); closeLog(); clearQuick(); go('today');
+  } finally {
+    _savingQuick = false;
+  }
 }
 
 function clearQuick() {
@@ -358,21 +375,28 @@ async function loadLogTotalsStrip() {
 
 // ── SAVE DIARY HANDLER (DOM side of saveDiary) ───────────────────────────────
 
+let _savingDiary = false;
 async function handleSaveDiary() {
-  const rawGrams = document.getElementById('log-grams').value;
-  const parsed = parseGramsExpr(rawGrams);
-  if (!parsed || parsed <= 0) { toast('Quantidade inválida'); return; }
-  document.getElementById('log-grams').value = parsed;
-  const ok = await saveDiary();
-  if (!ok) return;
-  // Reset UI — voltar ao stage de pesquisa sem fechar o sheet
-  selectedFood = null;
-  document.getElementById('log-stage-grams').classList.remove('active');
-  document.getElementById('log-stage-search').classList.add('active');
-  document.getElementById('log-q').value = '';
-  document.getElementById('log-results').innerHTML =
-    '<div class="loading">Começa a escrever para pesquisar</div>';
-  loadToday();
-  loadLogTotalsStrip();
-  setTimeout(() => document.getElementById('log-q').focus(), 100);
+  if (_savingDiary) return;
+  _savingDiary = true;
+  try {
+    const rawGrams = document.getElementById('log-grams').value;
+    const parsed = parseGramsExpr(rawGrams);
+    if (!parsed || parsed <= 0) { toast('Quantidade inválida'); return; }
+    document.getElementById('log-grams').value = parsed;
+    const ok = await saveDiary();
+    if (!ok) return;
+    // Reset UI — voltar ao stage de pesquisa sem fechar o sheet
+    selectedFood = null;
+    document.getElementById('log-stage-grams').classList.remove('active');
+    document.getElementById('log-stage-search').classList.add('active');
+    document.getElementById('log-q').value = '';
+    document.getElementById('log-results').innerHTML =
+      '<div class="loading">Começa a escrever para pesquisar</div>';
+    loadToday();
+    loadLogTotalsStrip();
+    setTimeout(() => document.getElementById('log-q').focus(), 100);
+  } finally {
+    _savingDiary = false;
+  }
 }

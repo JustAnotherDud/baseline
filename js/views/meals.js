@@ -215,43 +215,50 @@ function mcGramsChange(itemId, val) {
   }
 }
 
+let _savingMeal = false;
 async function saveMeal() {
-  const name = (document.getElementById('mc-name').value || '').trim();
-  if (!name) { toast('Dá um nome à refeição'); return; }
+  if (_savingMeal) return;
+  _savingMeal = true;
+  try {
+    const name = (document.getElementById('mc-name').value || '').trim();
+    if (!name) { toast('Dá um nome à refeição'); return; }
 
-  // Filter to items with a food selected and valid grams
-  const validItems = mealItems.filter(i => i.food_id && parseFloat(i.grams) > 0);
-  if (!validItems.length) { toast('Adiciona pelo menos um alimento com gramas'); return; }
+    // Filter to items with a food selected and valid grams
+    const validItems = mealItems.filter(i => i.food_id && parseFloat(i.grams) > 0);
+    if (!validItems.length) { toast('Adiciona pelo menos um alimento com gramas'); return; }
 
-  // Insert template
-  const { data: tpl, error: e1 } = await db
-    .from('meal_templates')
-    .insert({ name })
-    .select()
-    .single();
-  if (e1 || !tpl) { toast('Erro ao guardar refeição'); return; }
+    // Insert template
+    const { data: tpl, error: e1 } = await db
+      .from('meal_templates')
+      .insert({ name })
+      .select()
+      .single();
+    if (e1 || !tpl) { toast('Erro ao guardar refeição'); return; }
 
-  // Insert items
-  const rows = validItems.map(i => ({
-    template_id:   tpl.id,
-    food_id:       i.food_id,
-    food_name:     i.food_name,
-    grams:         parseFloat(i.grams),
-    calories:      i.calories,
-    protein:       i.protein,
-    carbs:         i.carbs,
-    fat:           i.fat,
-    saturated_fat: i.saturated_fat,
-    sugar:         i.sugar,
-    fiber:         i.fiber,
-  }));
+    // Insert items
+    const rows = validItems.map(i => ({
+      template_id:   tpl.id,
+      food_id:       i.food_id,
+      food_name:     i.food_name,
+      grams:         parseFloat(i.grams),
+      calories:      i.calories,
+      protein:       i.protein,
+      carbs:         i.carbs,
+      fat:           i.fat,
+      saturated_fat: i.saturated_fat,
+      sugar:         i.sugar,
+      fiber:         i.fiber,
+    }));
 
-  const { error: e2 } = await db.from('meal_template_items').insert(rows);
-  if (e2) { toast('Erro ao guardar itens'); return; }
+    const { error: e2 } = await db.from('meal_template_items').insert(rows);
+    if (e2) { toast('Erro ao guardar itens'); return; }
 
-  toast('Refeição guardada ✓');
-  closeMealCreate();
-  loadMeals();
+    toast('Refeição guardada ✓');
+    closeMealCreate();
+    loadMeals();
+  } finally {
+    _savingMeal = false;
+  }
 }
 
 // ── APPLY MEAL TO DIARY ──────────────────────────────────────────────────────
@@ -336,32 +343,39 @@ async function openApplyMeal(templateId, templateName) {
     + `<div class="apply-meal-total">${Math.round(totalKcal)} kcal total</div>`;
 }
 
+let _applyingMeal = false;
 async function applyMealToDiary() {
-  if (!_applyMealItems || !_applyMealItems.length) return;
-  const meal = document.getElementById('apply-meal-select').value;
-  const rows = _applyMealItems.map(i => ({
-    date:          currentDate,
-    meal,
-    food_id:       i.food_id || null,
-    food_name:     i.food_name,
-    grams:         +(i.grams),
-    calories:      +(i.calories),
-    protein:       +(i.protein),
-    carbs:         +(i.carbs),
-    fat:           +(i.fat),
-    saturated_fat: +(i.saturated_fat || 0),
-    sugar:         +(i.sugar || 0),
-    fiber:         +(i.fiber || 0),
-  }));
+  if (_applyingMeal) return;
+  _applyingMeal = true;
+  try {
+    if (!_applyMealItems || !_applyMealItems.length) return;
+    const meal = document.getElementById('apply-meal-select').value;
+    const rows = _applyMealItems.map(i => ({
+      date:          currentDate,
+      meal,
+      food_id:       i.food_id || null,
+      food_name:     i.food_name,
+      grams:         +(i.grams),
+      calories:      +(i.calories),
+      protein:       +(i.protein),
+      carbs:         +(i.carbs),
+      fat:           +(i.fat),
+      saturated_fat: +(i.saturated_fat || 0),
+      sugar:         +(i.sugar || 0),
+      fiber:         +(i.fiber || 0),
+    }));
 
-  const { error } = await db.from('diary').insert(rows);
-  if (error) { toast('Erro ao adicionar'); return; }
+    const { error } = await db.from('diary').insert(rows);
+    if (error) { toast('Erro ao adicionar'); return; }
 
-  const n = rows.length;
-  toast(`${n} alimento${n !== 1 ? 's' : ''} adicionado${n !== 1 ? 's' : ''} ✓`);
-  document.getElementById('apply-meal-overlay').classList.remove('open');
-  _applyMealItems = null;
-  selectedMeal = meal;
-  loadToday();
-  go('today');
+    const n = rows.length;
+    toast(`${n} alimento${n !== 1 ? 's' : ''} adicionado${n !== 1 ? 's' : ''} ✓`);
+    document.getElementById('apply-meal-overlay').classList.remove('open');
+    _applyMealItems = null;
+    selectedMeal = meal;
+    loadToday();
+    go('today');
+  } finally {
+    _applyingMeal = false;
+  }
 }

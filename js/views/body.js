@@ -680,6 +680,21 @@ function openActivityDetailSheet(metric) {
     Swim: '🏊',
   };
 
+  // Agrupamento por desporto para o detalhe semanal (roadmap: detalhe por tipo).
+  const TYPE_BUCKET = {
+    Run: 'run', VirtualRun: 'run', TrailRun: 'run',
+    Ride: 'ride', VirtualRide: 'ride',
+    Walk: 'walk', Hike: 'walk',
+    Swim: 'swim',
+  };
+  const BUCKET_LABEL = {
+    run:  '🏃 Corrida',
+    ride: '🚴 Bicicleta',
+    walk: '🚶 Caminhada',
+    swim: '🏊 Natação',
+    other: '🎯 Outros',
+  };
+
   const cfg = METRIC_CONFIG[metric];
 
   // Só actividades com nome e tipo desportivo (exclui WeightTraining/sem-tipo —
@@ -698,21 +713,48 @@ function openActivityDetailSheet(metric) {
     })
     .sort((a, b) => (b.start_date_local || '').localeCompare(a.start_date_local || ''));
 
-  const rows = activities.map(a => {
-    const val = cfg.getValue(a);
-    const emoji = TYPE_EMOJI[a.type] || '🎯';
-    const dateStr = a.start_date_local
-      ? new Date(a.start_date_local).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' })
-      : '';
-    return `
-      <div class="act-detail-row">
-        <span class="act-detail-icon">${emoji}</span>
-        <div class="act-detail-info">
-          <span class="act-detail-name">${escHtml(a.name || a.type)}</span>
-          <span class="act-detail-date">${dateStr}</span>
-        </div>
-        <span class="act-detail-val${val ? ' act-detail-val--highlight' : ''}">${val ? val + (cfg.unit ? ' ' + cfg.unit : '') : '—'}</span>
-      </div>`;
+  // Agrupar por tipo de desporto e calcular subtotais por grupo.
+  const bucketMap = {};
+  for (const a of activities) {
+    const bucket = TYPE_BUCKET[a.type] || 'other';
+    if (!bucketMap[bucket]) bucketMap[bucket] = { acts: [], meters: 0, secs: 0, load: 0 };
+    bucketMap[bucket].acts.push(a);
+    bucketMap[bucket].meters += tNum(a.distance)  || 0;
+    bucketMap[bucket].secs   += tNum(a.moving_time) || 0;
+    bucketMap[bucket].load   += tNum(a.icu_training_load) || 0;
+  }
+
+  // Ordenar baldes pelo subtotal da métrica activa (descendente).
+  const sortedBuckets = Object.keys(bucketMap).sort((x, y) => {
+    const val = bk => metric === 'distance' ? bucketMap[bk].meters
+               : metric === 'time'          ? bucketMap[bk].secs
+               :                             bucketMap[bk].load;
+    return val(y) - val(x);
+  });
+
+  const rows = sortedBuckets.map(bucket => {
+    const { acts, meters, secs, load } = bucketMap[bucket];
+    const subtotalStr = metric === 'distance' ? `${(meters / 1000).toFixed(1)} km`
+                      : metric === 'time'     ? formatActivityTime(secs)
+                      :                        `${Math.round(load)}`;
+    const sep = `<div class="act-detail-sep">${BUCKET_LABEL[bucket]} · ${subtotalStr}</div>`;
+    const actRows = acts.map(a => {
+      const val = cfg.getValue(a);
+      const emoji = TYPE_EMOJI[a.type] || '🎯';
+      const dateStr = a.start_date_local
+        ? new Date(a.start_date_local).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' })
+        : '';
+      return `
+        <div class="act-detail-row">
+          <span class="act-detail-icon">${emoji}</span>
+          <div class="act-detail-info">
+            <span class="act-detail-name">${escHtml(a.name || a.type)}</span>
+            <span class="act-detail-date">${dateStr}</span>
+          </div>
+          <span class="act-detail-val${val ? ' act-detail-val--highlight' : ''}">${val ? val + (cfg.unit ? ' ' + cfg.unit : '') : '—'}</span>
+        </div>`;
+    }).join('');
+    return sep + actRows;
   }).join('');
 
   // Secção de ginásio (Hevy) para Tempo/Carga — valor muted para distinguir do ICU.

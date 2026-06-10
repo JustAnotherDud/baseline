@@ -708,7 +708,7 @@ function openActivityDetailSheet(metric) {
       <div class="act-detail-row">
         <span class="act-detail-icon">${emoji}</span>
         <div class="act-detail-info">
-          <span class="act-detail-name">${a.name || a.type}</span>
+          <span class="act-detail-name">${escHtml(a.name || a.type)}</span>
           <span class="act-detail-date">${dateStr}</span>
         </div>
         <span class="act-detail-val${val ? ' act-detail-val--highlight' : ''}">${val ? val + (cfg.unit ? ' ' + cfg.unit : '') : '—'}</span>
@@ -731,7 +731,7 @@ function openActivityDetailSheet(metric) {
             <div class="act-detail-row">
               <span class="act-detail-icon">🏋️</span>
               <div class="act-detail-info">
-                <span class="act-detail-name">${w.title || 'Ginásio'}</span>
+                <span class="act-detail-name">${escHtml(w.title || 'Ginásio')}</span>
                 <span class="act-detail-date">${dateStr}</span>
               </div>
               <span class="act-detail-val act-detail-val--muted">${val}</span>
@@ -784,7 +784,7 @@ function openGymDetailSheet() {
       <div class="act-detail-row act-detail-row--gym">
         <span class="act-detail-icon">🏋️</span>
         <div class="act-detail-info">
-          <span class="act-detail-name">${w.title || 'Ginásio'}</span>
+          <span class="act-detail-name">${escHtml(w.title || 'Ginásio')}</span>
           <span class="act-detail-date">${dateStr} · ${exCount} ex.</span>
         </div>
         <div class="act-detail-gym-meta">

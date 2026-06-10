@@ -16,7 +16,7 @@ Mobile-first dark-theme PWA for nutrition tracking and body composition. No buil
 - Templates de refeições
 - Targets modulares (DCB)
 - Estatísticas
-- Body Comp *(em breve)*
+- Forma — composição corporal (Garmin) + treino (Intervals.icu) + ginásio (Hevy)
 
 ## App
 

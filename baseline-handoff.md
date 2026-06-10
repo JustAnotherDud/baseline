@@ -28,15 +28,18 @@ Sem build step, sem bundler, sem framework.
 | App (produção) | `https://justanotherdud.github.io/baseline/` |
 | Supabase dashboard | `https://supabase.com/dashboard/project/yvsjchzvoikqlpbqsphs` |
 
-**Credenciais (todas em `localStorage`, configuradas no ecrã de setup):**
+**Credenciais (todas em `localStorage`, configuradas no ecrã de setup ou Settings):**
 | Chave | Conteúdo |
 |---|---|
 | `nt_url` | URL do projecto Supabase (`https://….supabase.co`) |
 | `nt_key` | Publishable key do Supabase (`sb_publishable_…`) |
 | `icu_id` | Athlete ID do Intervals.icu (ex.: `i123456`) |
 | `icu_key` | API key do Intervals.icu |
+| `icu_enabled` | `'false'` se integração ICU desactivada (default: true) |
+| `hevy_key` | API key do Hevy |
+| `hevy_enabled` | `'false'` se integração Hevy desactivada (default: true) |
 
-**RLS activo** em todas as 9 tabelas com políticas permissivas `anon_all` (projecto pessoal — acesso único via publishable key). As credenciais ICU são opcionais: sem elas, a view Body mostra empty states nas secções de Treino a pedir configuração.
+**RLS activo** em todas as 9 tabelas com políticas permissivas `anon_all` (projecto pessoal — acesso único via publishable key). As credenciais ICU e Hevy são opcionais: sem elas, as secções de Treino/Ginásio mostram empty states a pedir configuração.
 
 ---
 
@@ -60,8 +63,10 @@ baseline/
 │   │                             move-meal sheet, keyword highlight, parseGramsExpr…)
 │   ├── app.js                  — init(), go(view), saveSetup(), resetSetup(),
 │   │                             switchFoodsTab(), loadSettingsView(),
-│   │                             editIcuSettings(), saveIcuSettings(),
-│   │                             clearCacheAndReload(); globais db/icuId/icuKey
+│   │                             editIcuSettings(), saveIcuSettings(), toggleIcu(),
+│   │                             editHevySettings(), saveHevySettings(), toggleHevy(),
+│   │                             clearCacheAndReload();
+│   │                             globais db/icuId/icuKey/hevyKey/icuEnabled/hevyEnabled
 │   └── views/
 │       ├── diary.js            — renderToday(), setDateLabel(), changeDay(), pickDate()
 │       │                         NUTRIENT_MAP, tap handlers nas barras de macros
@@ -82,11 +87,11 @@ baseline/
 │       │                         updatePhaseBadge(), onTargetsDateChange(),
 │       │                         updateTargetsDateLabel()
 │       ├── stats.js            — loadStats(), setStatsPeriod()
-│       └── body.js             — loadBody() — view unificada Body Comp + Treino (Intervals.icu)
+│       └── body.js             — loadBody() — view unificada Forma (Garmin + ICU + Hevy)
 │                                 Secções: Forma actual (CTL/ATL/TSB) · Última pesagem ·
 │                                 Chart Forma (CTL/ATL) · Chart Composição (Peso/BF/LBM) ·
-│                                 HRV · Resumo da semana · Wellness chips
-│                                 Charts: bodyFormChart · bodyCompChart · bodyHrvChart
+│                                 Últimos 7 dias (Intervals.icu + Hevy)
+│                                 Charts: bodyFormChart · bodyCompChart
 └── baseline-handoff.md         — este ficheiro
 ```
 
@@ -197,14 +202,13 @@ Lida pela view Body. Uma linha por data de pesagem.
 ## 4. Navegação e views
 
 ### Bottom nav (4 itens)
-`#nav-today` · `#nav-foods` · `#nav-body` · `#nav-mais`
-→ **Diário · Comida · Body · Mais**
+`#nav-today` · `#nav-foods` · `#nav-forma` · `#nav-mais`
+→ **Diário · Comida · Forma · Mais**
 
-A função `go(view)` troca a `.view` activa, marca o `.nav-btn` correspondente (se existir — views internas como Targets/Stats/Settings não têm botão de nav) e dispara o loader (`loadToday`, `loadFoods/loadMeals`, `loadBody`, `loadStats`, `loadSettingsView`).
+A função `go(view)` troca a `.view` activa, marca o `.nav-btn` correspondente (se existir — views internas como Targets/Stats/Settings não têm botão de nav) e dispara o loader: `today→loadToday`, `foods→loadFoods/loadMeals`, `forma→loadBody`, `settings→loadSettingsView`, `stats→loadStats`. Desde `c4b62ad`, usa `history.pushState({view}, '', '#'+view)` para suporte ao botão Voltar do Android.
 
 ### View **Mais** (`#view-mais`)
 Lista de atalhos para as views sem botão de nav próprio:
-- **Treino** → `go('treino')` *(integração Intervals.icu — CTL/ATL/HRV/resumo semanal)*
 - **Targets** → `go('targets')`
 - **Estatísticas** → `go('stats')`
 - **Settings** → `go('settings')`
@@ -227,18 +231,13 @@ Lista de atalhos para as views sem botão de nav próprio:
 - **Sub-tab Alimentos:** pesquisa multi-termo (vírgula) + por marca; sort chips Nome / Kcal / P-C-F por kcal; FAB `+` cria alimento.
 - **Sub-tab Refeições:** lista de templates, criar/aplicar.
 
-### `#view-treino` — Treino *(Intervals.icu — acessível via Mais)*
-Ver secção 5. Esta view é agora acessível a partir de `#view-mais`; `body.js` contém toda a lógica.
-
-### `#view-body` — Body + Treino (view unificada em scroll)
-Secções em scroll único:
-1. **Forma actual** — CTL / ATL / TSB + ramp rate (Intervals.icu)
-2. **Última pesagem** — Peso/BF/LBM/Água + delta vs pesagem anterior (Supabase `body_comp`)
-3. **Chart Forma** — CTL/ATL linha dupla, período partilhado
-4. **Chart Composição** — Peso / BF% / LBM, eixo duplo (yWeight esq. / yFat dir.), período partilhado
-5. **HRV · 30 dias** — linha azul
-6. **Resumo da semana** — km / tempo / carga TL, delta vs semana anterior
-7. **Wellness · 7 dias** — HRV (último + seta) + Sono (média)
+### `#view-forma` — Forma (view unificada em scroll)
+`body.js` — secções em scroll único:
+1. **Forma actual** (`bodyFormaHtml`) — CTL / ATL / TSB + ramp rate (Intervals.icu)
+2. **Última pesagem** (`bodyWeighInHtml`) — Peso/BF/LBM/Água + delta vs pesagem anterior (Supabase `body_comp`)
+3. **Chart Forma** (`bodyFormChartSectionHtml`) — CTL/ATL linha dupla, período partilhado; instância `bodyFormChart`
+4. **Chart Composição** (`bodyCompChartSectionHtml`) — Peso / BF% / LBM, eixo duplo (yWeight esq. / yFat dir.); instância `bodyCompChart`
+5. **Últimos 7 dias** (`bodyWeekSectionHtml`) — km / tempo / carga TL (Intervals.icu) + Ginásio (Hevy, se key configurada e `hevyEnabled`), delta vs 7 dias anteriores
 
 ### `#view-targets` — Targets *(read-only)*
 - Date picker (sem dots — `opts.showScores: false`).
@@ -250,21 +249,22 @@ Secções em scroll único:
 - Médias diárias, streak, aderência calórica, top alimentos.
 
 ### `#view-settings` — Settings
-- **Perfil:** Nome (dud), Fase activa, Objectivo (de `phases`).
+- **Perfil:** Nome, Fase activa, Objectivo (de `phases`).
 - **App:** Versão.
 - **Configuração:**
-  - **Intervals.icu:** Athlete ID (visível) + API Key (mascarada `••••••`) + botão "Configurar Intervals.icu" → sheet com 2 inputs → `saveIcuSettings()` grava `icu_id`/`icu_key`, actualiza globais e chama `loadTreino()`.
+  - **Intervals.icu:** Athlete ID (visível) + API Key (mascarada `••••••`) + toggle ON/OFF (`toggleIcu()`, persiste em `icu_enabled`) + botão "Configurar" → sheet (`editIcuSettings()`) → `saveIcuSettings()` grava `icu_id`/`icu_key`, actualiza globais e chama `loadBody()`.
+  - **Hevy:** API Key (mascarada, últimos 4 dígitos visíveis) + toggle ON/OFF (`toggleHevy()`, persiste em `hevy_enabled`) + botão "Configurar" → sheet (`editHevySettings()`) → `saveHevySettings()` grava `hevy_key` e chama `loadBody()`.
   - Limpar cache e recarregar (`caches.delete()` + `location.reload(true)`).
   - Redefinir ligação Supabase (`resetSetup()` — limpa `nt_url`/`nt_key`).
 
-### Sheets / overlays (criados dinamicamente em `ui.js`/`app.js`)
-`#sheet-log` · `#sheet-food` · `#sheet-edit` · `#dp-overlay` (date picker) · `#nutri-overlay` · `#meal-bd-overlay` (donut) · `#move-meal-overlay` · `#icu-settings-overlay` · overlays de templates de refeição.
+### Sheets / overlays (criados dinamicamente em `ui.js`/`app.js`/`body.js`)
+`#sheet-log` · `#sheet-food` · `#sheet-edit` · `#dp-overlay` (date picker) · `#nutri-overlay` · `#meal-bd-overlay` (donut) · `#move-meal-overlay` · `#icu-settings-overlay` · `#hevy-settings-overlay` · overlays de templates de refeição · `#gym-detail-sheet` (detalhe sessões Hevy) · sheet de detalhe actividades ICU.
 
 ---
 
-## 5. Integração Intervals.icu (view Body — secções de Treino)
+## 5. Integração Intervals.icu (view Forma — secções de Treino)
 
-Ficheiro: `js/views/body.js` (fundido com Body Comp). As secções de treino mostram **métricas e charts** — não lista actividades individuais.
+Ficheiro: `js/views/body.js` (view unificada com Body Comp). As secções de treino mostram **métricas e charts** — não lista actividades individuais.
 
 ### Autenticação
 HTTP Basic com utilizador literal `API_KEY` e a key como password:
@@ -278,20 +278,36 @@ Base URL: `https://intervals.icu/api/v1`. Helper `icuFetch(path)` faz `fetch` co
 ### Endpoints usados
 | Endpoint | Para quê |
 |---|---|
-| `GET /athlete/{id}/wellness?oldest=DATE-60d&newest=TODAY` | CTL/ATL/TSB actuais, histórico 60d (charts), HRV, sono |
-| `GET /athlete/{id}/activities?oldest=DATE-14d&newest=TODAY&fields=name,type,distance,moving_time,icu_training_load,start_date_local` | Resumo da semana actual vs anterior |
+| `GET /athlete/{id}/wellness?oldest=DATE-90d&newest=TODAY` | CTL/ATL/TSB actuais, histórico 90d (charts) |
+| `GET /athlete/{id}/activities?oldest=DATE-14d&newest=TODAY&fields=name,type,distance,moving_time,icu_training_load,start_date_local` | Últimos 7 dias (ICU) + semana anterior |
 
-Os dois fetches correm em paralelo com `Promise.all`, cada um com `.catch(() => null)` — **erro numa secção não afecta as outras**. Só se ambos falharem é mostrado o empty state global. Cada secção tem ainda o seu próprio empty state discreto quando não há dados.
+Os fetches correm em paralelo com `Promise.all`, cada um com `.catch(() => null)` — **erro numa secção não afecta as outras**. Se `icuEnabled` for `false`, os fetches não são feitos (resolvem `null` sem rede).
 
 ### Secções
-1. **Forma actual** — grid 3 colunas (estilo macro grid): Fitness (CTL, accent), Fadiga (ATL, orange), Forma (TSB = CTL−ATL, accent/red) + ramp rate. Usa o **último** registo do wellness (ordenado por `id`, que é `YYYY-MM-DD`).
-2. **Fitness · 60 dias** — Chart.js linha dupla CTL (accent) / ATL (orange), sem pontos, X dd/mm (1 etiqueta em cada 7), legenda no topo.
-3. **HRV · 30 dias** — Chart.js linha azul com pontos; últimos 30 registos com `hrv != null`; se < 3 → "Sem dados HRV suficientes".
-4. **Resumo da semana** — totais (km / tempo h:mm / carga TL) da semana actual (segunda→hoje) vs semana anterior, em 3 chips `.msc` com delta % (↑ verde / ↓ vermelho).
+1. **Forma actual** (`bodyFormaHtml`) — grid 4 colunas: Fitness (CTL, accent), Fadiga (ATL, orange), Forma (TSB = CTL−ATL, accent/red), Ramp (taxa/semana). Usa o **último** registo do wellness (ordenado por `id` = `YYYY-MM-DD`).
+2. **Chart Forma** (`bodyFormChartSectionHtml`, instância `bodyFormChart`) — Chart.js linha dupla CTL (accent) / ATL (orange), sem pontos. Gridlines `rgba(255,255,255,0.04)`, ticks `#666`. Cores hex directas (Chart.js não resolve `var(--…)` dentro do canvas).
+3. **Últimos 7 dias** (`bodyWeekSectionHtml`) — chips de Distância / Tempo / Carga (ICU) + Ginásio (Hevy, se configurado). Tap em chip → `openActivityDetailSheet(metric)` ou `openGymDetailSheet()`.
 
-**Wellness chips:** HRV (último + seta vs média 7d) e Sono (média 7d, `sleepSecs/3600`). Peso não aparece aqui (está na view Body).
+### 5.1 Integração Hevy (view Forma — secção Ginásio)
 
-Charts: instâncias guardadas em `treinoCtlChart` / `treinoHrvChart`, destruídas antes de cada re-render. Gridlines subtis `rgba(255,255,255,0.04)`, ticks `#666`. As cores de canvas usam valores hex directos (Chart.js não resolve `var(--…)` dentro do canvas).
+Base URL: `https://api.hevyapp.com`. Helper `hevyFetch(path)` envia header `api-key: hevyKey` e lança em `!res.ok`.
+
+**Endpoints:**
+| Endpoint | Para quê |
+|---|---|
+| `GET /v1/workouts?page=1&pageSize=10` | Página 1 dos treinos mais recentes |
+| `GET /v1/workouts?page=2&pageSize=10` | Página 2 (até 20 sessões no total) |
+
+Os dois fetches correm em paralelo; resultados são normalizados (array directo ou `{workouts:[...]}`) e filtrados para os últimos 14 dias (janela `[hoje-14, hoje]`). A janela activa para o chip é `[hoje-6, hoje]` (7 dias, hoje incluído), guardada em `bodyGymCurrent`.
+
+**Cálculo de volume** (`calcGymVolume(workout)`): soma `weight_kg × reps` de todos os sets com `type === 'normal'`, `weight_kg` e `reps` presentes.
+
+**Condições de fetch:** requer `hevyKey` (não vazio) **e** `hevyEnabled === true`. Se desactivado, `bodyHevyWorkouts` e `bodyGymCurrent` ficam `[]` sem fetch.
+
+**Configuração (Settings):**
+- `editHevySettings()` abre sheet `#hevy-settings-overlay` com campo de API key.
+- `saveHevySettings()` grava em `hevy_key`, actualiza `hevyKey`, fecha sheet e chama `loadBody()`.
+- `toggleHevy()` inverte `hevyEnabled`, persiste em `hevy_enabled` e chama `loadBody()`.
 
 ---
 
@@ -356,13 +372,13 @@ async function loadX() {
   render();
 }
 ```
-Aplicado em: `loadToday` (loadTodayGen), `loadStats`, `loadBody` (loadBodyGen), `loadTreino` (loadTreinoGen), `loadLogTotalsStrip`, `refreshPhaseAndTargets`, `openApplyMeal`.
+Aplicado em: `loadToday` (loadTodayGen), `loadStats`, `loadBody` (loadBodyGen), `loadLogTotalsStrip`, `refreshPhaseAndTargets`, `openApplyMeal`.
 
 ### `openDatePicker(value, onSelect, opts)`
 `opts.showScores === false` → não faz fetch de `getDayScores` nem desenha dots (usado na view Targets).
 
 ### Charts (Chart.js)
-Usado em Body (peso/BF/LBM) e Treino (CTL/ATL, HRV). Instâncias guardadas em variáveis e **destruídas antes de re-render** para evitar fugas e canvas a 0px. Cores hex directas (sem `var(--…)`).
+Usado na view Forma: `bodyFormChart` (CTL/ATL linha dupla) e `bodyCompChart` (Peso/BF/LBM). Instâncias guardadas em variáveis e **destruídas antes de re-render** para evitar fugas e canvas a 0px. Cores hex directas (sem `var(--…)`).
 
 ---
 
@@ -370,11 +386,13 @@ Usado em Body (peso/BF/LBM) e Treino (CTL/ATL, HRV). Instâncias guardadas em va
 
 ### Antes de cada push
 ```bash
-node --check js/views/ficheiro_alterado.js
+node --check js/views/ficheiro_alterado.js   # syntax check
+npm test                                      # 64 testes node:test
+node bump.js                                  # actualizar ?v= timestamps
 ```
 
 ### Cache-busting
-`?v=AAAAMMDD[-n]` em `css/styles.css` e em cada `<script>`. Incrementar o sufixo `-n` para múltiplas alterações no mesmo dia.
+`?v=AAAAMMDD[-n]` em `css/styles.css` e em cada `<script>`. Incrementar o sufixo `-n` para múltiplas alterações no mesmo dia. `bump.js` automatiza a actualização.
 
 ### Git
 Trabalhar sempre em `main`. Commit + push no fim de cada sessão. Remote: `https://github.com/JustAnotherDud/baseline.git`.
@@ -406,18 +424,23 @@ Criar `<div class="sheet-overlay">` dinamicamente uma vez (cache por `id`), `app
 - Diário, base de alimentos, log (pesquisa/rápida/templates), templates de refeições
 - Targets modulares read-only (DCB → `daily_targets`), barras segmentadas, nutrient ranking, meal breakdown donut
 - Date picker com score por dia, estatísticas (7/14/30d)
-- Body Comp (Dia + Histórico com chart)
-- **Treino** — integração Intervals.icu (forma, charts CTL/ATL e HRV, resumo semanal, wellness)
-- Configuração ICU no setup e nas Settings
+- Body Comp (Dia + Histórico com charts)
+- **Treino** — integração Intervals.icu (forma, charts CTL/ATL, resumo semanal) — view unificada `#view-forma`
+- **Ginásio** — integração Hevy (volume por sessão, chip Ginásio na secção Últimos 7 dias, detalhe em sheet) — commit `18c763e`
+- Toggles ON/OFF para ICU e Hevy + Limpar perfil — commit `18c763e`
+- Hash router (back button Android) — commit `c4b62ad`
+- Sheet animation (slide-up) + view fade-in + toast slide-in — commit `adb15a8`
+- Detalhe semanal agrupado por tipo de actividade (`openActivityDetailSheet`) — commit `47b0ef5`
+- Debounce na pesquisa de alimentos (300 ms) — commit `d1d2048`
+- SRI + CDN pinado (supabase-js) — commit `eb7ad30`
+- `escHtml()` em todos os interpolações innerHTML com dados externos (XSS hardening) — commits `a629026`, `85baeb7`
+- Suite de testes `npm test` (64 testes, `node:test`) — commit `ee8b08e`
+- `bump.js` para cache-busting automático
 
 **Pendente / ideias**
-- Hash router (back button Android)
 - Lock de refeições 🔐
-- Sheet animation (slide up)
 - Emojis automáticos nos alimentos
 - E-ink display (Orange Pi Zero 2W + Waveshare)
-- Tap Resumo da Semana → detalhe por tipo de actividade
-- DESIGN.md via `/impeccable document`
 - Próximo treino planeado (events ICU)
 - Export do diário (CSV/JSON)
 - Notificações PWA (Service Worker)

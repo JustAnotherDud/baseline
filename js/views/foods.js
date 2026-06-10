@@ -168,37 +168,44 @@ function editFood(id) {
   document.getElementById('sheet-food').classList.add('open');
 }
 
+let _savingFood = false;
 async function saveFood() {
-  const name=document.getElementById('f-name').value.trim();
-  const kcal=parseFloat(document.getElementById('f-kcal').value);
-  const prot=parseFloat(document.getElementById('f-prot').value);
-  const carb=parseFloat(document.getElementById('f-carb').value);
-  const fat=parseFloat(document.getElementById('f-fat').value);
-  if (!name||isNaN(kcal)||isNaN(prot)||isNaN(carb)||isNaN(fat)) { toast('Preenche os campos obrigatórios (*)'); return; }
-  const food={
-    name, brand:document.getElementById('f-brand').value.trim()||null,
-    serving_size_g:parseFloat(document.getElementById('f-serving').value)||null,
-    calories_per_100g:kcal, protein_per_100g:prot, carbs_per_100g:carb, fat_per_100g:fat,
-    saturated_fat_per_100g:parseFloat(document.getElementById('f-satfat').value)||0,
-    sugar_per_100g:parseFloat(document.getElementById('f-sugar').value)||0,
-    fiber_per_100g:parseFloat(document.getElementById('f-fiber').value)||0
-  };
-  let error, data2;
-  if (editingFoodId) {
-    ({ error } = await db.from('foods').update(food).eq('id',editingFoodId));
-  } else {
-    ({ error, data: data2 } = await db.from('foods').insert(food).select().single());
-  }
-  if (error) { toast('Erro ao guardar'); return; }
-  toast(editingFoodId?'Actualizado':'Alimento adicionado');
-  closeAddFood();
-  loadFoods();
-  if (!editingFoodId && fromLogContext && data2) {
-    fromLogContext = false;
-    document.getElementById('sheet-log').classList.add('open');
-    await pickFood(data2.id);
-  } else {
-    fromLogContext = false;
+  if (_savingFood) return;
+  _savingFood = true;
+  try {
+    const name=document.getElementById('f-name').value.trim();
+    const kcal=parseFloat(document.getElementById('f-kcal').value);
+    const prot=parseFloat(document.getElementById('f-prot').value);
+    const carb=parseFloat(document.getElementById('f-carb').value);
+    const fat=parseFloat(document.getElementById('f-fat').value);
+    if (!name||isNaN(kcal)||isNaN(prot)||isNaN(carb)||isNaN(fat)) { toast('Preenche os campos obrigatórios (*)'); return; }
+    const food={
+      name, brand:document.getElementById('f-brand').value.trim()||null,
+      serving_size_g:parseFloat(document.getElementById('f-serving').value)||null,
+      calories_per_100g:kcal, protein_per_100g:prot, carbs_per_100g:carb, fat_per_100g:fat,
+      saturated_fat_per_100g:parseFloat(document.getElementById('f-satfat').value)||0,
+      sugar_per_100g:parseFloat(document.getElementById('f-sugar').value)||0,
+      fiber_per_100g:parseFloat(document.getElementById('f-fiber').value)||0
+    };
+    let error, data2;
+    if (editingFoodId) {
+      ({ error } = await db.from('foods').update(food).eq('id',editingFoodId));
+    } else {
+      ({ error, data: data2 } = await db.from('foods').insert(food).select().single());
+    }
+    if (error) { toast('Erro ao guardar'); return; }
+    toast(editingFoodId?'Actualizado':'Alimento adicionado');
+    closeAddFood();
+    loadFoods();
+    if (!editingFoodId && fromLogContext && data2) {
+      fromLogContext = false;
+      document.getElementById('sheet-log').classList.add('open');
+      await pickFood(data2.id);
+    } else {
+      fromLogContext = false;
+    }
+  } finally {
+    _savingFood = false;
   }
 }
 

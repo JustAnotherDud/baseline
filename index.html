@@ -19,7 +19,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
           integrity="sha384-bs/nf9FbdNouRbMiFcrcZfLXYPKiPaGVGplVbv7dLGECccEXDW+S3zjqSKR5ZEaD"
           crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="css/styles.css?v=20260611f">
+  <link rel="stylesheet" href="css/styles.css?v=20260611g">
 </head>
 <body>
 
@@ -38,14 +38,6 @@
     <label>
       <span class="lt">Publishable Key</span>
       <input type="text" id="setup-key" placeholder="sb_publishable_..." autocomplete="off" aria-label="Publishable Key">
-    </label>
-    <label>
-      <span class="lt">Intervals.icu ID</span>
-      <input type="text" id="setup-icu-id" placeholder="i123456" autocomplete="off">
-    </label>
-    <label>
-      <span class="lt">Intervals.icu API Key</span>
-      <input type="password" id="setup-icu-key" placeholder="••••••••" autocomplete="off">
     </label>
     <button class="btn btn-primary" onclick="saveSetup()">Guardar e continuar</button>
   </div>
@@ -261,20 +253,12 @@
     <div class="settings-section-title">Configuração</div>
     <div class="settings-row" onclick="editIcuSettings()">
       <span class="settings-row-label">Intervals.icu</span>
-      <span class="settings-row-right">
-        <button id="icu-toggle-btn" class="settings-toggle-inline" onclick="event.stopPropagation();toggleIcu()"></button>
-        <span class="settings-chevron">›</span>
-      </span>
+      <span class="settings-chevron">›</span>
     </div>
-    <div class="settings-row-sub" id="settings-icu-id">—</div>
     <div class="settings-row" onclick="editHevySettings()">
       <span class="settings-row-label">Hevy</span>
-      <span class="settings-row-right">
-        <button id="hevy-toggle-btn" class="settings-toggle-inline" onclick="event.stopPropagation();toggleHevy()"></button>
-        <span class="settings-chevron">›</span>
-      </span>
+      <span class="settings-chevron">›</span>
     </div>
-    <div class="settings-row-sub" id="hevy-key-display">Não configurado</div>
 
     <!-- ACÇÕES -->
     <div class="settings-section-title">Acções</div>
@@ -282,7 +266,7 @@
       <span class="settings-row-label">Limpar cache e recarregar</span>
       <span class="settings-chevron">›</span>
     </div>
-    <div class="settings-row" onclick="resetSetup()">
+    <div class="settings-row settings-row--danger" onclick="resetSetup()">
       <span class="settings-row-label" style="color:var(--red)">Redefinir ligação Supabase</span>
       <span class="settings-chevron">›</span>
     </div>
@@ -542,17 +526,17 @@
 
 <div id="toast" aria-live="polite"></div>
 
-<script src="js/config.js?v=20260611f"></script>
-<script src="js/nutrition.js?v=20260611f"></script>
-<script src="js/db.js?v=20260611f"></script>
-<script src="js/ui.js?v=20260611f"></script>
-<script src="js/views/diary.js?v=20260611f-6"></script>
-<script src="js/views/log.js?v=20260611f"></script>
-<script src="js/views/foods.js?v=20260611f-6"></script>
-<script src="js/views/meals.js?v=20260611f"></script>
-<script src="js/views/targets.js?v=20260611f"></script>
-<script src="js/views/stats.js?v=20260611f-5"></script>
-<script src="js/views/body.js?v=20260611f"></script>
-<script src="js/app.js?v=20260611f"></script>
+<script src="js/config.js?v=20260611g"></script>
+<script src="js/nutrition.js?v=20260611g"></script>
+<script src="js/db.js?v=20260611g"></script>
+<script src="js/ui.js?v=20260611g"></script>
+<script src="js/views/diary.js?v=20260611g-6"></script>
+<script src="js/views/log.js?v=20260611g"></script>
+<script src="js/views/foods.js?v=20260611g-6"></script>
+<script src="js/views/meals.js?v=20260611g"></script>
+<script src="js/views/targets.js?v=20260611g"></script>
+<script src="js/views/stats.js?v=20260611g-5"></script>
+<script src="js/views/body.js?v=20260611g"></script>
+<script src="js/app.js?v=20260611g"></script>
 </body>
 </html>

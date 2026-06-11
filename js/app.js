@@ -53,10 +53,7 @@ function saveSetup() {
   if (!url || !key) { toast('Preenche os dois campos'); return; }
   localStorage.setItem('nt_url', url);
   localStorage.setItem('nt_key', key);
-  const icuIdVal  = document.getElementById('setup-icu-id').value.trim();
-  const icuKeyVal = document.getElementById('setup-icu-key').value.trim();
-  if (icuIdVal)  localStorage.setItem('icu_id', icuIdVal);  else localStorage.removeItem('icu_id');
-  if (icuKeyVal) localStorage.setItem('icu_key', icuKeyVal); else localStorage.removeItem('icu_key');
+  // ICU configura-se em Settings → Intervals.icu, não no setup inicial.
   init();
 }
 
@@ -124,24 +121,16 @@ async function loadSettingsView() {
     if (objetivoEl)  objetivoEl.textContent  = '—';
   }
 
-  // Sub-rows: athlete ID (ICU) e key mascarada (Hevy); a key ICU só no sheet.
-  const icuIdEl = document.getElementById('settings-icu-id');
-  const savedId = localStorage.getItem('icu_id');
-  if (icuIdEl) icuIdEl.textContent = savedId ? savedId : '—';
+  // Estado ICU/Hevy (ID, key, toggle) vive nos sheets de configuração.
+}
 
-  const hevyEl = document.getElementById('hevy-key-display');
-  if (hevyEl) hevyEl.textContent = hevyKey ? '••••••' + hevyKey.slice(-4) : 'Não configurado';
-
-  const icuBtn = document.getElementById('icu-toggle-btn');
-  if (icuBtn) {
-    icuBtn.textContent = icuEnabled ? 'ON' : 'OFF';
-    icuBtn.style.color = icuEnabled ? 'var(--accent)' : 'var(--text3)';
-  }
-  const hevyBtn = document.getElementById('hevy-toggle-btn');
-  if (hevyBtn) {
-    hevyBtn.textContent = hevyEnabled ? 'ON' : 'OFF';
-    hevyBtn.style.color = hevyEnabled ? 'var(--accent)' : 'var(--text3)';
-  }
+// Toggle ON/OFF dentro dos sheets de configuração (criados lazy e cacheados,
+// por isso o estado é re-aplicado a cada abertura).
+function updateSheetToggle(id, enabled) {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  btn.textContent = enabled ? 'ON' : 'OFF';
+  btn.style.color = enabled ? 'var(--accent)' : 'var(--text3)';
 }
 
 function editIcuSettings() {
@@ -159,6 +148,10 @@ function editIcuSettings() {
           <div class="sheet-close" id="icu-settings-close">×</div>
         </div>
         <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span class="lt">Integração</span>
+            <button id="icu-sheet-toggle" class="settings-toggle-inline" style="margin-right:0" onclick="toggleIcu()"></button>
+          </div>
           <label>
             <span class="lt">Athlete ID</span>
             <input type="text" id="icu-settings-id" placeholder="i123456" autocomplete="off">
@@ -177,6 +170,7 @@ function editIcuSettings() {
 
   document.getElementById('icu-settings-id').value  = localStorage.getItem('icu_id')  || '';
   document.getElementById('icu-settings-key').value = localStorage.getItem('icu_key') || '';
+  updateSheetToggle('icu-sheet-toggle', icuEnabled);
   overlay.classList.add('open');
 }
 
@@ -208,6 +202,10 @@ function editHevySettings() {
           <div class="sheet-close" onclick="document.getElementById('hevy-settings-overlay').classList.remove('open')">×</div>
         </div>
         <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span class="lt">Integração</span>
+            <button id="hevy-sheet-toggle" class="settings-toggle-inline" style="margin-right:0" onclick="toggleHevy()"></button>
+          </div>
           <label>
             <span class="lt">API Key</span>
             <input type="password" id="hevy-key-input" placeholder="••••••••" autocomplete="off">
@@ -222,6 +220,7 @@ function editHevySettings() {
   }
   const input = document.getElementById('hevy-key-input');
   if (input) input.value = hevyKey || '';
+  updateSheetToggle('hevy-sheet-toggle', hevyEnabled);
   overlay.classList.add('open');
 }
 
@@ -238,14 +237,14 @@ function saveHevySettings() {
 function toggleIcu() {
   icuEnabled = !icuEnabled;
   localStorage.setItem('icu_enabled', icuEnabled);
-  loadSettingsView();
+  updateSheetToggle('icu-sheet-toggle', icuEnabled);
   if (typeof loadBody === 'function') loadBody();
 }
 
 function toggleHevy() {
   hevyEnabled = !hevyEnabled;
   localStorage.setItem('hevy_enabled', hevyEnabled);
-  loadSettingsView();
+  updateSheetToggle('hevy-sheet-toggle', hevyEnabled);
   if (typeof loadBody === 'function') loadBody();
 }
 

@@ -63,7 +63,9 @@ body {
 }
 .view.active {
   display: flex;
-  animation: viewFadeIn 0.18s ease forwards;
+  /* Sem fill forwards: transform retido tornava a view containing block
+     do position:fixed (FAB fazia scroll com o conteúdo). */
+  animation: viewFadeIn 0.18s ease;
 }
 
 /* ── HEADER ── */

@@ -124,12 +124,10 @@ async function loadSettingsView() {
     if (objetivoEl)  objetivoEl.textContent  = '—';
   }
 
-  const icuIdEl  = document.getElementById('settings-icu-id');
-  const icuKeyEl = document.getElementById('settings-icu-key');
-  const savedId  = localStorage.getItem('icu_id');
-  const savedKey = localStorage.getItem('icu_key');
-  if (icuIdEl)  icuIdEl.textContent  = savedId ? savedId : '—';
-  if (icuKeyEl) icuKeyEl.textContent = savedKey ? '••••••' : '—';
+  // Sub-rows: athlete ID (ICU) e key mascarada (Hevy); a key ICU só no sheet.
+  const icuIdEl = document.getElementById('settings-icu-id');
+  const savedId = localStorage.getItem('icu_id');
+  if (icuIdEl) icuIdEl.textContent = savedId ? savedId : '—';
 
   const hevyEl = document.getElementById('hevy-key-display');
   if (hevyEl) hevyEl.textContent = hevyKey ? '••••••' + hevyKey.slice(-4) : 'Não configurado';

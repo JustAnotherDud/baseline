@@ -19,7 +19,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
           integrity="sha384-bs/nf9FbdNouRbMiFcrcZfLXYPKiPaGVGplVbv7dLGECccEXDW+S3zjqSKR5ZEaD"
           crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="css/styles.css?v=20260611e">
+  <link rel="stylesheet" href="css/styles.css?v=20260611f">
 </head>
 <body>
 
@@ -240,66 +240,51 @@
     </div>
 
     <!-- PERFIL -->
-    <div class="target-section">
-      <div class="target-section-title">Perfil</div>
-      <div class="settings-row">
-        <span class="settings-label">Fase activa</span>
-        <span class="settings-value" id="settings-phase-num">—</span>
-      </div>
-      <div class="settings-row">
-        <span class="settings-label">Objectivo</span>
-        <span class="settings-value" id="settings-objetivo">—</span>
-      </div>
+    <div class="settings-section-title">Perfil</div>
+    <div class="settings-row settings-row--static">
+      <span class="settings-row-label">Fase activa</span>
+      <span class="settings-row-value" id="settings-phase-num">—</span>
+    </div>
+    <div class="settings-row settings-row--static">
+      <span class="settings-row-label">Objectivo</span>
+      <span class="settings-row-value" id="settings-objetivo">—</span>
     </div>
 
     <!-- APP -->
-    <div class="target-section">
-      <div class="target-section-title">App</div>
-      <div class="settings-row">
-        <span class="settings-label">Versão</span>
-        <span class="settings-value">v2.0.0</span>
-      </div>
+    <div class="settings-section-title">App</div>
+    <div class="settings-row settings-row--static">
+      <span class="settings-row-label">Versão</span>
+      <span class="settings-row-value">v2.0.0</span>
     </div>
 
     <!-- CONFIGURAÇÃO -->
-    <div style="padding:16px 20px;margin-top:8px">
-      <div class="target-section-title" style="color:var(--red);margin-bottom:12px">Configuração</div>
-      <div class="target-section">
-        <div class="settings-section-header">
-          <span class="settings-section-label">Intervals.icu</span>
-          <button id="icu-toggle-btn" onclick="toggleIcu()" class="integration-toggle"></button>
-        </div>
-        <div class="settings-row">
-          <span class="settings-label">Athlete ID</span>
-          <span class="settings-value" id="settings-icu-id">—</span>
-        </div>
-        <div class="settings-row">
-          <span class="settings-label">API Key</span>
-          <span class="settings-value" id="settings-icu-key">—</span>
-        </div>
-      </div>
-      <div style="padding: 0 20px 12px">
-        <button class="btn btn-secondary" onclick="editIcuSettings()">
-          Configurar Intervals.icu
-        </button>
-      </div>
-      <div class="target-section">
-        <div class="settings-section-header">
-          <span class="settings-section-label">Hevy</span>
-          <button id="hevy-toggle-btn" onclick="toggleHevy()" class="integration-toggle"></button>
-        </div>
-        <div class="settings-row">
-          <span class="settings-label">API Key</span>
-          <span class="settings-value" id="hevy-key-display">Não configurado</span>
-        </div>
-      </div>
-      <div style="padding: 0 20px 12px">
-        <button class="btn btn-secondary" onclick="editHevySettings()">
-          Configurar Hevy
-        </button>
-      </div>
-      <button class="btn btn-secondary" onclick="clearCacheAndReload()" style="margin-bottom:10px">Limpar cache e recarregar</button>
-      <button class="btn btn-danger" onclick="resetSetup()">Redefinir ligação Supabase</button>
+    <div class="settings-section-title">Configuração</div>
+    <div class="settings-row" onclick="editIcuSettings()">
+      <span class="settings-row-label">Intervals.icu</span>
+      <span class="settings-row-right">
+        <button id="icu-toggle-btn" class="settings-toggle-inline" onclick="event.stopPropagation();toggleIcu()"></button>
+        <span class="settings-chevron">›</span>
+      </span>
+    </div>
+    <div class="settings-row-sub" id="settings-icu-id">—</div>
+    <div class="settings-row" onclick="editHevySettings()">
+      <span class="settings-row-label">Hevy</span>
+      <span class="settings-row-right">
+        <button id="hevy-toggle-btn" class="settings-toggle-inline" onclick="event.stopPropagation();toggleHevy()"></button>
+        <span class="settings-chevron">›</span>
+      </span>
+    </div>
+    <div class="settings-row-sub" id="hevy-key-display">Não configurado</div>
+
+    <!-- ACÇÕES -->
+    <div class="settings-section-title">Acções</div>
+    <div class="settings-row" onclick="clearCacheAndReload()">
+      <span class="settings-row-label">Limpar cache e recarregar</span>
+      <span class="settings-chevron">›</span>
+    </div>
+    <div class="settings-row" onclick="resetSetup()">
+      <span class="settings-row-label" style="color:var(--red)">Redefinir ligação Supabase</span>
+      <span class="settings-chevron">›</span>
     </div>
   </div>
 
@@ -557,17 +542,17 @@
 
 <div id="toast" aria-live="polite"></div>
 
-<script src="js/config.js?v=20260611e"></script>
-<script src="js/nutrition.js?v=20260611e"></script>
-<script src="js/db.js?v=20260611e"></script>
-<script src="js/ui.js?v=20260611e"></script>
-<script src="js/views/diary.js?v=20260611e-6"></script>
-<script src="js/views/log.js?v=20260611e"></script>
-<script src="js/views/foods.js?v=20260611e-6"></script>
-<script src="js/views/meals.js?v=20260611e"></script>
-<script src="js/views/targets.js?v=20260611e"></script>
-<script src="js/views/stats.js?v=20260611e-5"></script>
-<script src="js/views/body.js?v=20260611e"></script>
-<script src="js/app.js?v=20260611e"></script>
+<script src="js/config.js?v=20260611f"></script>
+<script src="js/nutrition.js?v=20260611f"></script>
+<script src="js/db.js?v=20260611f"></script>
+<script src="js/ui.js?v=20260611f"></script>
+<script src="js/views/diary.js?v=20260611f-6"></script>
+<script src="js/views/log.js?v=20260611f"></script>
+<script src="js/views/foods.js?v=20260611f-6"></script>
+<script src="js/views/meals.js?v=20260611f"></script>
+<script src="js/views/targets.js?v=20260611f"></script>
+<script src="js/views/stats.js?v=20260611f-5"></script>
+<script src="js/views/body.js?v=20260611f"></script>
+<script src="js/app.js?v=20260611f"></script>
 </body>
 </html>

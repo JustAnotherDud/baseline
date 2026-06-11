@@ -539,26 +539,34 @@ input[type="number"] { font-family: var(--mono); }
 /* ── TARGETS ── */
 .target-section { padding: 16px 20px; border-bottom: 1px solid var(--border); }
 .target-section-title { font-family: var(--mono); font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 14px; }
-.settings-section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
+/* ── SETTINGS (rows estilo iOS: label + valor/toggle + chevron) ── */
+.settings-section-title {
+  font-family: var(--mono); font-size: 11px; color: var(--text3);
+  text-transform: uppercase; letter-spacing: .08em;
+  padding: 20px 16px 6px;
 }
-.settings-section-label { font-family: var(--mono); font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; }
-.integration-toggle {
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 3px 10px;
-  font-size: 12px;
-  font-family: var(--mono);
+.settings-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-bottom: 1px solid var(--border);
   cursor: pointer;
 }
-.settings-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--surface3); }
-.settings-row:last-child { border-bottom: none; }
-.settings-label { font-size: 14px; color: var(--text2); }
-.settings-value { font-family: var(--mono); font-size: 13px; color: var(--text); }
+.settings-row:active { background: var(--surface2); }
+.settings-row--static { cursor: default; }
+.settings-row--static:active { background: none; }
+.settings-row-label { font-size: 15px; color: var(--text); }
+.settings-row-value { font-family: var(--mono); font-size: 14px; color: var(--text3); }
+.settings-row-right { display: flex; align-items: center; }
+.settings-row-sub {
+  font-family: var(--mono); font-size: 12px; color: var(--text3);
+  padding: 0 16px 10px; border-bottom: 1px solid var(--border);
+}
+.settings-chevron { color: var(--text3); font-size: 18px; margin-left: 8px; }
+.settings-toggle-inline {
+  font-family: var(--mono); font-size: 12px;
+  padding: 2px 8px; margin-right: 8px;
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  cursor: pointer;
+}
 .phase-badge { font-family: var(--mono); font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: .08em; padding: 6px 10px; background: var(--accent-a08); border-radius: 6px; display: inline-block; }
 .phase-badge-empty { color: var(--text3); background: transparent; }
 /* ── LOG VIEW ── */

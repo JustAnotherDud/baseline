@@ -20,17 +20,17 @@ test("tFmtHM(0) → '0:00'", () => assert.equal(tFmtHM(0), '0:00'));
 test("tFmtHM(null) → '—'", () => assert.equal(tFmtHM(null), '—'));
 
 // ── calcGymVolume ─────────────────────────────────────────────────────────────
-test('calcGymVolume: só sets normais com weight e reps truthy', () => {
+test('calcGymVolume: todos os sets com weight e reps truthy (incluindo warmup)', () => {
   const workout = {
     exercises: [{
       sets: [
         { type: 'normal', weight_kg: 100, reps: 5 },   // conta: 500
-        { type: 'warmup', weight_kg: 60,  reps: 5 },   // ignorado (tipo warmup)
+        { type: 'warmup', weight_kg: 60,  reps: 5 },   // conta: 300
         { type: 'normal', weight_kg: 100, reps: 0 },   // ignorado (reps falsy)
       ],
     }],
   };
-  assert.equal(calcGymVolume(workout), 500);
+  assert.equal(calcGymVolume(workout), 800);
 });
 
 test('calcGymVolume({}) → 0 (sem exercises)', () => {
@@ -71,15 +71,15 @@ test("bodyFilterByPeriod('all') devolve todas as rows", () => {
 });
 
 test("bodyFilterByPeriod('week') inclui hoje e today-7, exclui today-8", () => {
-  // today é 2026-06-11 → cutoff = 2026-06-04 (today - 7 dias)
+  // today é 2026-06-13 → cutoff = 2026-06-06 (today - 7 dias)
   // bodyFilterByPeriod usa >= cutoffStr, portanto cutoffStr está incluído.
   const rows = [
-    { date: '2026-06-11' }, // hoje → incluído
+    { date: '2026-06-13' }, // hoje → incluído
     { date: '2026-06-10' }, // dentro → incluído
-    { date: '2026-06-04' }, // exactamente no cutoff → INCLUÍDO (>=)
-    { date: '2026-06-03' }, // antes do cutoff → excluído
+    { date: '2026-06-06' }, // exactamente no cutoff → INCLUÍDO (>=)
+    { date: '2026-06-05' }, // antes do cutoff → excluído
   ];
   const result = bodyFilterByPeriod(rows, 'week');
   assert.equal(result.length, 3);
-  assert.deepEqual(result.map(r => r.date), ['2026-06-11', '2026-06-10', '2026-06-04']);
+  assert.deepEqual(result.map(r => r.date), ['2026-06-13', '2026-06-10', '2026-06-06']);
 });

@@ -114,12 +114,12 @@ async function hevyFetch(path) {
   return res.json();
 }
 
-// Volume de um treino Hevy (kg): soma weight×reps das sets normais.
+// Volume de um treino Hevy (kg): soma weight×reps de todos os sets com peso e reps.
 function calcGymVolume(workout) {
   let vol = 0;
   (workout.exercises || []).forEach(ex => {
     (ex.sets || [])
-      .filter(s => s.type === 'normal' && s.weight_kg && s.reps)
+      .filter(s => s.weight_kg && s.reps)
       .forEach(s => { vol += s.weight_kg * s.reps; });
   });
   return vol;
@@ -654,8 +654,9 @@ function bodyWeekSectionHtml(activities, hasIcu) {
 }
 
 function formatActivityTime(secs) {
-  const h = Math.floor(secs / 3600);
-  const m = Math.floor((secs % 3600) / 60);
+  const totalMin = Math.round(secs / 60);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
   return `${h}:${String(m).padStart(2, '0')}`;
 }
 

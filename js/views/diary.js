@@ -247,6 +247,26 @@ function setupTodaySticky() {
   const macro  = view ? view.querySelector('.macro-summary') : null;
   if (!sticky || !view || !macro) return;
 
+  // Largura/posição reais de #view-today (excluem a scrollbar) — evita sobrepor.
+  const viewRect = view.getBoundingClientRect();
+  sticky.style.left  = viewRect.left + 'px';
+  sticky.style.width = viewRect.width + 'px';
+  sticky.style.right = 'auto';
+
+  // Reajustar em resize (ligado uma só vez).
+  if (!window._stickyResizeBound) {
+    window._stickyResizeBound = true;
+    window.addEventListener('resize', () => {
+      const s = document.getElementById('today-sticky');
+      const v = document.getElementById('view-today');
+      if (s && v) {
+        const r = v.getBoundingClientRect();
+        s.style.left  = r.left + 'px';
+        s.style.width = r.width + 'px';
+      }
+    });
+  }
+
   // Offset os chips pelo header da data (sticky), para não o cobrir.
   const dateHeader = view.querySelector('.diary-header');
   const headerH = dateHeader ? dateHeader.offsetHeight : 0;

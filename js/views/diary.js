@@ -201,19 +201,25 @@ function renderToday(entries, t) {
   });
 }
 
-// Observa o bloco de macros (.macro-summary); quando sai do viewport do
-// #view-today, revela a barra sticky. Recriado a cada renderToday().
-let _todayStickyObs = null;
+// Revela a barra sticky quando o bloco de macros (.macro-summary) passa acima
+// do topo do scroll container (#view-today). Scroll listener (determinístico) —
+// o IntersectionObserver com root explícito não disparava de forma fiável aqui.
+let _todayStickyBound = false;
 function setupTodaySticky() {
-  const sticky      = document.getElementById('today-sticky');
-  const headerBlock = document.querySelector('#view-today .macro-summary');
-  const root        = document.getElementById('view-today');
-  if (!sticky || !headerBlock || !root) return;
-  if (_todayStickyObs) _todayStickyObs.disconnect();
-  _todayStickyObs = new IntersectionObserver(([entry]) => {
-    sticky.classList.toggle('visible', !entry.isIntersecting);
-  }, { root, threshold: 0 });
-  _todayStickyObs.observe(headerBlock);
+  const view   = document.getElementById('view-today');
+  const sticky = document.getElementById('today-sticky');
+  if (!view || !sticky) return;
+  const update = () => {
+    const macro = view.querySelector('.macro-summary');
+    if (!macro) return;
+    const passed = macro.getBoundingClientRect().bottom <= view.getBoundingClientRect().top;
+    sticky.classList.toggle('visible', passed);
+  };
+  if (!_todayStickyBound) {
+    view.addEventListener('scroll', update, { passive: true });
+    _todayStickyBound = true;
+  }
+  update();
 }
 
 function setDateLabel() {

@@ -247,6 +247,11 @@ function setupTodaySticky() {
   const macro  = view ? view.querySelector('.macro-summary') : null;
   if (!sticky || !view || !macro) return;
 
+  // Offset os chips pelo header da data (sticky), para não o cobrir.
+  const dateHeader = view.querySelector('.diary-header');
+  const headerH = dateHeader ? dateHeader.offsetHeight : 0;
+  sticky.style.top = headerH + 'px';
+
   // remover listener anterior se existir
   if (view._stickyListener) {
     view.removeEventListener('scroll', view._stickyListener);

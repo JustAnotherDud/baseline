@@ -118,8 +118,8 @@ function renderToday(entries, t) {
           <div class="meal-head-line"><span class="meal-name">${label}</span>${kcalInline}</div>
           ${macroStr}
         </div>
-        <div class="meal-header-right">
-          <button class="meal-lock-btn${locked ? ' locked' : ''}" aria-label="${locked ? 'Desbloquear' : 'Bloquear'} refeição">${lockIcon}</button>
+        <button class="meal-lock-btn${locked ? ' locked' : ''}" aria-label="${locked ? 'Desbloquear' : 'Bloquear'} refeição">${lockIcon}</button>
+        <div class="meal-header-right${locked ? ' locked' : ''}">
           ${rightAction}
         </div>
       </div>`;

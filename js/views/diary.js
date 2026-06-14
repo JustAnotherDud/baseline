@@ -89,6 +89,29 @@ function renderToday(entries, t) {
     el.onclick = () => openNutrientSheet(diaryEntries, n);
   });
 
+  // ── STICKY MACRO BAR (aparece quando o header de macros sai do viewport) ──
+  const sticky = document.getElementById('today-sticky');
+  if (sticky) {
+    const group = inner =>
+      `<span style="display:inline-flex;align-items:baseline;gap:3px">${inner}</span>`;
+    const macroChip = (lbl, val, color, target) => group(
+      `<span style="color:var(--text3);font-size:10px">${lbl}</span>` +
+      `<span style="color:${color};font-size:13px">${val}</span>` +
+      (hasTargets ? `<span style="color:var(--text3);font-size:10px">/${r(target)}</span>` : '')
+    );
+    const sep = `<span style="color:var(--text3)">·</span>`;
+    const kcalGroup = group(
+      `<span style="color:var(--accent);font-size:15px;font-weight:500">${kcalNum}</span>` +
+      (hasTargets ? `<span style="color:var(--text3);font-size:11px">/${t.calories}</span>` : '')
+    );
+    sticky.innerHTML =
+      kcalGroup + sep +
+      macroChip('F', r(tot.fat),  'var(--orange)', t.fat) + sep +
+      macroChip('C', r(tot.carb), 'var(--yellow)', t.carbs) + sep +
+      macroChip('P', r(tot.prot), 'var(--blue)',   t.protein);
+    setupTodaySticky();
+  }
+
   const container = document.getElementById('diary-container');
   container.innerHTML = '';
   Object.entries(MEALS).forEach(([k,label]) => {
@@ -145,6 +168,12 @@ function renderToday(entries, t) {
       rightEl.style.cursor = 'default';
     }
 
+    // Refeição bloqueada → estado colapsado: só o header (resumo F·C·P já lá está).
+    if (locked) {
+      container.appendChild(div);
+      return;
+    }
+
     if (mes.length === 0) {
       const noEntry = document.createElement('div');
       noEntry.className = 'no-entries';
@@ -170,6 +199,21 @@ function renderToday(entries, t) {
 
     container.appendChild(div);
   });
+}
+
+// Observa o bloco de macros (.macro-summary); quando sai do viewport do
+// #view-today, revela a barra sticky. Recriado a cada renderToday().
+let _todayStickyObs = null;
+function setupTodaySticky() {
+  const sticky      = document.getElementById('today-sticky');
+  const headerBlock = document.querySelector('#view-today .macro-summary');
+  const root        = document.getElementById('view-today');
+  if (!sticky || !headerBlock || !root) return;
+  if (_todayStickyObs) _todayStickyObs.disconnect();
+  _todayStickyObs = new IntersectionObserver(([entry]) => {
+    sticky.classList.toggle('visible', !entry.isIntersecting);
+  }, { root, threshold: 0 });
+  _todayStickyObs.observe(headerBlock);
 }
 
 function setDateLabel() {

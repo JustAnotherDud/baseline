@@ -247,11 +247,13 @@ function setupTodaySticky() {
   const macro  = view ? view.querySelector('.macro-summary') : null;
   if (!sticky || !view || !macro) return;
 
-  // Largura/posição reais de #view-today — clientWidth exclui a scrollbar
-  // (getBoundingClientRect().width inclui-a no Windows) → evita sobrepor.
+  // Largura/posição reais de #view-today — descontar a scrollbar.
+  // offsetWidth inclui scrollbar, clientWidth não → a diferença é a largura
+  // exacta da scrollbar em qualquer OS/browser.
+  const scrollbarW = view.offsetWidth - view.clientWidth;
   const viewRect = view.getBoundingClientRect();
   sticky.style.left  = viewRect.left + 'px';
-  sticky.style.width = view.clientWidth + 'px';
+  sticky.style.width = (viewRect.width - scrollbarW) + 'px';
   sticky.style.right = 'auto';
 
   // Reajustar em resize (ligado uma só vez).
@@ -261,9 +263,10 @@ function setupTodaySticky() {
       const s = document.getElementById('today-sticky');
       const v = document.getElementById('view-today');
       if (s && v) {
-        const r = v.getBoundingClientRect();
+        const sw = v.offsetWidth - v.clientWidth;
+        const r  = v.getBoundingClientRect();
         s.style.left  = r.left + 'px';
-        s.style.width = v.clientWidth + 'px';
+        s.style.width = (r.width - sw) + 'px';
       }
     });
   }

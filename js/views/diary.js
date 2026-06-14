@@ -106,7 +106,7 @@ function renderToday(entries, t) {
       ? `<div style="height:3px;border-radius:2px;background:var(--surface2);overflow:hidden;margin-top:6px"><div style="height:100%;width:${Math.min(100, kcalPct).toFixed(1)}%;background:${kCol}"></div></div>`
       : '';
     const chip1 = `
-      <div style="background:var(--surface);border-radius:10px;padding:9px 12px">
+      <div id="sticky-chip-kcal" style="background:var(--surface);border-radius:10px;padding:9px 12px">
         <div style="display:flex;justify-content:space-between;align-items:baseline">
           <span style="display:inline-flex;align-items:baseline;gap:4px">
             <span style="color:var(--accent);font-size:15px;font-weight:500">${kcalNum}</span>
@@ -138,7 +138,7 @@ function renderToday(entries, t) {
     };
     const sepV = `<div style="width:1px;align-self:stretch;background:var(--border)"></div>`;
     const chip2 = `
-      <div style="background:var(--surface);border-radius:10px;padding:9px 0;display:flex;align-items:stretch">
+      <div id="sticky-chip-macros" style="background:var(--surface);border-radius:10px;padding:9px 0;display:flex;align-items:stretch">
         ${macroCol('fat',     'FAT',   tot.fat,  'var(--orange)', t.fat)}
         ${sepV}
         ${macroCol('carbs',   'CARBS', tot.carb, 'var(--yellow)', t.carbs)}
@@ -284,15 +284,28 @@ function setupTodaySticky() {
     view.removeEventListener('scroll', view._stickyListener);
   }
 
+  const chipKcal   = sticky.querySelector('#sticky-chip-kcal');
+  const chipMacros = sticky.querySelector('#sticky-chip-macros');
+
   view._stickyListener = function() {
-    const scrolled = view.scrollTop;
     const macroBottom = macro.offsetTop + macro.offsetHeight;
-    // começa a aparecer quando o topo do scroll passa o fundo do macro
-    const fadeRange = macro.offsetHeight * 0.5;
-    const progress = (scrolled - (macroBottom - fadeRange)) / fadeRange;
-    const opacity = Math.min(1, Math.max(0, progress));
-    sticky.style.opacity = opacity;
-    sticky.style.pointerEvents = opacity > 0.5 ? 'auto' : 'none';
+    const fadeRange   = macro.offsetHeight * 0.5;
+    const offset      = 80; // px de scroll extra para a chip de macros
+
+    // kcal chip — aparece primeiro
+    const p1 = (view.scrollTop - (macroBottom - fadeRange)) / fadeRange;
+    const o1 = Math.min(1, Math.max(0, p1));
+
+    // macros chip — começa offset px depois
+    const p2 = (view.scrollTop - (macroBottom - fadeRange + offset)) / fadeRange;
+    const o2 = Math.min(1, Math.max(0, p2));
+
+    if (chipKcal)   chipKcal.style.opacity   = o1;
+    if (chipMacros) chipMacros.style.opacity = o2;
+
+    // container sempre presente; pointer-events só quando há chip visível
+    sticky.style.opacity      = '1';
+    sticky.style.pointerEvents = (o1 > 0 || o2 > 0) ? 'auto' : 'none';
   };
 
   view.addEventListener('scroll', view._stickyListener);

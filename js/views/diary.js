@@ -147,7 +147,6 @@ function renderToday(entries, t) {
       </div>`;
 
     sticky.innerHTML = chip1 + chip2;
-    setupTodaySticky();
   }
 
   const container = document.getElementById('diary-container');
@@ -237,6 +236,10 @@ function renderToday(entries, t) {
 
     container.appendChild(div);
   });
+
+  // Depois de o container estar preenchido — só agora #view-today tem a
+  // scrollbar, necessária para medir a sua largura correctamente.
+  setupTodaySticky();
 }
 
 // Barra fixa (position:fixed) que aparece ao fazer scroll do #view-today.

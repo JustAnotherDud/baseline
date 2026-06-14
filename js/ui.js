@@ -26,8 +26,21 @@ function toast(msg) {
 
 function overlayClose(e, id) { if(e.target.id===id) document.getElementById(id).classList.remove('open'); }
 
+// ── TARA no sheet de edição ───────────────────────────────────────────────────
+function setEditTaraUI(checked) {
+  const box = document.getElementById('edit-tara-box');
+  const lbl = document.getElementById('edit-tara-label');
+  if (box) box.classList.toggle('checked', !!checked);
+  if (lbl) lbl.classList.toggle('checked', !!checked);
+}
+function toggleEditTara() {
+  const box = document.getElementById('edit-tara-box');
+  setEditTaraUI(!(box && box.classList.contains('checked')));
+}
+
 function openLog(mode) {
   pushSheetState();
+  resetLogTara();
   if (!mealManuallySelected) {
     selectedMeal = getMealByHour();
     updateMealSelectorLabel(selectedMeal);
@@ -80,6 +93,8 @@ async function openEditEntry(id) {
   const { data, error } = await db.from('diary').select('*').eq('id', id).single();
   if (error || !data) return;
   editingEntry = data;
+
+  setEditTaraUI(!!data.has_tara);
 
   const isQuick = !data.grams && data.grams !== 0;
 

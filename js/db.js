@@ -37,7 +37,7 @@ async function loadToday() {
   renderToday(data || [], targets);
 }
 
-async function saveDiary() {
+async function saveDiary(extra = {}) {
   if (!selectedFood) return false;
   const g = parseFloat(document.getElementById('log-grams').value);
   if (!g || g <= 0) { toast('Indica a quantidade em gramas'); return false; }
@@ -53,6 +53,7 @@ async function saveDiary() {
     saturated_fat: c(selectedFood.saturated_fat_per_100g),
     sugar:         c(selectedFood.sugar_per_100g),
     fiber:         c(selectedFood.fiber_per_100g),
+    has_tara:      !!extra.has_tara,
   });
   if (error) { toast('Erro ao guardar'); return false; }
   toast(`${selectedFood.name} guardado ✓`);
@@ -62,6 +63,8 @@ async function saveDiary() {
 async function saveEditEntry() {
   if (!editingEntry) return;
   const isQuick = !editingEntry.grams && editingEntry.grams !== 0;
+  const taraEl = document.getElementById('edit-tara-box');
+  const hasTara = !!(taraEl && taraEl.classList.contains('checked'));
 
   if (isQuick) {
     const n = id => { const el = document.getElementById(id); return el ? parseFloat(el.value) || 0 : 0; };
@@ -72,6 +75,7 @@ async function saveEditEntry() {
       fat:           n('eq-fat'),
       saturated_fat: n('eq-satfat'),
       sugar:         n('eq-sugar'),
+      has_tara:      hasTara,
     }).eq('id', editingEntry.id);
     if (error) { toast('Erro ao guardar'); return; }
     toast('Actualizado');
@@ -97,6 +101,7 @@ async function saveEditEntry() {
     saturated_fat: r(editingEntry.saturated_fat),
     sugar:         r(editingEntry.sugar),
     fiber:         r(editingEntry.fiber),
+    has_tara:      hasTara,
   }).eq('id', editingEntry.id);
 
   if (error) { toast('Erro ao guardar'); return; }

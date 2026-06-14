@@ -159,6 +159,7 @@ function renderToday(entries, t) {
           <div class="entry-info">
             <div class="entry-name"></div>
             <div class="entry-detail">${entry.grams ? entry.grams + 'g · ' : ''}F ${r(entry.fat)}g · C ${r(entry.carbs)}g · P ${r(entry.protein)}g</div>
+            ${entry.has_tara ? '<div class="entry-tara-flag">⚖ tem tara</div>' : ''}
           </div>
           <div class="entry-kcal">${r(entry.calories)}</div>`;
         entryEl.querySelector('.entry-name').innerHTML = highlightFoodKeywords(entry.food_name);

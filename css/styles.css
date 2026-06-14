@@ -260,6 +260,15 @@ body {
 .entry-name { font-size: 13px; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .entry-detail { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-top: 2px; }
 .entry-kcal { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--text3); min-width: 40px; text-align: right; }
+.entry-tara-flag { font-size: 11px; color: var(--orange); margin-top: 3px; font-family: var(--mono); }
+
+/* ── TARA checkbox (sheets de log e edição) ── */
+.tara-check-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; cursor: pointer; border-top: 1px solid var(--border); }
+.tara-box { width: 20px; height: 20px; border-radius: 5px; border: 1.5px solid var(--border); background: var(--surface2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.tara-box.checked { border-color: var(--orange); background: rgba(251,146,60,0.12); }
+.tara-box.checked::after { content: '✓'; color: var(--orange); font-size: 13px; line-height: 1; }
+.tara-check-label { font-size: 13px; color: var(--text3); }
+.tara-check-label.checked { color: var(--orange); }
 .no-entries { padding: 10px 20px; font-size: 13px; color: var(--text3); border-top: 1px solid var(--border); font-style: italic; }
 
 /* ── BOTTOM NAV ── */

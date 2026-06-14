@@ -114,6 +114,9 @@ function switchFoodsTab(tab) {
 }
 
 async function loadSettingsView() {
+  const verEl = document.getElementById('settings-version');
+  if (verEl && typeof APP_VERSION !== 'undefined') verEl.textContent = 'v' + APP_VERSION;
+
   const today = new Date().toISOString().split('T')[0];
   const phase = await getActivePhase(today);
   const phaseNumEl  = document.getElementById('settings-phase-num');

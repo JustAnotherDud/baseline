@@ -26,3 +26,10 @@ if (matches.length) {
 html = html.replace(/\?v=\d{8}[a-z]*/g, `?v=${newV}`);
 fs.writeFileSync('index.html', html);
 console.log(`Bumped all ?v= to ${newV}`);
+
+// Manter APP_VERSION (js/config.js) em sync com a versão dos scripts.
+const cfgPath = 'js/config.js';
+let cfg = fs.readFileSync(cfgPath, 'utf8');
+cfg = cfg.replace(/const APP_VERSION = '[^']*';/, `const APP_VERSION = '${newV}';`);
+fs.writeFileSync(cfgPath, cfg);
+console.log(`APP_VERSION → ${newV}`);

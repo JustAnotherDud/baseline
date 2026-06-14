@@ -1,3 +1,5 @@
+const APP_VERSION = '20260615d';
+
 const MEALS = {
   breakfast:   'Pequeno-almoço',
   morning:     'Lanche manhã',

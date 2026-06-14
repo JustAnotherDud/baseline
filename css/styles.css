@@ -656,6 +656,9 @@ input[type="number"] { font-family: var(--mono); }
   .view-header { padding: 22px 24px 14px; }
   .meal-header-left { padding: 14px 0 12px 24px; }
   .meal-header-right { padding: 14px 24px 12px 12px; }
+  .meal-lock-btn { width: 34px; height: 34px; margin: 0 12px; }
+  .meal-lock-btn svg { width: 19px; height: 19px; }
+  .meal-log-label, .meal-locked-label { font-size: 15px; }
   .diary-entry { padding: 12px 24px; }
   .food-item { padding: 16px 24px; }
   .search-wrap { padding: 14px 24px; }

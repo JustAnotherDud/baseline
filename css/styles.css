@@ -92,15 +92,14 @@ body {
 /* ── MACRO SUMMARY ── */
 .macro-summary { padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 0; border-bottom: 1px solid var(--border); }
 
-/* ── Sticky macro bar (#view-today) — opacity controlada por JS no scroll ── */
+/* ── Sticky macro bar — position:fixed, opacity controlada por JS no scroll ── */
 #today-sticky {
-  position: sticky; top: 0; z-index: 10;
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
   display: flex; flex-direction: column; gap: 6px;
   font-family: var(--mono);
   background: #141414;
   border-bottom: 1px solid var(--border);
   padding: 8px 12px;
-  overflow: hidden;
   opacity: 0; pointer-events: none;
 }
 /* bar fills (shared, used by other views) */

@@ -1,0 +1,6 @@
+# Tooling local (Claude Code, skills, planos) — não versionar
+.claude/
+.agents/
+plans/
+sniff-reports/
+skills-lock.json

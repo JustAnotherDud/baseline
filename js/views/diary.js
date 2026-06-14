@@ -247,10 +247,11 @@ function setupTodaySticky() {
   const macro  = view ? view.querySelector('.macro-summary') : null;
   if (!sticky || !view || !macro) return;
 
-  // Largura/posição reais de #view-today (excluem a scrollbar) — evita sobrepor.
+  // Largura/posição reais de #view-today — clientWidth exclui a scrollbar
+  // (getBoundingClientRect().width inclui-a no Windows) → evita sobrepor.
   const viewRect = view.getBoundingClientRect();
   sticky.style.left  = viewRect.left + 'px';
-  sticky.style.width = viewRect.width + 'px';
+  sticky.style.width = view.clientWidth + 'px';
   sticky.style.right = 'auto';
 
   // Reajustar em resize (ligado uma só vez).
@@ -262,7 +263,7 @@ function setupTodaySticky() {
       if (s && v) {
         const r = v.getBoundingClientRect();
         s.style.left  = r.left + 'px';
-        s.style.width = r.width + 'px';
+        s.style.width = v.clientWidth + 'px';
       }
     });
   }

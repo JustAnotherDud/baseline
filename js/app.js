@@ -69,6 +69,13 @@ function pushSheetState() {
 }
 
 function go(view, _pushState = true) {
+  // #today-sticky é position:fixed no body → esconder sempre ao mudar de view.
+  // O scroll listener (setupTodaySticky) volta a mostrá-lo na view Hoje.
+  const sticky = document.getElementById('today-sticky');
+  if (sticky) {
+    sticky.style.opacity = '0';
+    sticky.style.pointerEvents = 'none';
+  }
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('view-'+view).classList.add('active');

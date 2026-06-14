@@ -288,16 +288,20 @@ function setupTodaySticky() {
   const chipMacros = sticky.querySelector('#sticky-chip-macros');
 
   view._stickyListener = function() {
+    // O macro desaparece quando o seu fundo passa por baixo do header sticky,
+    // i.e. scrollTop ≈ macroBottom - headerH. Ancorar o fade a esse ponto para
+    // a chip aparecer à medida que o original sai (sem gap).
     const macroBottom = macro.offsetTop + macro.offsetHeight;
+    const trigger     = macroBottom - headerH;
     const fadeRange   = macro.offsetHeight * 0.5;
-    const offset      = 80; // px de scroll extra para a chip de macros
+    const offset      = 36; // px de scroll extra para a chip de macros
 
-    // kcal chip — aparece primeiro
-    const p1 = (view.scrollTop - (macroBottom - fadeRange)) / fadeRange;
+    // kcal chip — atinge full quando o macro desaparece
+    const p1 = (view.scrollTop - (trigger - fadeRange)) / fadeRange;
     const o1 = Math.min(1, Math.max(0, p1));
 
     // macros chip — começa offset px depois
-    const p2 = (view.scrollTop - (macroBottom - fadeRange + offset)) / fadeRange;
+    const p2 = (view.scrollTop - (trigger - fadeRange + offset)) / fadeRange;
     const o2 = Math.min(1, Math.max(0, p2));
 
     if (chipKcal)   chipKcal.style.opacity   = o1;

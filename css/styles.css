@@ -91,6 +91,25 @@ body {
 
 /* ── MACRO SUMMARY ── */
 .macro-summary { padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 0; border-bottom: 1px solid var(--border); }
+
+/* ── Sticky macro bar (#view-today) ── */
+#today-sticky {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: baseline; gap: 6px;
+  font-family: var(--mono); white-space: nowrap;
+  background: #141414;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.15s ease;
+  /* colapsado quando escondido — evita barra vazia no topo (sticky ocupa espaço em fluxo) */
+  max-height: 0; overflow: hidden;
+  padding: 0 14px;
+  border-bottom: 1px solid transparent;
+}
+#today-sticky.visible {
+  opacity: 1; pointer-events: auto;
+  max-height: 48px; padding: 9px 14px;
+  border-bottom-color: var(--border);
+}
 /* bar fills (shared, used by other views) */
 .mbt { background: var(--surface3); border-radius: 999px; overflow: hidden; }
 .mbt-primary { height: 8px; margin-top: 0; }

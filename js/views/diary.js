@@ -89,26 +89,64 @@ function renderToday(entries, t) {
     el.onclick = () => openNutrientSheet(diaryEntries, n);
   });
 
-  // ── STICKY MACRO BAR (aparece quando o header de macros sai do viewport) ──
+  // ── STICKY MACRO BAR (dois chips: calorias + macros) ──
   const sticky = document.getElementById('today-sticky');
   if (sticky) {
-    const group = inner =>
-      `<span style="display:inline-flex;align-items:baseline;gap:3px">${inner}</span>`;
-    const macroChip = (lbl, val, color, target) => group(
-      `<span style="color:var(--text3);font-size:10px">${lbl}</span>` +
-      `<span style="color:${color};font-size:13px">${val}</span>` +
-      (hasTargets ? `<span style="color:var(--text3);font-size:10px">/${r(target)}</span>` : '')
-    );
-    const sep = `<span style="color:var(--text3)">·</span>`;
-    const kcalGroup = group(
-      `<span style="color:var(--accent);font-size:15px;font-weight:500">${kcalNum}</span>` +
-      (hasTargets ? `<span style="color:var(--text3);font-size:11px">/${t.calories}</span>` : '')
-    );
-    sticky.innerHTML =
-      kcalGroup + sep +
-      macroChip('F', r(tot.fat),  'var(--orange)', t.fat) + sep +
-      macroChip('C', r(tot.carb), 'var(--yellow)', t.carbs) + sep +
-      macroChip('P', r(tot.prot), 'var(--blue)',   t.protein);
+    // CHIP 1 — calorias
+    const kCol = hasTargets ? getNutrientColor('calories', kcalPct) : 'var(--accent)';
+    let kcalRight = '';
+    if (hasTargets) {
+      const diff = t.calories - kcalNum;
+      const restHTML = diff >= 0
+        ? `<span style="color:var(--accent)">${diff}↓</span>`
+        : `<span style="color:var(--red)">+${Math.abs(diff)}↑</span>`;
+      kcalRight = `<span style="display:inline-flex;align-items:baseline;gap:6px;font-size:11px">${restHTML}<span style="color:${kCol}">${Math.round(kcalPct)}%</span></span>`;
+    }
+    const kcalBar = hasTargets
+      ? `<div style="height:3px;border-radius:2px;background:var(--surface2);overflow:hidden;margin-top:6px"><div style="height:100%;width:${Math.min(100, kcalPct).toFixed(1)}%;background:${kCol}"></div></div>`
+      : '';
+    const chip1 = `
+      <div style="background:var(--surface);border-radius:10px;padding:9px 12px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <span style="display:inline-flex;align-items:baseline;gap:4px">
+            <span style="color:var(--accent);font-size:15px;font-weight:500">${kcalNum}</span>
+            <span style="color:var(--text3);font-size:11px">${hasTargets ? '/' + t.calories + ' KCAL' : 'KCAL'}</span>
+          </span>
+          ${kcalRight}
+        </div>
+        ${kcalBar}
+      </div>`;
+
+    // CHIP 2 — macros (FAT / CARBS / PROT)
+    const macroCol = (key, label, val, color, target) => {
+      const pct = (hasTargets && target > 0) ? val / target * 100 : null;
+      const pctHTML = pct !== null
+        ? `<span style="font-size:9px;color:${getNutrientColor(key, pct)}">${Math.round(pct)}%</span>`
+        : '';
+      const tgtHTML = hasTargets ? `<span style="font-size:10px;color:var(--text3)">/${r(target)}</span>` : '';
+      return `
+        <div style="flex:1;min-width:0;padding:0 10px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <span style="font-size:9px;color:var(--text3)">${label}</span>
+            ${pctHTML}
+          </div>
+          <div style="display:flex;align-items:baseline;gap:3px;margin-top:2px">
+            <span style="font-size:15px;color:${color}">${r(val)}</span>
+            ${tgtHTML}
+          </div>
+        </div>`;
+    };
+    const sepV = `<div style="width:1px;align-self:stretch;background:var(--border)"></div>`;
+    const chip2 = `
+      <div style="background:var(--surface);border-radius:10px;padding:9px 0;display:flex;align-items:stretch">
+        ${macroCol('fat',     'FAT',   tot.fat,  'var(--orange)', t.fat)}
+        ${sepV}
+        ${macroCol('carbs',   'CARBS', tot.carb, 'var(--yellow)', t.carbs)}
+        ${sepV}
+        ${macroCol('protein', 'PROT',  tot.prot, 'var(--blue)',   t.protein)}
+      </div>`;
+
+    sticky.innerHTML = chip1 + chip2;
     setupTodaySticky();
   }
 
@@ -132,9 +170,9 @@ function renderToday(entries, t) {
     const lockIcon = locked
       ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'
       : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>';
-    const rightAction = locked
-      ? '<span class="meal-locked-label">Locked</span>'
-      : '<span class="meal-log-label">+ LOG</span>';
+    const rightAction = !locked
+      ? '<span class="meal-log-label">+ LOG</span>'
+      : (mes.length > 0 ? '<span class="meal-locked-label">Locked</span>' : '');
     div.innerHTML = `
       <div class="meal-header">
         <div class="meal-header-left">
@@ -209,11 +247,20 @@ function setupTodaySticky() {
   const view   = document.getElementById('view-today');
   const sticky = document.getElementById('today-sticky');
   if (!view || !sticky) return;
+  // A barra está sempre em fluxo (1º filho sticky) → anula a sua altura via
+  // margin-bottom negativo para não deixar gap no topo quando opacity 0.
+  sticky.style.marginBottom = (-sticky.offsetHeight) + 'px';
   const update = () => {
     const macro = view.querySelector('.macro-summary');
     if (!macro) return;
-    const passed = macro.getBoundingClientRect().bottom <= view.getBoundingClientRect().top;
-    sticky.classList.toggle('visible', passed);
+    const macroRect = macro.getBoundingClientRect();
+    const viewRect  = view.getBoundingClientRect();
+    // Fade gradual à medida que o bottom do macro sobe até ao topo do view.
+    const fadeStart = viewRect.top + macro.offsetHeight;
+    const progress  = (fadeStart - macroRect.bottom) / macro.offsetHeight;
+    const opacity   = Math.min(1, Math.max(0, progress));
+    sticky.style.opacity = opacity;
+    sticky.style.pointerEvents = opacity > 0.5 ? 'auto' : 'none';
   };
   if (!_todayStickyBound) {
     view.addEventListener('scroll', update, { passive: true });

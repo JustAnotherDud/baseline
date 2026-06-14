@@ -2,6 +2,24 @@ let loadTotalsGen = 0;
 let lastSearchResults = [];
 let expandedGroups = new Set();
 
+// ── TARA (peso do recipiente) ─────────────────────────────────────────────────
+// Flag opcional do registo de log; reset a cada abertura do sheet / backToSearch.
+let logHasTara = false;
+function setLogTaraUI() {
+  const box = document.getElementById('log-tara-box');
+  const lbl = document.getElementById('log-tara-label');
+  if (box) box.classList.toggle('checked', logHasTara);
+  if (lbl) lbl.classList.toggle('checked', logHasTara);
+}
+function toggleLogTara() {
+  logHasTara = !logHasTara;
+  setLogTaraUI();
+}
+function resetLogTara() {
+  logHasTara = false;
+  setLogTaraUI();
+}
+
 // Debounce da pesquisa: 1 query depois de o utilizador parar de escrever,
 // em vez de 1 por tecla. Input vazio limpa imediatamente (sem esperar).
 let _searchDebT = null;
@@ -174,6 +192,7 @@ function backToSearch() {
   document.getElementById('log-stage-search').classList.add('active');
   document.getElementById('log-stage-grams').classList.remove('active');
   selectedFood=null;
+  resetLogTara();
   const infoEl = document.getElementById('dose-info');
   if (infoEl) infoEl.textContent = '';
 }
@@ -384,10 +403,11 @@ async function handleSaveDiary() {
     const parsed = parseGramsExpr(rawGrams);
     if (!parsed || parsed <= 0) { toast('Quantidade inválida'); return; }
     document.getElementById('log-grams').value = parsed;
-    const ok = await saveDiary();
+    const ok = await saveDiary({ has_tara: logHasTara });
     if (!ok) return;
     // Reset UI — voltar ao stage de pesquisa sem fechar o sheet
     selectedFood = null;
+    resetLogTara();
     document.getElementById('log-stage-grams').classList.remove('active');
     document.getElementById('log-stage-search').classList.add('active');
     document.getElementById('log-q').value = '';

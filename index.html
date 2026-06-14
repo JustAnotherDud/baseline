@@ -19,7 +19,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
           integrity="sha384-bs/nf9FbdNouRbMiFcrcZfLXYPKiPaGVGplVbv7dLGECccEXDW+S3zjqSKR5ZEaD"
           crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="css/styles.css?v=20260614c">
+  <link rel="stylesheet" href="css/styles.css?v=20260614d">
 </head>
 <body>
 
@@ -410,6 +410,10 @@
               <button type="button" class="btn btn-secondary" style="flex:1;padding:8px 0;font-size:16px;min-height:44px" onclick="insertOperator('log-grams','/')">÷</button>
             </div>
           </label>
+          <div class="tara-check-row" onclick="toggleLogTara()">
+            <span class="tara-box" id="log-tara-box"></span>
+            <span class="tara-check-label" id="log-tara-label">Tem tara</span>
+          </div>
           <div class="macro-preview" style="flex-wrap:wrap;gap:6px">
             <div class="mp-chip"><div class="mp-val kcal" id="prev-kcal">0</div><div class="mp-lbl">kcal</div></div>
             <div class="mp-chip"><div class="mp-val g" id="prev-fat">0</div><div class="mp-lbl">fat</div></div>
@@ -504,6 +508,10 @@
         </div>
         <button type="button" id="edit-portion-btn" class="btn btn-secondary" style="display:none;margin-top:8px;padding:8px 14px;font-size:13px;width:auto"></button>
       </label>
+      <div class="tara-check-row" onclick="toggleEditTara()">
+        <span class="tara-box" id="edit-tara-box"></span>
+        <span class="tara-check-label" id="edit-tara-label">Tem tara</span>
+      </div>
       <div class="macro-preview" style="flex-wrap:wrap;gap:6px" id="edit-preview">
         <div class="mp-chip"><div class="mp-val kcal" id="ep-kcal">0</div><div class="mp-lbl">kcal</div></div>
         <div class="mp-chip"><div class="mp-val g"    id="ep-fat">0</div><div class="mp-lbl">fat</div></div>
@@ -526,17 +534,17 @@
 
 <div id="toast" aria-live="polite"></div>
 
-<script src="js/config.js?v=20260614c"></script>
-<script src="js/nutrition.js?v=20260614c"></script>
-<script src="js/db.js?v=20260614c"></script>
-<script src="js/ui.js?v=20260614c"></script>
-<script src="js/views/diary.js?v=20260614c-6"></script>
-<script src="js/views/log.js?v=20260614c"></script>
-<script src="js/views/foods.js?v=20260614c-6"></script>
-<script src="js/views/meals.js?v=20260614c"></script>
-<script src="js/views/targets.js?v=20260614c"></script>
-<script src="js/views/stats.js?v=20260614c-5"></script>
-<script src="js/views/body.js?v=20260614c"></script>
-<script src="js/app.js?v=20260614c"></script>
+<script src="js/config.js?v=20260614d"></script>
+<script src="js/nutrition.js?v=20260614d"></script>
+<script src="js/db.js?v=20260614d"></script>
+<script src="js/ui.js?v=20260614d"></script>
+<script src="js/views/diary.js?v=20260614d-6"></script>
+<script src="js/views/log.js?v=20260614d"></script>
+<script src="js/views/foods.js?v=20260614d-6"></script>
+<script src="js/views/meals.js?v=20260614d"></script>
+<script src="js/views/targets.js?v=20260614d"></script>
+<script src="js/views/stats.js?v=20260614d-5"></script>
+<script src="js/views/body.js?v=20260614d"></script>
+<script src="js/app.js?v=20260614d"></script>
 </body>
 </html>

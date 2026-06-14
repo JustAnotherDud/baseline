@@ -35,7 +35,7 @@ function renderToday(entries, t) {
     const restHTML = diff >= 0
       ? `<span style="font-size:12px;color:var(--text2)">${diff}↓ rest.</span>`
       : `<span style="font-size:12px;color:var(--accent)">+${Math.abs(diff)} excesso</span>`;
-    kcalLine2 = `<div style="display:flex;justify-content:flex-end;align-items:baseline;gap:6px;margin-top:4px;font-family:var(--mono)">${restHTML}<span style="font-size:12px;color:var(--text3)">${pct}%</span></div>`;
+    kcalLine2 = `<div style="display:flex;justify-content:flex-start;align-items:baseline;gap:6px;margin-top:4px;font-family:var(--mono)">${restHTML}<span style="font-size:12px;color:var(--text3)">${pct}%</span></div>`;
   }
 
   // ── MACROS (grid) ──
@@ -70,12 +70,16 @@ function renderToday(entries, t) {
 
   const summary = document.querySelector('#view-today .macro-summary');
   summary.innerHTML = `
-    <div class="diary-kcal-row">
-      <span class="diary-kcal-num" id="tot-kcal" style="color:${kcalColor}">${kcalNum}</span>
-      <span class="diary-kcal-tgt" style="cursor:pointer" onclick="go('targets')" title="Ver targets">${hasTargets ? '/ ' + t.calories + ' kcal' : 'kcal'}</span>
+    <div style="display:flex;gap:16px;align-items:flex-start">
+      <div style="flex-shrink:0">
+        <div class="diary-kcal-row" style="justify-content:flex-start;align-items:baseline;gap:6px">
+          <span class="diary-kcal-num" id="tot-kcal" style="font-size:30px;color:${kcalColor}">${kcalNum}</span>
+          <span class="diary-kcal-tgt" style="cursor:pointer" onclick="go('targets')" title="Ver targets">${hasTargets ? '/ ' + t.calories + ' kcal' : 'kcal'}</span>
+        </div>
+        ${kcalLine2}
+      </div>
+      <div id="bar-kcal-wrap" style="flex:1;min-width:0;padding-top:6px">${kcalBar}</div>
     </div>
-    ${kcalLine2}
-    <div id="bar-kcal-wrap">${kcalBar}</div>
     <div class="macro-grid">${cellsHTML}</div>`;
 
   // Tap handlers → open nutrient ranking

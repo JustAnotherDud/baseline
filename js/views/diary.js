@@ -239,34 +239,33 @@ function renderToday(entries, t) {
   });
 }
 
-// Revela a barra sticky quando o bloco de macros (.macro-summary) passa acima
-// do topo do scroll container (#view-today). Scroll listener (determinístico) —
-// o IntersectionObserver com root explícito não disparava de forma fiável aqui.
-let _todayStickyBound = false;
+// Barra fixa (position:fixed) que aparece ao fazer scroll do #view-today.
+// Opacidade calculada a partir do scrollTop vs. fundo do bloco de macros.
 function setupTodaySticky() {
-  const view   = document.getElementById('view-today');
   const sticky = document.getElementById('today-sticky');
-  if (!view || !sticky) return;
-  // A barra está sempre em fluxo (1º filho sticky) → anula a sua altura via
-  // margin-bottom negativo para não deixar gap no topo quando opacity 0.
-  sticky.style.marginBottom = (-sticky.offsetHeight) + 'px';
-  const update = () => {
-    const macro = view.querySelector('.macro-summary');
-    if (!macro) return;
-    const macroRect = macro.getBoundingClientRect();
-    const viewRect  = view.getBoundingClientRect();
-    // Fade gradual à medida que o bottom do macro sobe até ao topo do view.
-    const fadeStart = viewRect.top + macro.offsetHeight;
-    const progress  = (fadeStart - macroRect.bottom) / macro.offsetHeight;
-    const opacity   = Math.min(1, Math.max(0, progress));
+  const view   = document.getElementById('view-today');
+  const macro  = view ? view.querySelector('.macro-summary') : null;
+  if (!sticky || !view || !macro) return;
+
+  // remover listener anterior se existir
+  if (view._stickyListener) {
+    view.removeEventListener('scroll', view._stickyListener);
+  }
+
+  view._stickyListener = function() {
+    const scrolled = view.scrollTop;
+    const macroBottom = macro.offsetTop + macro.offsetHeight;
+    // começa a aparecer quando o topo do scroll passa o fundo do macro
+    const fadeRange = macro.offsetHeight * 0.5;
+    const progress = (scrolled - (macroBottom - fadeRange)) / fadeRange;
+    const opacity = Math.min(1, Math.max(0, progress));
     sticky.style.opacity = opacity;
     sticky.style.pointerEvents = opacity > 0.5 ? 'auto' : 'none';
   };
-  if (!_todayStickyBound) {
-    view.addEventListener('scroll', update, { passive: true });
-    _todayStickyBound = true;
-  }
-  update();
+
+  view.addEventListener('scroll', view._stickyListener);
+  // estado inicial
+  view._stickyListener();
 }
 
 function setDateLabel() {

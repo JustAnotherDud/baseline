@@ -92,24 +92,16 @@ body {
 /* ── MACRO SUMMARY ── */
 .macro-summary { padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 0; border-bottom: 1px solid var(--border); }
 
-/* ── Sticky macro bar (#view-today) ── */
+/* ── Sticky macro bar (#view-today) — opacity controlada por JS no scroll ── */
 #today-sticky {
   position: sticky; top: 0; z-index: 10;
-  display: flex; align-items: baseline; gap: 6px;
-  font-family: var(--mono); white-space: nowrap;
+  display: flex; flex-direction: column; gap: 6px;
+  font-family: var(--mono);
   background: #141414;
+  border-bottom: 1px solid var(--border);
+  padding: 8px 12px;
+  overflow: hidden;
   opacity: 0; pointer-events: none;
-  transition: opacity 0.15s ease;
-  /* colapsado quando escondido — evita barra vazia no topo (sticky ocupa espaço em fluxo) */
-  max-height: 0; overflow: hidden;
-  padding: 0 14px;
-  border-bottom: 1px solid transparent;
-}
-#today-sticky.visible {
-  opacity: 1; pointer-events: auto;
-  max-height: none; height: auto; overflow: visible;
-  padding: 9px 14px;
-  border-bottom-color: var(--border);
 }
 /* bar fills (shared, used by other views) */
 .mbt { background: var(--surface3); border-radius: 999px; overflow: hidden; }

@@ -226,6 +226,11 @@ body {
 .meal-header-left { flex: 3; padding: 8px 0 8px 14px; background: var(--surface2); min-height: 52px; cursor: pointer; display: flex; flex-direction: column; justify-content: center; }
 .meal-header-right { flex: 1; padding: 12px 20px 12px 12px; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--accent-a06); border-left: 1px solid var(--border); min-height: 52px; cursor: pointer; }
 .meal-header-right:active { background: var(--accent-a12); }
+.meal-lock-btn { flex-shrink: 0; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; background: var(--surface3); border: 1px solid var(--border); border-radius: 8px; color: var(--text3); cursor: pointer; }
+.meal-lock-btn svg { width: 15px; height: 15px; }
+.meal-lock-btn.locked { background: #1f2a1f; border-color: #2d4a2d; color: var(--accent); }
+.meal-log-label { color: var(--accent); font-family: var(--mono); font-size: 13px; letter-spacing: .06em; }
+.meal-locked-label { color: var(--text3); font-family: var(--mono); font-size: 13px; letter-spacing: .06em; }
 .meal-head-line { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; overflow: hidden; }
 .meal-name { font-size: 12px; font-family: var(--mono); color: var(--text); font-weight: 500; text-transform: uppercase; letter-spacing: .12em; }
 .meal-kcal-val { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent); }

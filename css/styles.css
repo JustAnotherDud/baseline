@@ -79,7 +79,9 @@ body {
 .view-sub { font-family: var(--mono); font-size: 12px; color: var(--text2); margin-top: 3px; }
 
 /* ── DIARY HEADER ── */
-.diary-header { align-items: flex-start; }
+/* já é sticky/top:0/bg via .view-header — só elevar acima dos chips fixos
+   (#today-sticky z-index:100) para o header da data ficar sempre visível */
+.diary-header { align-items: flex-start; z-index: 99; }
 .diary-head-eyebrow { font-family: var(--mono); font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: .2em; }
 .diary-head-date { font-family: var(--sans); font-size: 18px; font-weight: 600; color: var(--text); margin-top: 4px; line-height: 1.1; }
 .diary-head-weekday { font-family: var(--mono); font-size: 10px; color: var(--text3); margin-top: 2px; }

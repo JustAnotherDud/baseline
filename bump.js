@@ -1,11 +1,13 @@
 const fs = require('fs');
-const today = new Date();
-const v = today.getFullYear().toString() +
-  String(today.getMonth()+1).padStart(2,'0') +
-  String(today.getDate()).padStart(2,'0');
+
+// Stamp YYYYMMDD para uma data (default: hoje).
+function todayStamp(d = new Date()) {
+  return d.getFullYear().toString() +
+    String(d.getMonth() + 1).padStart(2, '0') +
+    String(d.getDate()).padStart(2, '0');
+}
 
 // Incremento estilo folha-de-cálculo: '' → 'b' → … → 'z' → 'aa' → 'ab' …
-// (mantém o comportamento antigo até 'z'; só corrige o overflow z→{).
 function incrSuffix(s) {
   if (!s) return 'b';
   const a = s.split('');
@@ -17,25 +19,32 @@ function incrSuffix(s) {
   return 'a' + a.join('');
 }
 
-let html = fs.readFileSync('index.html', 'utf8');
-
-// Detectar o sufixo mais alto de hoje: por comprimento, depois alfabético
-// ('' < 'b' < 'z' < 'aa' < 'ab' …).
-const matches = [...html.matchAll(/\?v=(\d{8})([a-z]*)/g)];
-let newV = v;
-const todays = matches.filter(m => m[1] === v).map(m => m[2]);
-if (todays.length) {
+// Próxima versão dado o HTML actual e o stamp de hoje. Puro (sem IO).
+// Maior sufixo de hoje por comprimento, depois alfabético ('' < 'b' < 'z' < 'aa').
+function nextVersion(html, stamp) {
+  const matches = [...html.matchAll(/\?v=(\d{8})([a-z]*)/g)];
+  const todays = matches.filter(m => m[1] === stamp).map(m => m[2]);
+  if (!todays.length) return stamp;
   const cur = todays.sort((a, b) => a.length - b.length || a.localeCompare(b)).pop();
-  newV = v + incrSuffix(cur);
+  return stamp + incrSuffix(cur);
 }
 
-html = html.replace(/\?v=\d{8}[a-z]*/g, `?v=${newV}`);
-fs.writeFileSync('index.html', html);
-console.log(`Bumped all ?v= to ${newV}`);
+function run() {
+  const stamp = todayStamp();
+  let html = fs.readFileSync('index.html', 'utf8');
+  const newV = nextVersion(html, stamp);
+  html = html.replace(/\?v=\d{8}[a-z]*/g, `?v=${newV}`);
+  fs.writeFileSync('index.html', html);
+  console.log(`Bumped all ?v= to ${newV}`);
 
-// Manter APP_VERSION (js/config.js) em sync com a versão dos scripts.
-const cfgPath = 'js/config.js';
-let cfg = fs.readFileSync(cfgPath, 'utf8');
-cfg = cfg.replace(/const APP_VERSION = '[^']*';/, `const APP_VERSION = '${newV}';`);
-fs.writeFileSync(cfgPath, cfg);
-console.log(`APP_VERSION → ${newV}`);
+  // Manter APP_VERSION (js/config.js) em sync com a versão dos scripts.
+  const cfgPath = 'js/config.js';
+  let cfg = fs.readFileSync(cfgPath, 'utf8');
+  cfg = cfg.replace(/const APP_VERSION = '[^']*';/, `const APP_VERSION = '${newV}';`);
+  fs.writeFileSync(cfgPath, cfg);
+  console.log(`APP_VERSION → ${newV}`);
+}
+
+if (require.main === module) run();
+
+module.exports = { incrSuffix, nextVersion, todayStamp };

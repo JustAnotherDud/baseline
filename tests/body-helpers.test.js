@@ -79,7 +79,8 @@ test("bodyFilterByPeriod('week') inclui hoje e today-7, exclui today-8", () => {
     { date: '2026-06-06' }, // exactamente no cutoff → INCLUÍDO (>=)
     { date: '2026-06-05' }, // antes do cutoff → excluído
   ];
-  const result = bodyFilterByPeriod(rows, 'week');
+  const fakeToday = new Date('2026-06-13T12:00:00');
+  const result = bodyFilterByPeriod(rows, 'week', fakeToday);
   assert.equal(result.length, 3);
   assert.deepEqual(result.map(r => r.date), ['2026-06-13', '2026-06-10', '2026-06-06']);
 });

@@ -1,4 +1,4 @@
-const APP_VERSION = '20260615v';
+const APP_VERSION = '20260615w';
 
 const MEALS = {
   breakfast:   'Pequeno-almoço',

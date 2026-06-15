@@ -24,3 +24,15 @@ function getNutrientColor(nutrient, pct) {
       return 'var(--accent)';
   }
 }
+
+// Estado de um macro "floor" (proteína/gordura) para a célula do diário.
+// floor é um mínimo, não um teto. Devolve null se não houver floor válido.
+// status: 'below' (abaixo do mínimo) | 'over' (só gordura, >90g) | 'met'.
+function macroFloorState(key, actual, floor) {
+  if (!(floor > 0)) return null;
+  const val = Math.round(actual);
+  const pct = Math.round(actual / floor * 100);
+  if (val < floor)               return { status: 'below', pct, deficit: Math.round(floor - actual) };
+  if (key === 'fat' && val > 90) return { status: 'over', pct };
+  return { status: 'met', pct };
+}

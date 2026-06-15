@@ -90,7 +90,7 @@ body {
 .diary-date-month { font-family: var(--mono); font-size: 9px; color: var(--accent); letter-spacing: .06em; padding: 0 8px; cursor: pointer; }
 
 /* ── MACRO SUMMARY ── */
-.macro-summary { padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 0; border-bottom: 1px solid var(--border); }
+.macro-summary { padding: 16px 20px 10px; display: flex; flex-direction: column; gap: 0; border-bottom: 1px solid var(--border); }
 
 /* Header da data + resumo de macros pinados sempre no topo do #view-today.
    O .view-header interno fica estático (a stickiness é do wrapper). */
@@ -225,7 +225,7 @@ body {
 }
 
 /* ── MEAL SECTIONS ── */
-#diary-container { padding-top: 10px; }
+#diary-container { padding-top: 2px; }
 .meal-section { border-radius: 12px; overflow: hidden; margin: 8px 12px; border: 1px solid var(--border); }
 .meal-header { display: flex; align-items: stretch; border-top: 1px solid var(--surface3); }
 .meal-header-left { flex: 1; padding: 8px 0 8px 14px; background: var(--surface2); min-height: 52px; cursor: pointer; display: flex; flex-direction: column; justify-content: center; }
@@ -666,7 +666,7 @@ input[type="number"] { font-family: var(--mono); }
   .setup-sub { font-size: 16px; }
   .setup-logo { font-size: 13px; }
   .meal-card { border-radius: 18px; }
-  .macro-summary { padding: 20px 24px; }
+  .macro-summary { padding: 16px 24px 10px; }
   .view-header { padding: 22px 24px 14px; }
   .meal-header-left { padding: 14px 0 12px 24px; }
   .meal-header-right { padding: 14px 24px 12px 12px; }

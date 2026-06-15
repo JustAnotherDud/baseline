@@ -60,15 +60,13 @@ function renderToday(entries, t) {
       // Floor (P/F): abaixo → restante + %; atingido → só ✓; fat >90 sinaliza.
       const tgtHTML = hasTargets ? `<span class="macro-cell-tgt" style="color:var(--text3)">≥${m.floor}</span>` : '';
       valLine = `<span class="macro-cell-val" style="color:${m.color}">${val}</span>${tgtHTML}`;
-      if (hasTargets && m.floor > 0) {
-        const pct = Math.round(rawPct(m.actual, m.floor));
-        if (val < m.floor) {
-          topRight = `<span style="display:inline-flex;align-items:baseline;gap:4px;font-family:var(--mono)"><span style="font-size:10px;color:var(--red)">−${r(m.floor - m.actual)} ↓</span><span style="font-size:10px;color:var(--text3)">${pct}%</span></span>`;
-        } else if (m.key === 'fat' && val > 90) {
-          topRight = `<span style="font-size:10px;color:var(--red);font-family:var(--mono)">&gt;90 ↑</span>`;
-        } else {
-          topRight = `<span style="font-size:11px;color:var(--accent);font-family:var(--mono)">✓</span>`;
-        }
+      const st = hasTargets ? macroFloorState(m.key, m.actual, m.floor) : null;
+      if (st && st.status === 'below') {
+        topRight = `<span style="display:inline-flex;align-items:baseline;gap:4px;font-family:var(--mono)"><span style="font-size:10px;color:var(--red)">−${st.deficit} ↓</span><span style="font-size:10px;color:var(--text3)">${st.pct}%</span></span>`;
+      } else if (st && st.status === 'over') {
+        topRight = `<span style="font-size:10px;color:var(--red);font-family:var(--mono)">&gt;90 ↑</span>`;
+      } else if (st) {
+        topRight = `<span style="font-size:11px;color:var(--accent);font-family:var(--mono)">✓</span>`;
       }
     }
 

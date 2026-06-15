@@ -38,31 +38,45 @@ function renderToday(entries, t) {
   }
 
   // ── MACROS (grid) ──
+  // Hierarquia: P e F são floors mínimos (passar é ok, abaixo é o sinal);
+  // hidratos é residual (o que sobra, nunca sinalizado). Ver PRODUCT.md.
   const macros = [
-    { key: 'fat',     label: 'FAT',   actual: tot.fat,  target: t.fat,     color: 'var(--orange)' },
-    { key: 'carbs',   label: 'CARBS', actual: tot.carb, target: t.carbs,   color: 'var(--yellow)' },
-    { key: 'protein', label: 'PROT',  actual: tot.prot, target: t.protein, color: 'var(--blue)'   },
+    { key: 'fat',     label: 'FAT',   actual: tot.fat,  floor: t.fat,     color: 'var(--orange)', role: 'floor'    },
+    { key: 'carbs',   label: 'CARBS', actual: tot.carb,                   color: 'var(--yellow)', role: 'residual' },
+    { key: 'protein', label: 'PROT',  actual: tot.prot, floor: t.protein, color: 'var(--blue)',   role: 'floor'    },
   ];
   const cellsHTML = macros.map((m, i) => {
     const pad = i === 0 ? 'padding-right:8px' : 'padding-left:10px;padding-right:4px';
-    const tgtHTML = hasTargets ? `<span class="macro-cell-tgt" style="color:var(--text3)">/${m.target}g</span>` : '';
-    // Linha 1 (junto ao nome): restante / excesso + percentagem
-    let restPct = '';
-    if (hasTargets) {
-      const diff = r(m.target - m.actual);
-      const pct  = Math.round(rawPct(m.actual, m.target));
-      const restHTML = diff >= 0
-        ? `<span style="font-size:10px;color:var(--text2)">${diff}↓</span>`
-        : `<span style="font-size:10px;color:${m.color}">+${Math.abs(diff)}↑</span>`;
-      restPct = `<span style="display:inline-flex;align-items:baseline;gap:4px;font-family:var(--mono)">${restHTML}<span style="font-size:10px;color:var(--text3)">${pct}%</span></span>`;
+    const val = r(m.actual);
+    let topRight = '';   // linha 1, junto ao nome
+    let valLine  = '';   // linha 2
+
+    if (m.role === 'residual') {
+      // Hidratos: o que sobra — número muted, sem floor/%, nunca sinalizado.
+      topRight = `<span style="font-size:10px;color:var(--text3);font-family:var(--mono)">residual</span>`;
+      valLine  = `<span class="macro-cell-val" style="color:var(--text3)">${val}</span>`;
+    } else {
+      // Floor (P/F): ✓ se atingido, −Xg se abaixo; gordura >90 sinaliza sempre.
+      const tgtHTML = hasTargets ? `<span class="macro-cell-tgt" style="color:var(--text3)">≥${m.floor}</span>` : '';
+      valLine = `<span class="macro-cell-val" style="color:${m.color}">${val}</span>${tgtHTML}`;
+      if (hasTargets) {
+        if (val < m.floor) {
+          topRight = `<span style="font-size:10px;color:var(--red);font-family:var(--mono)">−${r(m.floor - m.actual)} ↓</span>`;
+        } else if (m.key === 'fat' && val > 90) {
+          topRight = `<span style="font-size:10px;color:var(--red);font-family:var(--mono)">&gt;90 ↑</span>`;
+        } else {
+          topRight = `<span style="font-size:10px;color:var(--accent);font-family:var(--mono)">✓ floor</span>`;
+        }
+      }
     }
+
     return `<div class="macro-cell" data-nutrient="${m.key}" style="${pad}">
       <div style="display:flex;justify-content:space-between;align-items:baseline">
         <span class="macro-cell-label">${m.label}</span>
-        ${restPct}
+        ${topRight}
       </div>
       <div style="display:flex;align-items:baseline;gap:2px;margin-top:3px">
-        <span class="macro-cell-val" style="color:${m.color}">${r(m.actual)}</span>${tgtHTML}
+        ${valLine}
       </div>
     </div>`;
   }).join('');

@@ -27,15 +27,14 @@ function renderToday(entries, t) {
   const kcalNum = r(tot.kcal);
   const kcalPct = rawPct(tot.kcal, t.calories);
   const kcalColor = (hasTargets && hasData) ? getNutrientColor('calories', kcalPct) : 'var(--accent)';
-  const kcalBar = hasTargets ? buildSegmentedBar(tot.kcal, t.calories, 'calories') : '';
-  let kcalLine2 = '';
+  let kcalRight = '';
   if (hasTargets) {
     const diff = t.calories - kcalNum;
     const pct  = Math.round(kcalPct);
     const restHTML = diff >= 0
-      ? `<span style="font-size:12px;color:var(--text2)">${diff}↓ rest.</span>`
-      : `<span style="font-size:12px;color:var(--accent)">+${Math.abs(diff)} excesso</span>`;
-    kcalLine2 = `<div style="display:flex;justify-content:flex-start;align-items:baseline;gap:6px;margin-top:4px;font-family:var(--mono)">${restHTML}<span style="font-size:12px;color:var(--text3)">${pct}%</span></div>`;
+      ? `<span style="color:var(--text2)">${diff}↓ rest.</span>`
+      : `<span style="color:var(--accent)">+${Math.abs(diff)} excesso</span>`;
+    kcalRight = `<span style="margin-left:auto;display:inline-flex;align-items:baseline;gap:6px;font-size:12px;font-family:var(--mono)">${restHTML}<span style="color:var(--text3)">${pct}%</span></span>`;
   }
 
   // ── MACROS (grid) ──
@@ -47,7 +46,6 @@ function renderToday(entries, t) {
   const cellsHTML = macros.map((m, i) => {
     const pad = i === 0 ? 'padding-right:8px' : 'padding-left:10px;padding-right:4px';
     const tgtHTML = hasTargets ? `<span class="macro-cell-tgt" style="color:var(--text3)">/${m.target}g</span>` : '';
-    const bar = hasTargets ? buildSegmentedBar(m.actual, m.target, m.key) : '';
     // Line 2: remaining / excess + percentage
     let line2 = '';
     if (hasTargets) {
@@ -64,21 +62,15 @@ function renderToday(entries, t) {
         <span style="display:flex;align-items:baseline;gap:2px"><span class="macro-cell-val" style="color:${m.color}">${r(m.actual)}</span>${tgtHTML}</span>
       </div>
       ${line2}
-      ${bar}
     </div>`;
   }).join('');
 
   const summary = document.querySelector('#view-today .macro-summary');
   summary.innerHTML = `
-    <div style="display:flex;gap:16px;align-items:flex-start">
-      <div style="flex-shrink:0">
-        <div class="diary-kcal-row" style="justify-content:flex-start;align-items:baseline;gap:6px">
-          <span class="diary-kcal-num" id="tot-kcal" style="font-size:30px;color:${kcalColor}">${kcalNum}</span>
-          <span class="diary-kcal-tgt" style="cursor:pointer" onclick="go('targets')" title="Ver targets">${hasTargets ? '/ ' + t.calories + ' kcal' : 'kcal'}</span>
-        </div>
-        ${kcalLine2}
-      </div>
-      <div id="bar-kcal-wrap" style="flex:1;min-width:0;padding-top:6px">${kcalBar}</div>
+    <div class="diary-kcal-row" style="justify-content:flex-start;align-items:baseline;gap:8px">
+      <span class="diary-kcal-num" id="tot-kcal" style="font-size:28px;color:${kcalColor}">${kcalNum}</span>
+      <span class="diary-kcal-tgt" style="cursor:pointer" onclick="go('targets')" title="Ver targets">${hasTargets ? '/ ' + t.calories + ' kcal' : 'kcal'}</span>
+      ${kcalRight}
     </div>
     <div class="macro-grid">${cellsHTML}</div>`;
 

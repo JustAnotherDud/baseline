@@ -79,9 +79,7 @@ body {
 .view-sub { font-family: var(--mono); font-size: 12px; color: var(--text2); margin-top: 3px; }
 
 /* ── DIARY HEADER ── */
-/* já é sticky/top:0/bg via .view-header — só elevar acima dos chips fixos
-   (#today-sticky z-index:100) para o header da data ficar sempre visível */
-.diary-header { align-items: flex-start; z-index: 99; }
+.diary-header { align-items: flex-start; }
 .diary-head-eyebrow { font-family: var(--mono); font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: .2em; }
 .diary-head-date { font-family: var(--sans); font-size: 18px; font-weight: 600; color: var(--text); margin-top: 4px; line-height: 1.1; }
 .diary-head-weekday { font-family: var(--mono); font-size: 10px; color: var(--text3); margin-top: 2px; }
@@ -94,17 +92,10 @@ body {
 /* ── MACRO SUMMARY ── */
 .macro-summary { padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 0; border-bottom: 1px solid var(--border); }
 
-/* ── Sticky macro bar — position:fixed, opacity por chip controlada por JS ── */
-/* Container transparente: o fundo/borda vivem nas chips (fade independente). */
-#today-sticky {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  display: flex; flex-direction: column; gap: 6px;
-  font-family: var(--mono);
-  background: transparent; border: none;
-  padding: 8px 12px;
-  opacity: 0; pointer-events: none;
-}
-#sticky-chip-kcal, #sticky-chip-macros { opacity: 0; transition: none; }
+/* Header da data + resumo de macros pinados sempre no topo do #view-today.
+   O .view-header interno fica estático (a stickiness é do wrapper). */
+#today-head-sticky { position: sticky; top: 0; z-index: 20; background: var(--bg); }
+#today-head-sticky .view-header { position: static; }
 /* bar fills (shared, used by other views) */
 .mbt { background: var(--surface3); border-radius: 999px; overflow: hidden; }
 .mbt-primary { height: 8px; margin-top: 0; }

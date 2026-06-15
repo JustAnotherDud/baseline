@@ -57,16 +57,18 @@ function renderToday(entries, t) {
       if (pct !== null) topRight = `<span style="font-size:10px;color:var(--text3);font-family:var(--mono)">${pct}%</span>`;
       valLine = `<span class="macro-cell-val" style="color:${m.color}">${val}</span>`;
     } else {
-      // Floor (P/F): % do floor; verde se atingido, vermelho se abaixo (ou fat >90).
+      // Floor (P/F): abaixo → restante + %; atingido → só ✓; fat >90 sinaliza.
       const tgtHTML = hasTargets ? `<span class="macro-cell-tgt" style="color:var(--text3)">≥${m.floor}</span>` : '';
       valLine = `<span class="macro-cell-val" style="color:${m.color}">${val}</span>${tgtHTML}`;
       if (hasTargets && m.floor > 0) {
-        const pct     = Math.round(rawPct(m.actual, m.floor));
-        const below   = val < m.floor;
-        const fatOver = m.key === 'fat' && val > 90;
-        const color   = (below || fatOver) ? 'var(--red)' : 'var(--accent)';
-        const arrow   = below ? ' ↓' : (fatOver ? ' ↑' : '');
-        topRight = `<span style="font-size:10px;color:${color};font-family:var(--mono)">${pct}%${arrow}</span>`;
+        const pct = Math.round(rawPct(m.actual, m.floor));
+        if (val < m.floor) {
+          topRight = `<span style="display:inline-flex;align-items:baseline;gap:4px;font-family:var(--mono)"><span style="font-size:10px;color:var(--red)">−${r(m.floor - m.actual)} ↓</span><span style="font-size:10px;color:var(--text3)">${pct}%</span></span>`;
+        } else if (m.key === 'fat' && val > 90) {
+          topRight = `<span style="font-size:10px;color:var(--red);font-family:var(--mono)">&gt;90 ↑</span>`;
+        } else {
+          topRight = `<span style="font-size:11px;color:var(--accent);font-family:var(--mono)">✓</span>`;
+        }
       }
     }
 

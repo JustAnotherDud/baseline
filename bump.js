@@ -4,23 +4,29 @@ const v = today.getFullYear().toString() +
   String(today.getMonth()+1).padStart(2,'0') +
   String(today.getDate()).padStart(2,'0');
 
+// Incremento estilo folha-de-cálculo: '' → 'b' → … → 'z' → 'aa' → 'ab' …
+// (mantém o comportamento antigo até 'z'; só corrige o overflow z→{).
+function incrSuffix(s) {
+  if (!s) return 'b';
+  const a = s.split('');
+  let i = a.length - 1;
+  while (i >= 0) {
+    if (a[i] === 'z') { a[i] = 'a'; i--; }
+    else { a[i] = String.fromCharCode(a[i].charCodeAt(0) + 1); return a.join(''); }
+  }
+  return 'a' + a.join('');
+}
+
 let html = fs.readFileSync('index.html', 'utf8');
 
-// Detectar versão mais alta actual
+// Detectar o sufixo mais alto de hoje: por comprimento, depois alfabético
+// ('' < 'b' < 'z' < 'aa' < 'ab' …).
 const matches = [...html.matchAll(/\?v=(\d{8})([a-z]*)/g)];
 let newV = v;
-if (matches.length) {
-  const current = matches
-    .map(m => m[1] + m[2])
-    .sort().pop();
-  const curDate = current.slice(0, 8);
-  const curSuffix = current.slice(8);
-  if (curDate === v) {
-    const next = curSuffix
-      ? String.fromCharCode(curSuffix.charCodeAt(0) + 1)
-      : 'b';
-    newV = v + next;
-  }
+const todays = matches.filter(m => m[1] === v).map(m => m[2]);
+if (todays.length) {
+  const cur = todays.sort((a, b) => a.length - b.length || a.localeCompare(b)).pop();
+  newV = v + incrSuffix(cur);
 }
 
 html = html.replace(/\?v=\d{8}[a-z]*/g, `?v=${newV}`);

@@ -47,10 +47,8 @@ Hierarquia de leitura: o valor é `--text` (ou cor semântica), o contexto à vo
 Variantes alfa do accent: `--accent-a06/-a08/-a12` — fundos subtis de zonas tappable relacionadas com a acção primária (`+ LOG`, phase badge). Escala: a06 repouso, a12 pressed.
 
 Cores fora do sistema (usar apenas nos contextos exactos onde já existem):
-- `#f97316` — gordura saturada (`mbf.gs`, segmento central da barra de fat)
-- `#e879f9` — açúcar (`mbf.a`, `.mp-val.a`)
+- `#e879f9` — açúcar (`.mp-val.a`, chip de preview da entrada rápida)
 - `#a3845a` — keyword "Integral" em nomes de alimentos
-- `#22c55e` — centro verde da barra segmentada de calorias
 
 ### 1.4 Vocabulário de macros (imutável)
 
@@ -96,7 +94,7 @@ A hierarquia é transportada por **escala e peso**, não por cor nem decoração
 
 | Nível | Tamanho/peso | Exemplo |
 |---|---|---|
-| Hero | 48px / 600 mono | kcal do dia (`.diary-kcal-num`) |
+| Hero | 36px / 600 mono | kcal do dia no Diário (`.diary-kcal-num`, definido inline; classe base 48px) |
 | Destaque | 42px / 600 mono | kcal na view Targets |
 | Valor de célula | 22px / 600 mono | macros no grid do diário |
 | Valor de chip | 16px / 600 | `.msc` (CTL, peso, etc.) |
@@ -116,7 +114,7 @@ Media query única escala tudo proporcionalmente (~1.4×). Não é um layout nov
 
 ### 3.1 View header (`.view-header`)
 
-Sticky ao topo, `--bg`, border-bottom. Título em `.view-title` (mono 15px uppercase). Views internas (Targets, Stats, Settings) levam botão `←` à esquerda que faz `go('mais')`. O header do Diário é a variante rica: eyebrow + data por extenso + weekday, com pill de navegação temporal à direita.
+Sticky ao topo, `--bg`, border-bottom. Título em `.view-title` (mono 15px uppercase). Views internas (Targets, Stats, Settings) levam botão `←` à esquerda que faz `go('mais')`. O header do Diário é a variante rica (pinada no topo): data por extenso + weekday, com pill de navegação temporal à direita.
 
 ### 3.2 Resumo de macros (header do Diário)
 

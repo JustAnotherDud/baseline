@@ -214,11 +214,10 @@ Lista de atalhos para as views sem botão de nav próprio:
 - **Settings** → `go('settings')`
 
 ### `#view-today` — Diário
-- Calorias em destaque + barra segmentada + `restantes/excesso` + %.
-- Grid de macros (Gordura / Hidratos / Proteína) com barra segmentada por macro.
-- Chip secundário: Fibra.
-- Tap nas barras/células → nutrient ranking sheet.
-- Refeições (7): tap no nome → meal breakdown (donut) ou log se vazia; `+ LOG` → log.
+- Header pinado no topo: data + kcal em destaque (herói 36px) com `restante/excesso` + %.
+- Grid de macros (Gordura / Hidratos / Proteína) com hierarquia floor/residual: P e F são floors (`≥min`, `✓` atingido, `−Xg ↓` abaixo, gordura `>90` sinaliza); Hidratos é residual (só `%`, nunca sinalizado). Ver `PRODUCT.md`.
+- Tap no kcal ou numa célula de macro → nutrient ranking sheet.
+- Refeições (7): tap no nome → meal breakdown (donut) ou log se vazia; `+ LOG` → log. Lock por refeição (localStorage) colapsa e impede edição; entradas com tara mostram `⚖ tem tara`.
 - Tap numa entrada → sheet de edição.
 - Navegação temporal: ‹ › por dia, mês → date picker (com dots de score).
 
@@ -419,7 +418,8 @@ Criar `<div class="sheet-overlay">` dinamicamente uma vez (cache por `id`), `app
 
 **Concluído**
 - Diário, base de alimentos, log (pesquisa/rápida/templates), templates de refeições
-- Targets modulares read-only (DCB → `daily_targets`), barras segmentadas, nutrient ranking, meal breakdown donut
+- Targets modulares read-only (DCB → `daily_targets`), hierarquia floor/residual de macros, nutrient ranking, meal breakdown donut
+- Lock de refeição (localStorage) + flag de tara nas entradas; seletores de refeição gerados de `MEALS`
 - Date picker com score por dia, estatísticas (7/14/30d)
 - Body Comp (Dia + Histórico com charts)
 - **Treino** — integração Intervals.icu (forma, charts CTL/ATL, resumo semanal) — view unificada `#view-forma`

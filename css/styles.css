@@ -90,12 +90,12 @@ body {
 /* ── DIARY HEADER ── */
 .diary-header { align-items: flex-start; }
 .diary-head-date { font-family: var(--sans); font-size: 18px; font-weight: 600; color: var(--text); margin-top: 4px; line-height: 1.1; }
-.diary-head-weekday { font-family: var(--mono); font-size: 10px; color: var(--text3); margin-top: 2px; }
+.diary-head-weekday { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-top: 2px; }
 .diary-date-pill { display: flex; align-items: center; border: 1px solid var(--border); background: var(--surface2); border-radius: 10px; padding: 3px; }
 .diary-date-nav { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: none; border: none; color: var(--text3); font-size: 16px; line-height: 1; cursor: pointer; font-family: var(--mono); }
 .diary-date-nav:active { color: var(--text); }
 .diary-date-pill-sep { width: 1px; height: 14px; background: var(--border); }
-.diary-date-month { font-family: var(--mono); font-size: 9px; color: var(--accent); letter-spacing: .06em; padding: 0 8px; cursor: pointer; }
+.diary-date-month { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: .06em; padding: 0 10px; cursor: pointer; align-self: stretch; display: flex; align-items: center; min-height: 44px; }
 
 /* ── MACRO SUMMARY ── */
 .macro-summary { padding: 16px 20px 10px; display: flex; flex-direction: column; gap: 0; border-bottom: 1px solid var(--border); }
@@ -117,9 +117,9 @@ body {
 .macro-cell:last-child { border-right: none; }
 .macro-cell:nth-child(2), .macro-cell:nth-child(3) { padding-left: 12px; }
 .macro-cell:active { opacity: .8; }
-.macro-cell-label { font-family: var(--mono); font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: .1em; }
+.macro-cell-label { font-family: var(--mono); font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .1em; }
 .macro-cell-val { font-family: var(--mono); font-size: 22px; font-weight: 600; line-height: 1; }
-.macro-cell-tgt { font-family: var(--mono); font-size: 9px; color: var(--text3); }
+.macro-cell-tgt { font-family: var(--mono); font-size: 11px; color: var(--text3); }
 
 /* ── MACRO SECONDARY CHIPS (.msc) — used by Treino wellness/week chips ── */
 .macro-secondary { display: flex; gap: 8px; }
@@ -211,7 +211,9 @@ body {
 .meal-header-right { flex: 0 0 auto; padding: 12px 20px; display: flex; align-items: center; justify-content: center; background: var(--accent-a06); min-height: 52px; cursor: pointer; }
 .meal-header-right:active { background: var(--accent-a12); }
 .meal-header-right.locked, .meal-header-right.locked:active { background: transparent; cursor: default; }
-.meal-lock-btn { flex-shrink: 0; align-self: center; margin: 0 8px; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; background: var(--surface3); border: 1px solid var(--border); border-radius: 8px; color: var(--text3); cursor: pointer; }
+.meal-lock-btn { position: relative; flex-shrink: 0; align-self: center; margin: 0 8px; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; background: var(--surface3); border: 1px solid var(--border); border-radius: 8px; color: var(--text3); cursor: pointer; }
+/* Alvo de toque ≥44×44 (uso a uma mão) sem mudar o visual de 28px. */
+.meal-lock-btn::before { content: ''; position: absolute; inset: -8px; }
 .meal-lock-btn svg { width: 15px; height: 15px; }
 .meal-lock-btn.locked { background: #1f2a1f; border-color: #2d4a2d; color: var(--accent); }
 .meal-log-label { color: var(--accent); font-family: var(--mono); font-size: 13px; letter-spacing: .06em; }
@@ -220,7 +222,7 @@ body {
 .meal-name { font-size: 12px; font-family: var(--mono); color: var(--text); font-weight: 500; text-transform: uppercase; letter-spacing: .12em; }
 .meal-kcal-val { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent); }
 .meal-kcal { font-family: var(--mono); font-size: 13px; color: var(--text); font-weight: 600; }
-.meal-macros { font-family: var(--mono); font-size: 10px; color: var(--text3); margin-top: 3px; }
+.meal-macros { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-top: 3px; }
 
 /* ── MEAL BREAKDOWN SHEET ── */
 .meal-bd-content { padding: 0 0 24px; }

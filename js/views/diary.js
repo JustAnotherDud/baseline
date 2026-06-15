@@ -46,22 +46,24 @@ function renderToday(entries, t) {
   const cellsHTML = macros.map((m, i) => {
     const pad = i === 0 ? 'padding-right:8px' : 'padding-left:10px;padding-right:4px';
     const tgtHTML = hasTargets ? `<span class="macro-cell-tgt" style="color:var(--text3)">/${m.target}g</span>` : '';
-    // Line 2: remaining / excess + percentage
-    let line2 = '';
+    // Linha 1 (junto ao nome): restante / excesso + percentagem
+    let restPct = '';
     if (hasTargets) {
       const diff = r(m.target - m.actual);
       const pct  = Math.round(rawPct(m.actual, m.target));
       const restHTML = diff >= 0
         ? `<span style="font-size:10px;color:var(--text2)">${diff}↓</span>`
         : `<span style="font-size:10px;color:${m.color}">+${Math.abs(diff)}↑</span>`;
-      line2 = `<div style="display:flex;justify-content:flex-end;align-items:baseline;gap:4px;margin-top:3px;font-family:var(--mono)">${restHTML}<span style="font-size:10px;color:var(--text3)">${pct}%</span></div>`;
+      restPct = `<span style="display:inline-flex;align-items:baseline;gap:4px;font-family:var(--mono)">${restHTML}<span style="font-size:10px;color:var(--text3)">${pct}%</span></span>`;
     }
     return `<div class="macro-cell" data-nutrient="${m.key}" style="${pad}">
       <div style="display:flex;justify-content:space-between;align-items:baseline">
         <span class="macro-cell-label">${m.label}</span>
-        <span style="display:flex;align-items:baseline;gap:2px"><span class="macro-cell-val" style="color:${m.color}">${r(m.actual)}</span>${tgtHTML}</span>
+        ${restPct}
       </div>
-      ${line2}
+      <div style="display:flex;align-items:baseline;gap:2px;margin-top:3px">
+        <span class="macro-cell-val" style="color:${m.color}">${r(m.actual)}</span>${tgtHTML}
+      </div>
     </div>`;
   }).join('');
 

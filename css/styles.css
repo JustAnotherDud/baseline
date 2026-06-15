@@ -104,7 +104,8 @@ body {
 /* Header da data + resumo de macros pinados sempre no topo do #view-today.
    O .view-header interno fica estático (a stickiness é do wrapper). */
 #today-head-sticky { position: sticky; top: 0; z-index: 20; background: var(--bg); }
-#today-head-sticky .view-header { position: static; }
+/* A folga da status bar já vem do body (--safe-t) → header com menos padding-top. */
+#today-head-sticky .view-header { position: static; padding-top: 8px; }
 /* bar fills (shared, used by other views) */
 .mbt { background: var(--surface3); border-radius: 999px; overflow: hidden; }
 .mbt-primary { height: 8px; margin-top: 0; }

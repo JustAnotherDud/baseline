@@ -24,5 +24,3 @@ function getNutrientColor(nutrient, pct) {
       return 'var(--accent)';
   }
 }
-
-function getTargets() { return cachedTargets; }

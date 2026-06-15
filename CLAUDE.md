@@ -14,9 +14,12 @@ Para contexto de produto/design, consulta `PRODUCT.md` e `DESIGN.md`.
 
 ```bash
 node --check js/views/ficheiro_alterado.js
-npm test          # deve passar 64 testes
+npm test          # deve passar 80 testes
 node bump.js      # actualiza ?v= timestamps
 ```
+
+O hook `githooks/pre-push` automatiza o `node --check` + `npm test`. Activar uma
+vez por clone: `git config core.hooksPath githooks` (bloqueia o push se falhar).
 
 ## Convenção de linguagem e voz
 

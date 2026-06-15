@@ -1,0 +1,15 @@
+#!/bin/sh
+# Pre-push gate — ritual obrigatório (ver CLAUDE.md): node --check + npm test.
+# Activar uma vez por clone:  git config core.hooksPath githooks
+set -e
+
+echo "[pre-push] node --check em js/..."
+for f in js/*.js js/views/*.js; do
+  [ -e "$f" ] || continue
+  node --check "$f"
+done
+
+echo "[pre-push] npm test..."
+npm test
+
+echo "[pre-push] OK"

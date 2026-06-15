@@ -42,31 +42,31 @@ function renderToday(entries, t) {
   // hidratos é residual (o que sobra, nunca sinalizado). Ver PRODUCT.md.
   const macros = [
     { key: 'fat',     label: 'FAT',   actual: tot.fat,  floor: t.fat,     color: 'var(--orange)', role: 'floor'    },
-    { key: 'carbs',   label: 'CARBS', actual: tot.carb,                   color: 'var(--yellow)', role: 'residual' },
+    { key: 'carbs',   label: 'CARBS', actual: tot.carb, target: t.carbs,  color: 'var(--yellow)', role: 'residual' },
     { key: 'protein', label: 'PROT',  actual: tot.prot, floor: t.protein, color: 'var(--blue)',   role: 'floor'    },
   ];
   const cellsHTML = macros.map((m, i) => {
     const pad = i === 0 ? 'padding-right:8px' : 'padding-left:10px;padding-right:4px';
     const val = r(m.actual);
-    let topRight = '';   // linha 1, junto ao nome
-    let valLine  = '';   // linha 2
+    let topRight = '';   // linha 1, junto ao nome: percentagem
+    let valLine  = '';   // linha 2: valor (cor da macro) + referência
 
     if (m.role === 'residual') {
-      // Hidratos: o que sobra — número muted, sem floor/%, nunca sinalizado.
-      topRight = `<span style="font-size:10px;color:var(--text3);font-family:var(--mono)">residual</span>`;
-      valLine  = `<span class="macro-cell-val" style="color:var(--text3)">${val}</span>`;
+      // Hidratos: cor própria + % informativa (neutra) — nunca sinalizado.
+      const pct = (hasTargets && m.target > 0) ? Math.round(rawPct(m.actual, m.target)) : null;
+      if (pct !== null) topRight = `<span style="font-size:10px;color:var(--text3);font-family:var(--mono)">${pct}%</span>`;
+      valLine = `<span class="macro-cell-val" style="color:${m.color}">${val}</span>`;
     } else {
-      // Floor (P/F): ✓ se atingido, −Xg se abaixo; gordura >90 sinaliza sempre.
+      // Floor (P/F): % do floor; verde se atingido, vermelho se abaixo (ou fat >90).
       const tgtHTML = hasTargets ? `<span class="macro-cell-tgt" style="color:var(--text3)">≥${m.floor}</span>` : '';
       valLine = `<span class="macro-cell-val" style="color:${m.color}">${val}</span>${tgtHTML}`;
-      if (hasTargets) {
-        if (val < m.floor) {
-          topRight = `<span style="font-size:10px;color:var(--red);font-family:var(--mono)">−${r(m.floor - m.actual)} ↓</span>`;
-        } else if (m.key === 'fat' && val > 90) {
-          topRight = `<span style="font-size:10px;color:var(--red);font-family:var(--mono)">&gt;90 ↑</span>`;
-        } else {
-          topRight = `<span style="font-size:10px;color:var(--accent);font-family:var(--mono)">✓ floor</span>`;
-        }
+      if (hasTargets && m.floor > 0) {
+        const pct     = Math.round(rawPct(m.actual, m.floor));
+        const below   = val < m.floor;
+        const fatOver = m.key === 'fat' && val > 90;
+        const color   = (below || fatOver) ? 'var(--red)' : 'var(--accent)';
+        const arrow   = below ? ' ↓' : (fatOver ? ' ↑' : '');
+        topRight = `<span style="font-size:10px;color:${color};font-family:var(--mono)">${pct}%${arrow}</span>`;
       }
     }
 

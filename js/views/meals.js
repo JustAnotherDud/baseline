@@ -287,15 +287,7 @@ async function openApplyMeal(templateId, templateName) {
           <div class="divider"></div>
           <label>
             <span class="lt">Adicionar a</span>
-            <select id="apply-meal-select">
-              <option value="breakfast">Pequeno-almoço</option>
-              <option value="morning">Lanche manhã</option>
-              <option value="lunch">Almoço</option>
-              <option value="afternoon1">Lanche tarde 1</option>
-              <option value="afternoon2">Lanche tarde 2</option>
-              <option value="dinner">Jantar</option>
-              <option value="supper">Ceia</option>
-            </select>
+            <select id="apply-meal-select"></select>
           </label>
           <button class="btn btn-primary" id="apply-meal-btn">Adicionar ao diário</button>
         </div>
@@ -304,6 +296,7 @@ async function openApplyMeal(templateId, templateName) {
     overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('open'); };
     document.getElementById('apply-meal-close').onclick = () => overlay.classList.remove('open');
     document.getElementById('apply-meal-btn').onclick = applyMealToDiary;
+    populateMealSelect(document.getElementById('apply-meal-select'));
   }
 
   document.getElementById('apply-meal-title').textContent = templateName.toUpperCase();

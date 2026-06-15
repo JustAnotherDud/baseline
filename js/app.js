@@ -69,9 +69,12 @@ function pushSheetState() {
 }
 
 function go(view, _pushState = true) {
+  // Hash de view desconhecido (bookmark velho, typo) → cai para 'today'.
+  let viewEl = document.getElementById('view-' + view);
+  if (!viewEl) { view = 'today'; viewEl = document.getElementById('view-today'); }
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('view-'+view).classList.add('active');
+  viewEl.classList.add('active');
   const nb = document.getElementById('nav-'+view);
   if (nb) nb.classList.add('active');
   if (view==='today')    loadToday();

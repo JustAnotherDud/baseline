@@ -53,8 +53,8 @@ baseline/
 ├── css/
 │   └── styles.css              — todos os estilos; sem preprocessor
 ├── js/
-│   ├── config.js               — MEALS (dict), cachedTargets (fallback)
-│   ├── nutrition.js            — getNutrientColor(), getTargets()
+│   ├── config.js               — MEALS (dict)
+│   ├── nutrition.js            — getNutrientColor()
 │   ├── db.js                   — Supabase queries: getTargetsForDate, loadToday,
 │   │                             saveDiary, saveEditEntry, delEntryFromEdit,
 │   │                             getDayScores, getActivePhase, moveEntryToMeal
@@ -322,11 +322,8 @@ const MEALS = {
 };
 ```
 
-### cachedTargets — fallback (`config.js`)
-```js
-let cachedTargets = { calories: 2300, fat: 65, carbs: 254, fiber: 30, protein: 175 };
-```
-Usado por `getTargets()`. Na prática o diário usa `getTargetsForDate(date)` que lê `daily_targets`; se não houver row, a view trata como "sem target".
+### Targets — `getTargetsForDate(date)` (`db.js`)
+O diário usa `getTargetsForDate(date)`, que lê `daily_targets`; se não houver row, a view trata como "sem target".
 
 ### Cores por nutriente (`nutrition.js` — `getNutrientColor`)
 | Nutriente | Verde (accent) | Amarelo | Vermelho |

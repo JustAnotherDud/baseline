@@ -227,13 +227,16 @@ function clearQuick() {
 // Guard: só popula se ainda estiver vazio (não regenera a cada abertura).
 function initMealSelectors() {
   const grid = document.getElementById('meal-selector-grid');
-  if (grid && !grid.hasChildNodes()) {
+  const sel  = document.getElementById('sheet-meal-select');
+
+  // childElementCount ignora whitespace/text nodes (hasChildNodes não).
+  if (grid && grid.childElementCount === 0) {
     buildMealSelectorBtns(grid, 'selectMealFromSelector');
   }
-  const sel = document.getElementById('sheet-meal-select');
-  if (sel && !sel.hasChildNodes()) {
+  if (sel && sel.childElementCount === 0) {
     populateMealSelect(sel);
   }
+
   const lbl = document.getElementById('meal-selector-label');
   if (lbl && !lbl.textContent.trim()) {
     lbl.textContent = Object.values(MEALS)[0];

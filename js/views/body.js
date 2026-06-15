@@ -127,15 +127,15 @@ function calcGymVolume(workout) {
 
 // ── Período (estado partilhado secções 3/4) ───────────────────────────────────
 
-function bodyFilterByPeriod(rows, period) {
+function bodyFilterByPeriod(rows, period, today = new Date()) {
   if (period === 'all') return rows;
-  const today = new Date(); today.setHours(12, 0, 0, 0);
-  const cutoff = new Date(today);
-  if      (period === 'week')  cutoff.setDate(today.getDate() - 7);
-  else if (period === 'month') cutoff.setMonth(today.getMonth() - 1);
-  else if (period === '3m')    cutoff.setMonth(today.getMonth() - 3);
-  else if (period === '6m')    cutoff.setMonth(today.getMonth() - 6);
-  else if (period === '1y')    cutoff.setFullYear(today.getFullYear() - 1);
+  const base = new Date(today); base.setHours(12, 0, 0, 0);
+  const cutoff = new Date(base);
+  if      (period === 'week')  cutoff.setDate(base.getDate() - 7);
+  else if (period === 'month') cutoff.setMonth(base.getMonth() - 1);
+  else if (period === '3m')    cutoff.setMonth(base.getMonth() - 3);
+  else if (period === '6m')    cutoff.setMonth(base.getMonth() - 6);
+  else if (period === '1y')    cutoff.setFullYear(base.getFullYear() - 1);
   const cutoffStr = cutoff.toISOString().split('T')[0];
   return rows.filter(r => r.date >= cutoffStr);
 }

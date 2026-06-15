@@ -138,17 +138,6 @@ body {
 .macro-cell-val { font-family: var(--mono); font-size: 22px; font-weight: 600; line-height: 1; }
 .macro-cell-tgt { font-family: var(--mono); font-size: 9px; color: var(--text3); }
 .macro-cell-rem { font-family: var(--mono); font-size: 9px; color: var(--text3); }
-/* compact segmented bars inside the macro grid (scheme D) */
-.macro-cell .seg-bar-wrap { padding-top: 8px; margin: 6px 0 0; }
-.macro-cell .seg-bar-bg { height: 4px; border-radius: 3px; }
-.macro-cell .seg-bar-tick { display: none; }
-.macro-cell .seg-bar-line { height: 18px; width: 2px; background: rgba(255,255,255,0.5); box-shadow: none; border-radius: 1px; }
-.macro-cell .seg-bar-labels { height: 12px; margin-top: 2px; }
-.macro-cell .seg-bar-labels span { font-size: 9px; color: #777; }
-/* mobile: drop green-limit labels but keep the position indicator */
-@media (max-width: 480px) {
-  .macro-cell .seg-bar-labels { display: none; }
-}
 
 /* ── MACRO SECONDARY CHIPS (.msc) — used by Treino wellness/week chips ── */
 .macro-secondary { display: flex; gap: 8px; }
@@ -647,7 +636,6 @@ input[type="number"] { font-family: var(--mono); }
   .macro-cell-label { font-size: 13px; }
   .macro-cell-tgt { font-size: 13px; }
   .macro-cell-rem { font-size: 12px; }
-  .macro-cell .seg-bar-labels span { font-size: 11px; }
   .entry-name { font-size: 19px; }
   .entry-detail { font-size: 16px; }
   .entry-kcal { font-size: 18px; }
@@ -749,41 +737,6 @@ input[type="number"] { font-family: var(--mono); }
 .t-row-value { font-family: var(--mono); font-size: 18px; font-weight: 600; color: var(--text); }
 .t-row-unit { font-family: var(--mono); font-size: 12px; color: var(--text3); width: 16px; }
 .block-chip { padding: 4px 10px; border-radius: 20px; font-family: var(--mono); font-size: 11px; background: var(--surface2); border: 1px solid var(--border); color: var(--text2); }
-
-/* ── SEGMENTED BAR ──────────────────────────────────────────────────────── */
-.seg-bar-wrap {
-  position: relative;
-  padding-top: 10px;
-  margin: 8px 0 20px;
-}
-.seg-bar-bg {
-  display: flex; height: 10px;
-  border-radius: 6px; overflow: hidden;
-}
-.seg-bar-indicator {
-  position: absolute; top: 0;
-  transform: translateX(-50%);
-  display: flex; flex-direction: column;
-  align-items: center; pointer-events: none; z-index: 1;
-}
-.seg-bar-tick {
-  font-size: 10px; line-height: 1; font-weight: 700;
-  color: #fff; margin-bottom: 1px;
-  text-shadow: 0 1px 2px rgba(0,0,0,.8);
-}
-.seg-bar-line {
-  width: 3px; height: 20px; background: #fff;
-  border-radius: 1px; box-shadow: 0 0 3px rgba(0,0,0,.8);
-}
-.seg-bar-labels {
-  position: relative; height: 14px; margin-top: 3px;
-}
-.seg-bar-labels span {
-  position: absolute;
-  font-family: var(--mono); font-size: 11px;
-  color: var(--text2); transform: translateX(-50%);
-  white-space: nowrap;
-}
 
 /* ── Stats view ─────────────────────────────────────────────────────────── */
 .stats-section { margin-bottom: 28px; }

@@ -118,14 +118,13 @@ Media query única escala tudo proporcionalmente (~1.4×). Não é um layout nov
 
 Sticky ao topo, `--bg`, border-bottom. Título em `.view-title` (mono 15px uppercase). Views internas (Targets, Stats, Settings) levam botão `←` à esquerda que faz `go('mais')`. O header do Diário é a variante rica: eyebrow + data por extenso + weekday, com pill de navegação temporal à direita.
 
-### 3.2 Barra segmentada (`buildSegmentedBar` em ui.js)
+### 3.2 Resumo de macros (header do Diário)
 
-O componente de aderência central. Anatomia:
-- Fundo dividido em 5 segmentos fixos: extremos quase invisíveis (`rgba(255,255,255,0.06)`) → near-miss na cor do macro a 35% alfa → centro sólido na cor do macro.
-- Indicador de posição: linha branca vertical + tick `▼`, posicionado pela % actual/target.
-- Labels numéricos por baixo nos limites da zona verde (ex.: `150 … 228`).
+`renderToday()` reescreve `.macro-summary`: linha de kcal (alvo primário, cor por `getNutrientColor`) + grid de 3 macros, cada uma com um papel:
+- **Proteína / Gordura** — floors mínimos. Linha 1: `%` do floor (verde se atingido, vermelho `−Xg` se abaixo; gordura `>90` sinaliza). Linha 2: valor na cor da macro + `≥floor`. Atingido → só `✓`.
+- **Hidratos** — residual: valor na cor própria + `%` neutra, nunca sinalizado.
 
-Duas densidades: primária (10px, no resumo de kcal) e compacta dentro de `.macro-cell` (4px, sem tick, labels escondidos em <480px). As zonas vêm de `ZONES` na própria função — **espelham `getNutrientColor` e têm de mudar em conjunto**.
+> A antiga barra segmentada (`buildSegmentedBar`) foi removida quando o header passou a compacto/pinado — só restava como dead code.
 
 ### 3.3 Chips de dados (`.msc` / `tChip()`)
 

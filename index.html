@@ -19,7 +19,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
           integrity="sha384-bs/nf9FbdNouRbMiFcrcZfLXYPKiPaGVGplVbv7dLGECccEXDW+S3zjqSKR5ZEaD"
           crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="css/styles.css?v=20260615ae">
+  <link rel="stylesheet" href="css/styles.css?v=20260615af">
 </head>
 <body>
 
@@ -344,7 +344,7 @@
     <!-- Meal selector inside sheet -->
     <div style="padding:10px 16px;border-bottom:1px solid var(--border)">
       <select id="sheet-meal-select"
-        style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--sans);font-size:14px;padding:10px 14px;width:100%;outline:none;-webkit-appearance:none;appearance:none"
+        style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--sans);font-size:14px;padding:12px 14px;width:100%;min-height:44px;outline:none;-webkit-appearance:none;appearance:none"
         onchange="selectSheetMealFromDropdown(this.value)">
       </select>
     </div>
@@ -354,11 +354,11 @@
       <div id="log-stage-search" class="active">
         <div class="form-body" style="padding-top:12px;padding-bottom:8px;gap:8px">
           <input type="search" id="log-q" placeholder="Pesquisar na base de dados..." oninput="searchDBDebounced()" autocomplete="off" aria-label="Pesquisar na base de dados">
-          <button class="btn btn-secondary" style="padding:10px;font-size:13px" onclick="openAddFoodFromLog('')">+ Criar novo alimento</button>
+          <button class="btn btn-secondary" style="padding:10px;font-size:13px;min-height:44px" onclick="openAddFoodFromLog('')">+ Criar novo alimento</button>
         </div>
         <div style="display:flex;gap:8px;padding:0 20px 12px">
-          <button class="btn btn-secondary" style="flex:1;font-size:13px;padding:10px" onclick="openLog('quick')">Entrada rápida</button>
-          <button class="btn btn-secondary" style="flex:1;font-size:13px;padding:10px" onclick="openLogMeals()">Refeição template</button>
+          <button class="btn btn-secondary" style="flex:1;font-size:13px;padding:10px;min-height:44px" onclick="openLog('quick')">Entrada rápida</button>
+          <button class="btn btn-secondary" style="flex:1;font-size:13px;padding:10px;min-height:44px" onclick="openLogMeals()">Refeição template</button>
         </div>
         <div class="search-results" id="log-results">
           <div class="loading">Começa a escrever para pesquisar</div>
@@ -375,7 +375,7 @@
             </div>
             <div style="display:flex;gap:6px">
               <input type="text" id="log-grams" inputmode="decimal" placeholder="0" oninput="updatePreview()" style="flex:1">
-              <button class="btn btn-secondary" style="width:auto;padding:8px 14px;font-size:15px" onclick="evalGramsInput('log-grams', updatePreview)">=</button>
+              <button class="btn btn-secondary" style="width:auto;padding:8px 16px;font-size:15px;min-height:44px" onclick="evalGramsInput('log-grams', updatePreview)">=</button>
             </div>
             <div style="display:flex;gap:4px;margin-top:4px">
               <button type="button" class="btn btn-secondary" style="flex:1;padding:8px 0;font-size:16px;min-height:44px" onclick="insertOperator('log-grams','+')">+</button>
@@ -472,7 +472,7 @@
         </div>
         <div style="display:flex;gap:6px">
           <input type="text" id="edit-grams" inputmode="decimal" placeholder="0" oninput="updateEditPreview()" style="flex:1">
-          <button class="btn btn-secondary" style="width:auto;padding:8px 14px;font-size:15px" onclick="evalGramsInput('edit-grams', updateEditPreview)">=</button>
+          <button class="btn btn-secondary" style="width:auto;padding:8px 16px;font-size:15px;min-height:44px" onclick="evalGramsInput('edit-grams', updateEditPreview)">=</button>
         </div>
         <div style="display:flex;gap:4px;margin-top:4px">
           <button type="button" class="btn btn-secondary" style="flex:1;padding:8px 0;font-size:16px;min-height:44px" onclick="insertOperator('edit-grams','+')">+</button>
@@ -508,17 +508,17 @@
 
 <div id="toast" aria-live="polite"></div>
 
-<script src="js/config.js?v=20260615ae"></script>
-<script src="js/nutrition.js?v=20260615ae"></script>
-<script src="js/db.js?v=20260615ae"></script>
-<script src="js/ui.js?v=20260615ae"></script>
-<script src="js/views/diary.js?v=20260615ae-6"></script>
-<script src="js/views/log.js?v=20260615ae"></script>
-<script src="js/views/foods.js?v=20260615ae-6"></script>
-<script src="js/views/meals.js?v=20260615ae"></script>
-<script src="js/views/targets.js?v=20260615ae"></script>
-<script src="js/views/stats.js?v=20260615ae-5"></script>
-<script src="js/views/body.js?v=20260615ae"></script>
-<script src="js/app.js?v=20260615ae"></script>
+<script src="js/config.js?v=20260615af"></script>
+<script src="js/nutrition.js?v=20260615af"></script>
+<script src="js/db.js?v=20260615af"></script>
+<script src="js/ui.js?v=20260615af"></script>
+<script src="js/views/diary.js?v=20260615af-6"></script>
+<script src="js/views/log.js?v=20260615af"></script>
+<script src="js/views/foods.js?v=20260615af-6"></script>
+<script src="js/views/meals.js?v=20260615af"></script>
+<script src="js/views/targets.js?v=20260615af"></script>
+<script src="js/views/stats.js?v=20260615af-5"></script>
+<script src="js/views/body.js?v=20260615af"></script>
+<script src="js/app.js?v=20260615af"></script>
 </body>
 </html>

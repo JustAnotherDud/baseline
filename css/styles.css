@@ -39,6 +39,12 @@ body {
   padding-top: var(--safe-t);
 }
 
+/* PWA instalada em mobile (touch): garante folga no topo mesmo quando o
+   inset não é reportado (ex.: Android). Não afecta o browser no PC. */
+@media (display-mode: standalone) and (pointer: coarse) {
+  body { padding-top: max(var(--safe-t), 24px); }
+}
+
 /* ── SETUP ── */
 #setup-screen {
   flex: 1; display: flex; flex-direction: column;

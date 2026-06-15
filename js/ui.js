@@ -725,68 +725,6 @@ function highlightFoodKeywords(name) {
 
 // ── SHARED: MEAL TEMPLATE LIST ───────────────────────────────────────────────
 // opts: { showDelete: bool, onItemClick: fn(t), onDeleteClick?: fn(id) }
-function buildSegmentedBar(actual, target, macro) {
-  const ZONES = {
-    protein:  { bounds: [63, 86, 130, 150],   maxPct: 155 },
-    carbs:    { bounds: [70, 85, 135, 150],   maxPct: 155 },
-    fat:      { bounds: [54, 85, 160, 200],   maxPct: 205 },
-    calories: { bounds: [80, 90, 110, 120],   maxPct: 125 },
-  };
-  const { bounds, maxPct } = ZONES[macro];
-  const [b1, b2, b3, b4] = bounds;
-  const minPct = 20;
-  const range  = maxPct - minPct;
-
-  // Scheme D: faint extremes, macro-tinted near-miss, solid green centre
-  const CENTER = {
-    protein:  '#60a5fa',
-    carbs:    '#fbbf24',
-    fat:      '#f97316',
-    calories: '#22c55e',
-  };
-  const NEARMISS = {
-    protein:  'rgba(96,165,250,0.35)',
-    carbs:    'rgba(251,191,36,0.35)',
-    fat:      'rgba(249,115,22,0.35)',
-    calories: 'rgba(74,222,128,0.35)',
-  };
-  const EXTREME     = 'rgba(255,255,255,0.06)';
-  const centerColor = CENTER[macro]   || '#22c55e';
-  const nearMiss    = NEARMISS[macro] || 'rgba(74,222,128,0.35)';
-  const segs = [
-    { w: b1 - minPct,  color: EXTREME     },
-    { w: b2 - b1,      color: nearMiss    },
-    { w: b3 - b2,      color: centerColor },
-    { w: b4 - b3,      color: nearMiss    },
-    { w: maxPct - b4,  color: EXTREME     },
-  ];
-  const segsHTML = segs.map(s =>
-    `<div style="flex:0 0 ${(s.w / range * 100).toFixed(3)}%;background:${s.color}"></div>`
-  ).join('');
-
-  const pct = target > 0 ? actual / target * 100 : 0;
-  const indicatorPos = pct <= minPct ? 0
-    : pct >= maxPct ? 100
-    : (pct - minPct) / range * 100;
-
-  const greenStart    = Math.round(b2 / 100 * target);
-  const greenEnd      = Math.round(b3 / 100 * target);
-  const greenStartPos = ((b2 - minPct) / range * 100).toFixed(3);
-  const greenEndPos   = ((b3 - minPct) / range * 100).toFixed(3);
-
-  return `<div class="seg-bar-wrap">` +
-    `<div class="seg-bar-indicator" style="left:${indicatorPos.toFixed(3)}%">` +
-      `<div class="seg-bar-tick">▼</div>` +
-      `<div class="seg-bar-line"></div>` +
-    `</div>` +
-    `<div class="seg-bar-bg">${segsHTML}</div>` +
-    `<div class="seg-bar-labels">` +
-      `<span style="left:${greenStartPos}%">${greenStart}</span>` +
-      `<span style="left:${greenEndPos}%">${greenEnd}</span>` +
-    `</div>` +
-  `</div>`;
-}
-
 function renderMealTemplateList(containerEl, templates, countMap, opts) {
   containerEl.innerHTML = '';
   templates.forEach(t => {

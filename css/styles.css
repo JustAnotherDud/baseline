@@ -24,6 +24,7 @@
   --sans: 'DM Sans', sans-serif;
   --nav-h: 64px;
   --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
 }
 
 body {
@@ -34,6 +35,8 @@ body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  /* Empurra o conteúdo abaixo da status bar/notch no mobile (PWA). */
+  padding-top: var(--safe-t);
 }
 
 /* ── SETUP ── */

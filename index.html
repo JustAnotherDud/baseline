@@ -19,7 +19,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
           integrity="sha384-bs/nf9FbdNouRbMiFcrcZfLXYPKiPaGVGplVbv7dLGECccEXDW+S3zjqSKR5ZEaD"
           crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="css/styles.css?v=20260615t">
+  <link rel="stylesheet" href="css/styles.css?v=20260615u">
 </head>
 <body>
 
@@ -95,18 +95,10 @@
       <div class="log-meal-label" style="margin-bottom:8px">Refeição</div>
       <div id="meal-selector">
         <div class="meal-selector-collapsed" id="meal-selector-head" onclick="toggleMealSelector()">
-          <span id="meal-selector-label">Pequeno-almoço</span>
+          <span id="meal-selector-label"></span>
           <span id="meal-selector-chevron">▾</span>
         </div>
-        <div class="meal-selector-expanded" id="meal-selector-grid">
-          <button class="meal-selector-opt active" data-meal="breakfast"  onclick="selectMealFromSelector('breakfast')">Pequeno-almoço</button>
-          <button class="meal-selector-opt"         data-meal="morning"    onclick="selectMealFromSelector('morning')">Lanche manhã</button>
-          <button class="meal-selector-opt"         data-meal="lunch"      onclick="selectMealFromSelector('lunch')">Almoço</button>
-          <button class="meal-selector-opt"         data-meal="afternoon1" onclick="selectMealFromSelector('afternoon1')">Lanche tarde 1</button>
-          <button class="meal-selector-opt"         data-meal="afternoon2" onclick="selectMealFromSelector('afternoon2')">Lanche tarde 2</button>
-          <button class="meal-selector-opt"         data-meal="dinner"     onclick="selectMealFromSelector('dinner')">Jantar</button>
-          <button class="meal-selector-opt"         data-meal="supper"     onclick="selectMealFromSelector('supper')">Ceia</button>
-        </div>
+        <div class="meal-selector-expanded" id="meal-selector-grid"></div>
       </div>
     </div>
     <div class="log-type-chips">
@@ -367,13 +359,6 @@
       <select id="sheet-meal-select"
         style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--sans);font-size:14px;padding:10px 14px;width:100%;outline:none;-webkit-appearance:none;appearance:none"
         onchange="selectSheetMealFromDropdown(this.value)">
-        <option value="breakfast">Pequeno-almoço</option>
-        <option value="morning">Lanche manhã</option>
-        <option value="lunch">Almoço</option>
-        <option value="afternoon1">Lanche tarde 1</option>
-        <option value="afternoon2">Lanche tarde 2</option>
-        <option value="dinner">Jantar</option>
-        <option value="supper">Ceia</option>
       </select>
     </div>
 
@@ -536,17 +521,17 @@
 
 <div id="toast" aria-live="polite"></div>
 
-<script src="js/config.js?v=20260615t"></script>
-<script src="js/nutrition.js?v=20260615t"></script>
-<script src="js/db.js?v=20260615t"></script>
-<script src="js/ui.js?v=20260615t"></script>
-<script src="js/views/diary.js?v=20260615t-6"></script>
-<script src="js/views/log.js?v=20260615t"></script>
-<script src="js/views/foods.js?v=20260615t-6"></script>
-<script src="js/views/meals.js?v=20260615t"></script>
-<script src="js/views/targets.js?v=20260615t"></script>
-<script src="js/views/stats.js?v=20260615t-5"></script>
-<script src="js/views/body.js?v=20260615t"></script>
-<script src="js/app.js?v=20260615t"></script>
+<script src="js/config.js?v=20260615u"></script>
+<script src="js/nutrition.js?v=20260615u"></script>
+<script src="js/db.js?v=20260615u"></script>
+<script src="js/ui.js?v=20260615u"></script>
+<script src="js/views/diary.js?v=20260615u-6"></script>
+<script src="js/views/log.js?v=20260615u"></script>
+<script src="js/views/foods.js?v=20260615u-6"></script>
+<script src="js/views/meals.js?v=20260615u"></script>
+<script src="js/views/targets.js?v=20260615u"></script>
+<script src="js/views/stats.js?v=20260615u-5"></script>
+<script src="js/views/body.js?v=20260615u"></script>
+<script src="js/app.js?v=20260615u"></script>
 </body>
 </html>

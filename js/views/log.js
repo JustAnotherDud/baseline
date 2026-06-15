@@ -223,6 +223,23 @@ function clearQuick() {
   ['q-name','q-kcal','q-fat','q-carb','q-fiber','q-prot'].forEach(id=>document.getElementById(id).value='');
 }
 
+// Gera o seletor de refeição e o dropdown do sheet de log a partir de MEALS.
+// Guard: só popula se ainda estiver vazio (não regenera a cada abertura).
+function initMealSelectors() {
+  const grid = document.getElementById('meal-selector-grid');
+  if (grid && !grid.hasChildNodes()) {
+    buildMealSelectorBtns(grid, 'selectMealFromSelector');
+  }
+  const sel = document.getElementById('sheet-meal-select');
+  if (sel && !sel.hasChildNodes()) {
+    populateMealSelect(sel);
+  }
+  const lbl = document.getElementById('meal-selector-label');
+  if (lbl && !lbl.textContent.trim()) {
+    lbl.textContent = Object.values(MEALS)[0];
+  }
+}
+
 function openLogForMeal(mealKey) {
   selectedMeal = mealKey;
   mealManuallySelected = true;

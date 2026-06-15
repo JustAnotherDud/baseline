@@ -26,6 +26,26 @@ function toast(msg) {
 
 function overlayClose(e, id) { if(e.target.id===id) document.getElementById(id).classList.remove('open'); }
 
+// ── MEAL SELECTORS (gerados a partir de MEALS — fonte canónica) ───────────────
+// Popula um <select> com as options de MEALS.
+function populateMealSelect(selectEl) {
+  if (!selectEl) return;
+  selectEl.innerHTML = Object.entries(MEALS)
+    .map(([k, v]) => `<option value="${k}">${escHtml(v)}</option>`)
+    .join('');
+}
+// Gera os botões do meal selector (grid de refeições). onSelect = nome da fn.
+function buildMealSelectorBtns(containerEl, onSelect) {
+  if (!containerEl) return;
+  containerEl.innerHTML = Object.entries(MEALS)
+    .map(([k, v]) => `
+      <button class="meal-selector-opt" data-meal="${k}"
+              onclick="${onSelect}('${k}')">
+        ${escHtml(v)}
+      </button>`)
+    .join('');
+}
+
 // ── TARA no sheet de edição ───────────────────────────────────────────────────
 function setEditTaraUI(checked) {
   const box = document.getElementById('edit-tara-box');
@@ -41,6 +61,7 @@ function toggleEditTara() {
 function openLog(mode) {
   pushSheetState();
   resetLogTara();
+  initMealSelectors();
   if (!mealManuallySelected) {
     selectedMeal = getMealByHour();
     updateMealSelectorLabel(selectedMeal);

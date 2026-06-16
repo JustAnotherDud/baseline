@@ -74,8 +74,7 @@ baseline/
 │       │                         saveQuick(), clearQuick(), openLogForMeal(),
 │       │                         openAddFoodFromLog(), getMealByHour(),
 │       │                         meal selectors (sheet + view), openLogMeals(),
-│       │                         pickLogDate(), updateLogDateLabel(),
-│       │                         loadLogTotalsStrip(), handleSaveDiary()
+│       │                         pickLogDate(), updateLogDateLabel(), handleSaveDiary()
 │       ├── foods.js            — loadFoods(), sortFoods(), setSortFoods(), filterFoods(),
 │       │                         renderFoods(), editFood(), saveFood(), deleteFood()
 │       │                         (SORT_CONFIG, RATIO_FIELD — sort por rácios macro/kcal)
@@ -368,7 +367,7 @@ async function loadX() {
   render();
 }
 ```
-Aplicado em: `loadToday` (loadTodayGen), `loadStats`, `loadBody` (loadBodyGen), `loadLogTotalsStrip`, `refreshPhaseAndTargets`, `openApplyMeal`.
+Aplicado em: `loadToday` (loadTodayGen), `loadStats`, `loadBody` (loadBodyGen), `refreshPhaseAndTargets`, `openApplyMeal`.
 
 ### `openDatePicker(value, onSelect, opts)`
 `opts.showScores === false` → não faz fetch de `getDayScores` nem desenha dots (usado na view Targets).
@@ -383,8 +382,8 @@ Usado na view Forma: `bodyFormChart` (CTL/ATL linha dupla) e `bodyCompChart` (Pe
 ### Antes de cada push
 ```bash
 node --check js/views/ficheiro_alterado.js   # syntax check
-npm test                                      # 64 testes node:test
-node bump.js                                  # actualizar ?v= timestamps
+npm test                                      # 92 testes node:test (hook pre-push automatiza)
+node bump.js                                  # actualizar ?v= timestamps + APP_VERSION
 ```
 
 ### Cache-busting
@@ -431,11 +430,10 @@ Criar `<div class="sheet-overlay">` dinamicamente uma vez (cache por `id`), `app
 - Debounce na pesquisa de alimentos (300 ms) — commit `d1d2048`
 - SRI + CDN pinado (supabase-js) — commit `eb7ad30`
 - `escHtml()` em todos os interpolações innerHTML com dados externos (XSS hardening) — commits `a629026`, `85baeb7`
-- Suite de testes `npm test` (64 testes, `node:test`) — commit `ee8b08e`
-- `bump.js` para cache-busting automático
+- Suite de testes `npm test` (92 testes, `node:test`) + hook `githooks/pre-push` + `contrast-check.js` (gate WCAG AA)
+- `bump.js` para cache-busting automático (`?v=` + `APP_VERSION`, sufixo z→aa)
 
 **Pendente / ideias**
-- Lock de refeições 🔐
 - Emojis automáticos nos alimentos
 - E-ink display (Orange Pi Zero 2W + Waveshare)
 - Próximo treino planeado (events ICU)

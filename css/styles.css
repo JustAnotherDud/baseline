@@ -25,6 +25,7 @@
   --nav-h: 64px;
   --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-t: env(safe-area-inset-top, 0px);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 body {
@@ -214,7 +215,13 @@ body {
 .meal-collapse-btn { position: relative; flex-shrink: 0; align-self: center; margin: 0 8px; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; background: var(--surface3); border: 1px solid var(--border); border-radius: 8px; color: var(--text3); cursor: pointer; }
 /* Alvo de toque ≥44×44 (uso a uma mão) sem mudar o visual de 28px. */
 .meal-collapse-btn::before { content: ''; position: absolute; inset: -8px; }
-.meal-collapse-btn svg { width: 16px; height: 16px; }
+.meal-collapse-btn svg { width: 16px; height: 16px; transition: transform .26s var(--ease-out-quart); }
+/* Chevron base aponta ▼ (expandir); refeição aberta roda para ▲ (recolher). */
+.meal-section:not(.collapsed) .meal-collapse-btn svg { transform: rotate(180deg); }
+/* Expand/collapse animado por grid-template-rows (não por height). */
+.meal-entries { display: grid; grid-template-rows: 1fr; transition: grid-template-rows .28s var(--ease-out-quart); }
+.meal-entries-inner { overflow: hidden; min-height: 0; }
+.meal-section.collapsed .meal-entries { grid-template-rows: 0fr; }
 .meal-log-label { color: var(--accent); font-family: var(--mono); font-size: 13px; letter-spacing: .06em; }
 .meal-head-line { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; overflow: hidden; }
 .meal-name { font-size: 12px; font-family: var(--mono); color: var(--text); font-weight: 500; text-transform: uppercase; letter-spacing: .12em; }

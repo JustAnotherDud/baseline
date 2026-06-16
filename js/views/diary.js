@@ -117,48 +117,47 @@ function renderToday(entries, t) {
     const macroStr = mes.length > 0
       ? `<div class="meal-macros">F ${r(mfat)} · C ${r(mcarb)} · P ${r(mprot)}</div>`
       : '';
-    const locked = isMealLocked(currentDate, k);
-    const lockIcon = locked
-      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'
-      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>';
-    const rightAction = !locked
-      ? '<span class="meal-log-label">+ LOG</span>'
-      : (mes.length > 0 ? '<span class="meal-locked-label">Locked</span>' : '');
+    // "Lock" reenquadrado como collapse/expand: meal_locks guarda o estado
+    // recolhido. Só faz sentido recolher quando há entradas para esconder.
+    const hasEntries = mes.length > 0;
+    const collapsed = hasEntries && isMealLocked(currentDate, k);
+    const chevron = collapsed
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>'   // ▼ expandir
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>'; // ▲ recolher
+    const chevronBtn = hasEntries
+      ? `<button class="meal-collapse-btn" aria-label="${collapsed ? 'Expandir' : 'Recolher'} refeição">${chevron}</button>`
+      : '';
     div.innerHTML = `
       <div class="meal-header">
         <div class="meal-header-left">
           <div class="meal-head-line"><span class="meal-name">${label}</span>${kcalInline}</div>
           ${macroStr}
         </div>
-        <button class="meal-lock-btn${locked ? ' locked' : ''}" aria-label="${locked ? 'Desbloquear' : 'Bloquear'} refeição">${lockIcon}</button>
-        <div class="meal-header-right${locked ? ' locked' : ''}">
-          ${rightAction}
+        ${chevronBtn}
+        <div class="meal-header-right">
+          <span class="meal-log-label">+ LOG</span>
         </div>
       </div>`;
     const leftEl  = div.querySelector('.meal-header-left');
     const rightEl = div.querySelector('.meal-header-right');
-    const lockBtn = div.querySelector('.meal-lock-btn');
-    lockBtn.addEventListener('click', e => {
+    const collapseBtn = div.querySelector('.meal-collapse-btn');
+    if (collapseBtn) collapseBtn.addEventListener('click', e => {
       e.stopPropagation();
       toggleMealLock(currentDate, k);
       renderToday(entries, t);
     });
     leftEl.addEventListener('click', e => {
       e.stopPropagation();
-      if (mes.length > 0) openMealBreakdown(k, diaryEntries);
-      else if (!locked) openLogForMeal(k);
+      if (hasEntries) openMealBreakdown(k, diaryEntries);
+      else openLogForMeal(k);
     });
-    if (!locked) {
-      rightEl.addEventListener('click', e => {
-        e.stopPropagation();
-        openLogForMeal(k);
-      });
-    } else {
-      rightEl.style.cursor = 'default';
-    }
+    rightEl.addEventListener('click', e => {
+      e.stopPropagation();
+      openLogForMeal(k);
+    });
 
-    // Refeição bloqueada → estado colapsado: só o header (resumo F·C·P já lá está).
-    if (locked) {
+    // Recolhido → só o header (resumo F·C·P já lá está); entradas escondidas.
+    if (collapsed) {
       container.appendChild(div);
       return;
     }
@@ -172,7 +171,7 @@ function renderToday(entries, t) {
       mes.forEach(entry => {
         const entryEl = document.createElement('div');
         entryEl.className = 'diary-entry';
-        if (!locked) entryEl.style.cursor = 'pointer';
+        entryEl.style.cursor = 'pointer';
         entryEl.innerHTML = `
           <div class="entry-info">
             <div class="entry-name"></div>
@@ -181,7 +180,7 @@ function renderToday(entries, t) {
           </div>
           <div class="entry-kcal">${r(entry.calories)}</div>`;
         entryEl.querySelector('.entry-name').innerHTML = highlightFoodKeywords(entry.food_name);
-        if (!locked) entryEl.addEventListener('click', () => openEditEntry(entry.id));
+        entryEl.addEventListener('click', () => openEditEntry(entry.id));
         div.appendChild(entryEl);
       });
     }

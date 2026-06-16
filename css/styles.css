@@ -210,14 +210,12 @@ body {
 .meal-header-left { flex: 1; padding: 8px 0 8px 14px; background: var(--surface2); min-height: 52px; cursor: pointer; display: flex; flex-direction: column; justify-content: center; }
 .meal-header-right { flex: 0 0 auto; padding: 12px 20px; display: flex; align-items: center; justify-content: center; background: var(--accent-a06); min-height: 52px; cursor: pointer; }
 .meal-header-right:active { background: var(--accent-a12); }
-.meal-header-right.locked, .meal-header-right.locked:active { background: transparent; cursor: default; }
-.meal-lock-btn { position: relative; flex-shrink: 0; align-self: center; margin: 0 8px; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; background: var(--surface3); border: 1px solid var(--border); border-radius: 8px; color: var(--text3); cursor: pointer; }
+/* Toggle de recolher/expandir refeição (chevron). */
+.meal-collapse-btn { position: relative; flex-shrink: 0; align-self: center; margin: 0 8px; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; background: var(--surface3); border: 1px solid var(--border); border-radius: 8px; color: var(--text3); cursor: pointer; }
 /* Alvo de toque ≥44×44 (uso a uma mão) sem mudar o visual de 28px. */
-.meal-lock-btn::before { content: ''; position: absolute; inset: -8px; }
-.meal-lock-btn svg { width: 15px; height: 15px; }
-.meal-lock-btn.locked { background: #1f2a1f; border-color: #2d4a2d; color: var(--accent); }
+.meal-collapse-btn::before { content: ''; position: absolute; inset: -8px; }
+.meal-collapse-btn svg { width: 16px; height: 16px; }
 .meal-log-label { color: var(--accent); font-family: var(--mono); font-size: 13px; letter-spacing: .06em; }
-.meal-locked-label { color: var(--text3); font-family: var(--mono); font-size: 13px; letter-spacing: .06em; }
 .meal-head-line { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; overflow: hidden; }
 .meal-name { font-size: 12px; font-family: var(--mono); color: var(--text); font-weight: 500; text-transform: uppercase; letter-spacing: .12em; }
 .meal-kcal-val { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent); }
@@ -617,9 +615,9 @@ input[type="number"] { font-family: var(--mono); }
   .view-header { padding: 22px 24px 14px; }
   .meal-header-left { padding: 14px 0 12px 24px; }
   .meal-header-right { padding: 14px 24px 12px 12px; }
-  .meal-lock-btn { width: 34px; height: 34px; margin: 0 12px; }
-  .meal-lock-btn svg { width: 19px; height: 19px; }
-  .meal-log-label, .meal-locked-label { font-size: 15px; }
+  .meal-collapse-btn { width: 34px; height: 34px; margin: 0 12px; }
+  .meal-collapse-btn svg { width: 20px; height: 20px; }
+  .meal-log-label { font-size: 15px; }
   .diary-entry { padding: 12px 24px; }
   .food-item { padding: 16px 24px; }
   .search-wrap { padding: 14px 24px; }

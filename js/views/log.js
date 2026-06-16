@@ -148,22 +148,25 @@ async function pickFood(id) {
   document.getElementById('log-stage-grams').classList.add('active');
 
   const serving = data.serving_size_g;
-  const servingBtn = serving
-    ? `<button id="dose-btn" class="btn btn-secondary" style="margin-top:8px;padding:8px 14px;font-size:13px;width:auto">+ porção (${serving}g)</button>`
-    : '';
-
   document.getElementById('log-food-card').innerHTML=`
     <div class="food-card-name">${escHtml(data.name)}</div>
-    <div class="food-card-sub">${data.brand?escHtml(data.brand)+' · ':''}${data.calories_per_100g} kcal/100g · P${data.protein_per_100g}g C${data.carbs_per_100g}g F${data.fat_per_100g}g</div>
-    ${servingBtn}`;
+    <div class="food-card-sub">${data.brand?escHtml(data.brand)+' · ':''}${data.calories_per_100g} kcal/100g · P${data.protein_per_100g}g C${data.carbs_per_100g}g F${data.fat_per_100g}g</div>`;
 
+  // "+ porção" agora é estático (lado a lado com "tem tara") — só texto/visibilidade/handler.
   const doseBtn = document.getElementById('dose-btn');
   if (doseBtn) {
-    doseBtn.addEventListener('click', () => {
-      const current = parseFloat(document.getElementById('log-grams').value) || 0;
-      document.getElementById('log-grams').value = current + serving;
-      updatePreview();
-    });
+    if (serving) {
+      doseBtn.textContent = `+ porção (${serving}g)`;
+      doseBtn.style.display = '';
+      doseBtn.onclick = () => {
+        const current = parseFloat(document.getElementById('log-grams').value) || 0;
+        document.getElementById('log-grams').value = current + serving;
+        updatePreview();
+      };
+    } else {
+      doseBtn.style.display = 'none';
+      doseBtn.onclick = null;
+    }
   }
 
   const gi = document.getElementById('log-grams');

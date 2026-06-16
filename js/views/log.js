@@ -1,4 +1,3 @@
-let loadTotalsGen = 0;
 let lastSearchResults = [];
 let expandedGroups = new Set();
 
@@ -383,35 +382,6 @@ function updateLogDateLabel() {
   if (el) el.textContent = currentDate === today ? `Hoje — ${dateStr}` : dateStr;
 }
 
-async function loadLogTotalsStrip() {
-  const gen = ++loadTotalsGen;
-  const strip = document.getElementById('log-totals-strip');
-  if (!strip || !db) return;
-  const { data } = await db.from('diary').select('calories,protein,carbs,fat').eq('date', currentDate);
-  if (!data) return;
-  const t = await getTargetsForDate(currentDate);
-  if (gen !== loadTotalsGen) return;
-  const r = n => Math.round(n);
-  const tot = { kcal:0, prot:0, carb:0, fat:0 };
-  data.forEach(e => { tot.kcal+=+e.calories; tot.prot+=+e.protein; tot.carb+=+e.carbs; tot.fat+=+e.fat; });
-  const hasTargets = t && t.calories > 0;
-  let kcalHtml = `
-    <div style="font-family:var(--mono);font-size:12px">
-      <span style="color:var(--accent);font-weight:600">${r(tot.kcal)}</span>`;
-  if (hasTargets) kcalHtml += `<span style="color:var(--text3)">/${t.calories}</span>`;
-  kcalHtml += `</div>`;
-  let remHtml = '';
-  if (hasTargets) {
-    const rem = t.calories - r(tot.kcal);
-    const remColor = rem >= 0 ? 'var(--text2)' : 'var(--red)';
-    remHtml = `<div style="font-family:var(--mono);font-size:11px;color:${remColor}">${rem>=0?rem+'↓':Math.abs(rem)+'↑'} kcal</div>`;
-  }
-  strip.innerHTML = kcalHtml + remHtml + `
-    <div style="font-family:var(--mono);font-size:11px;color:var(--orange)">F ${r(tot.fat)}g</div>
-    <div style="font-family:var(--mono);font-size:11px;color:var(--yellow)">C ${r(tot.carb)}g</div>
-    <div style="font-family:var(--mono);font-size:11px;color:var(--blue)">P ${r(tot.prot)}g</div>`;
-}
-
 // ── SAVE DIARY HANDLER (DOM side of saveDiary) ───────────────────────────────
 
 let _savingDiary = false;
@@ -434,7 +404,6 @@ async function handleSaveDiary() {
     document.getElementById('log-results').innerHTML =
       '<div class="loading">Começa a escrever para pesquisar</div>';
     loadToday();
-    loadLogTotalsStrip();
     setTimeout(() => document.getElementById('log-q').focus(), 100);
   } finally {
     _savingDiary = false;

@@ -81,7 +81,6 @@ function openLog(mode) {
     setTimeout(()=>document.getElementById('q-name').focus(),300);
   }
   document.getElementById('sheet-log').classList.add('open');
-  loadLogTotalsStrip();
 }
 
 function closeLog() {

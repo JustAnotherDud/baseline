@@ -119,14 +119,15 @@ function renderToday(entries, t) {
       : '';
     // "Lock" reenquadrado como collapse/expand: meal_locks guarda o estado
     // recolhido. Só faz sentido recolher quando há entradas para esconder.
+    // "Lock" reenquadrado como collapse/expand: meal_locks guarda o estado
+    // recolhido. Só faz sentido recolher quando há entradas para esconder.
     const hasEntries = mes.length > 0;
     const collapsed = hasEntries && isMealLocked(currentDate, k);
-    const chevron = collapsed
-      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>'   // ▼ expandir
-      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>'; // ▲ recolher
+    // Chevron único (▼); roda para ▲ via CSS quando a refeição está aberta.
     const chevronBtn = hasEntries
-      ? `<button class="meal-collapse-btn" aria-label="${collapsed ? 'Expandir' : 'Recolher'} refeição">${chevron}</button>`
+      ? `<button class="meal-collapse-btn" aria-label="${collapsed ? 'Expandir' : 'Recolher'} refeição"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>`
       : '';
+    if (collapsed) div.classList.add('collapsed');
     div.innerHTML = `
       <div class="meal-header">
         <div class="meal-header-left">
@@ -141,10 +142,13 @@ function renderToday(entries, t) {
     const leftEl  = div.querySelector('.meal-header-left');
     const rightEl = div.querySelector('.meal-header-right');
     const collapseBtn = div.querySelector('.meal-collapse-btn');
+    // Toggle anima via CSS (classe .collapsed) — sem re-render, sem perder o estado.
     if (collapseBtn) collapseBtn.addEventListener('click', e => {
       e.stopPropagation();
       toggleMealLock(currentDate, k);
-      renderToday(entries, t);
+      const nc = isMealLocked(currentDate, k);
+      div.classList.toggle('collapsed', nc);
+      collapseBtn.setAttribute('aria-label', (nc ? 'Expandir' : 'Recolher') + ' refeição');
     });
     leftEl.addEventListener('click', e => {
       e.stopPropagation();
@@ -156,18 +160,17 @@ function renderToday(entries, t) {
       openLogForMeal(k);
     });
 
-    // Recolhido → só o header (resumo F·C·P já lá está); entradas escondidas.
-    if (collapsed) {
-      container.appendChild(div);
-      return;
-    }
-
-    if (mes.length === 0) {
+    if (!hasEntries) {
       const noEntry = document.createElement('div');
       noEntry.className = 'no-entries';
       noEntry.textContent = 'Sem registos';
       div.appendChild(noEntry);
     } else {
+      // Entradas sempre no DOM, dentro de um wrapper colapsável (grid-rows).
+      const wrap = document.createElement('div');
+      wrap.className = 'meal-entries';
+      const inner = document.createElement('div');
+      inner.className = 'meal-entries-inner';
       mes.forEach(entry => {
         const entryEl = document.createElement('div');
         entryEl.className = 'diary-entry';
@@ -181,8 +184,10 @@ function renderToday(entries, t) {
           <div class="entry-kcal">${r(entry.calories)}</div>`;
         entryEl.querySelector('.entry-name').innerHTML = highlightFoodKeywords(entry.food_name);
         entryEl.addEventListener('click', () => openEditEntry(entry.id));
-        div.appendChild(entryEl);
+        inner.appendChild(entryEl);
       });
+      wrap.appendChild(inner);
+      div.appendChild(wrap);
     }
 
     container.appendChild(div);

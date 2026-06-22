@@ -103,7 +103,7 @@ body {
 
 /* Header da data + resumo de macros pinados sempre no topo do #view-today.
    O .view-header interno fica estático (a stickiness é do wrapper). */
-#today-head-sticky { position: sticky; top: 0; z-index: 20; background: var(--bg); }
+#today-head-sticky { position: sticky; top: 0; z-index: 20; background: var(--bg); box-shadow: 0 1px 0 var(--border), 0 4px 16px -4px rgba(0,0,0,.18); }
 /* A folga da status bar já vem do body (--safe-t) → header com menos padding-top. */
 #today-head-sticky .view-header { position: static; padding-top: 14px; }
 
@@ -209,10 +209,11 @@ body {
 .meal-section { border-radius: 12px; overflow: hidden; margin: 8px 12px; border: 1px solid var(--border); }
 .meal-header { display: flex; align-items: stretch; border-top: 1px solid var(--surface3); }
 .meal-header-left { flex: 1; padding: 8px 0 8px 14px; background: var(--surface2); min-height: 52px; cursor: pointer; display: flex; flex-direction: column; justify-content: center; }
-.meal-header-right { flex: 0 0 auto; padding: 12px 20px; display: flex; align-items: center; justify-content: center; background: var(--accent-a06); min-height: 52px; cursor: pointer; }
-.meal-header-right:active { background: var(--accent-a12); }
+.meal-header-right { flex: 0 0 auto; padding: 12px 20px; display: flex; align-items: center; justify-content: center; background: var(--accent-a06); min-height: 52px; cursor: pointer; transition: background .15s ease, transform .12s var(--ease-out-quart); }
+.meal-header-right:active { background: var(--accent-a12); transform: scale(0.96); }
 /* Toggle de recolher/expandir refeição (chevron). */
-.meal-collapse-btn { position: relative; flex-shrink: 0; align-self: center; margin: 0 8px; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; background: var(--surface3); border: 1px solid var(--border); border-radius: 8px; color: var(--text3); cursor: pointer; }
+.meal-collapse-btn { position: relative; flex-shrink: 0; align-self: center; margin: 0 8px; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; background: var(--surface3); border: 1px solid var(--border); border-radius: 8px; color: var(--text3); cursor: pointer; transition: transform .12s var(--ease-out-quart), background .15s ease; }
+.meal-collapse-btn:active { transform: scale(0.92); }
 /* Alvo de toque ≥44×44 (uso a uma mão) sem mudar o visual de 28px. */
 .meal-collapse-btn::before { content: ''; position: absolute; inset: -8px; }
 .meal-collapse-btn svg { width: 16px; height: 16px; transition: transform .26s var(--ease-out-quart); }
@@ -253,11 +254,12 @@ body {
 .entry-tara-flag { font-size: 11px; color: var(--orange); margin-top: 3px; font-family: var(--mono); }
 
 /* ── TARA checkbox (sheets de log e edição) ── */
-.tara-check-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; cursor: pointer; border-top: 1px solid var(--border); }
-.tara-box { width: 20px; height: 20px; border-radius: 5px; border: 1.5px solid var(--border); background: var(--surface2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.tara-check-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; cursor: pointer; border-top: 1px solid var(--border); transition: opacity .08s ease; }
+.tara-check-row:active { opacity: 0.65; }
+.tara-box { width: 20px; height: 20px; border-radius: 5px; border: 1.5px solid var(--border); background: var(--surface2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background .18s ease, border-color .18s ease, transform .12s var(--ease-out-quart); }
 .tara-box.checked { border-color: var(--orange); background: rgba(251,146,60,0.12); }
-.tara-box.checked::after { content: '✓'; color: var(--orange); font-size: 13px; line-height: 1; }
-.tara-check-label { font-size: 13px; color: var(--text3); }
+.tara-box.checked::after { content: '✓'; color: var(--orange); font-size: 13px; line-height: 1; margin-top: 1px; }
+.tara-check-label { font-size: 13px; color: var(--text3); transition: color .18s ease; }
 .tara-check-label.checked { color: var(--orange); }
 .no-entries { padding: 10px 20px; font-size: 13px; color: var(--text3); border-top: 1px solid var(--border); font-style: italic; }
 

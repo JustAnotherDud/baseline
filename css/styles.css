@@ -744,6 +744,21 @@ input[type="range"]::-moz-range-thumb {
   border: none;
 }
 
+/* ── QTY / PORÇÃO / TARA compact layout ── */
+.qty-section { display: flex; flex-direction: column; }
+.qty-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.qty-row { display: flex; gap: 6px; }
+.qty-row input { flex: 1.4; min-width: 0; }
+.qty-portion-btn {
+  flex: 1; min-width: 0; width: auto;
+  font-size: 12px; padding: 6px 4px; min-height: 44px;
+  white-space: normal; line-height: 1.25; text-align: center;
+}
+.qty-eval-btn { width: 46px; flex-shrink: 0; padding: 8px 0; font-size: 15px; min-height: 44px; }
+.tara-check-row--compact { border-top: none; padding: 0; gap: 6px; flex-shrink: 0; }
+.tara-check-row--compact .tara-box { width: 16px; height: 16px; border-radius: 4px; }
+.tara-check-row--compact .tara-check-label { font-size: 11px; }
+
 /* ── REDUCED MOTION ── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

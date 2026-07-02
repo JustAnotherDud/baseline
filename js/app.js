@@ -262,4 +262,30 @@ async function clearCacheAndReload() {
   location.reload(true);
 }
 
+// ── Refresh automático ───────────────────────────────────────────────────────
+// Reflecte alterações feitas noutro dispositivo (ex.: registo no telemóvel
+// enquanto o separador está aberto no PC). Recarrega a vista actual quando a
+// app volta a ficar visível/focada + poll a cada 60s enquanto visível.
+// Throttle de 15s para não duplicar pedidos (visibilitychange + focus disparam
+// juntos ao voltar à app). Não recarrega com sheet aberto nem edição em curso,
+// para não pisar o que o utilizador está a fazer.
+let lastAutoRefresh = 0;
+
+function refreshCurrentView() {
+  if (!db || document.hidden) return;
+  if (document.querySelector('.sheet-overlay.open') || editingEntry || selectedFood) return;
+  const now = Date.now();
+  if (now - lastAutoRefresh < 15000) return;
+  lastAutoRefresh = now;
+  const view = location.hash.replace('#', '') || 'today';
+  if (view === 'today') loadToday();
+  else if (view === 'foods') { if (currentFoodsTab === 'foods') loadFoods(); else loadMeals(); }
+  else if (view === 'forma') loadBody();
+  else if (view === 'stats') loadStats();
+}
+
+document.addEventListener('visibilitychange', refreshCurrentView);
+window.addEventListener('focus', refreshCurrentView);
+setInterval(refreshCurrentView, 60000);
+
 init();

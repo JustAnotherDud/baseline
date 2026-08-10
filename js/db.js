@@ -75,6 +75,7 @@ async function saveEditEntry() {
       fat:           n('eq-fat'),
       saturated_fat: n('eq-satfat'),
       sugar:         n('eq-sugar'),
+      fiber:         n('eq-fiber'),
       has_tara:      hasTara,
     }).eq('id', editingEntry.id);
     if (error) { toast('Erro ao guardar'); return; }

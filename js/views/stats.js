@@ -237,7 +237,7 @@ async function loadStats() {
     const topRows = topFoods.map(([name, { count, totalKcal }], idx) => `
       <div class="stats-top-item">
         <div class="stats-top-rank">${idx + 1}</div>
-        <div class="stats-top-name">${name}</div>
+        <div class="stats-top-name">${escHtml(name)}</div>
         <div class="stats-top-meta">${count}× · ${Math.round(totalKcal)} kcal</div>
       </div>`).join('');
 

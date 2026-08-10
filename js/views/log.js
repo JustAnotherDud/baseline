@@ -1,6 +1,3 @@
-let lastSearchResults = [];
-let expandedGroups = new Set();
-
 // ── TARA (peso do recipiente) ─────────────────────────────────────────────────
 // Flag opcional do registo de log; reset a cada abertura do sheet / backToSearch.
 let logHasTara = false;
@@ -54,7 +51,6 @@ async function searchDB() {
     </div>`;
     return;
   }
-  lastSearchResults = data;
   renderSearchResults(data);
 }
 
@@ -68,7 +64,6 @@ function groupFoodResults(foods) {
 }
 
 function renderSearchResults(foods) {
-  expandedGroups = new Set(); // reset expansão a cada render de nova pesquisa
   const container = document.getElementById('log-results');
   container.innerHTML = '';
 
@@ -120,7 +115,6 @@ function toggleFoodGroup(name, items, wrapper) {
   if (existing) {
     existing.remove();
     chevron.classList.remove('open');
-    expandedGroups.delete(name);
   } else {
     const brandsEl = document.createElement('div');
     brandsEl.className = 'food-group-brands';
@@ -136,7 +130,6 @@ function toggleFoodGroup(name, items, wrapper) {
     });
     wrapper.appendChild(brandsEl);
     chevron.classList.add('open');
-    expandedGroups.add(name);
   }
 }
 

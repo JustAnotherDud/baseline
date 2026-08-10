@@ -199,9 +199,10 @@ async function loadBody() {
   const hevy7  = new Date(todayMid); hevy7.setDate(todayMid.getDate() - 6);
   bodyHevyWorkouts = rawWorkouts.filter(w => w.start_time && new Date(w.start_time) >= hevy14);
   bodyGymCurrent = bodyHevyWorkouts.filter(w => new Date(w.start_time) >= hevy7);
-  bodyPeriod = 'month';
-  bodyFormActive = { ctl: true, atl: true };
-  bodyCompActive = { weight: true, fat: true, lbm: true };
+  // bodyPeriod/bodyFormActive/bodyCompActive NÃO se repõem aqui - já têm o
+  // default certo na declaração (topo do ficheiro) para o 1º load, e repor
+  // em toda chamada apagava a escolha do utilizador (período, datasets) a
+  // cada auto-refresh (visibilitychange/focus/poll 60s em app.js).
 
   bodyTrendRows = buildBodyTrendRows(bodyWellness, bodyAsc);
 

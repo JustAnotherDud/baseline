@@ -19,7 +19,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
           integrity="sha384-bs/nf9FbdNouRbMiFcrcZfLXYPKiPaGVGplVbv7dLGECccEXDW+S3zjqSKR5ZEaD"
           crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="css/styles.css?v=20260702">
+  <link rel="stylesheet" href="css/styles.css?v=20260826c">
 </head>
 <body>
 
@@ -146,7 +146,7 @@
       <div class="target-section-title">Data</div>
       <button id="targets-date-btn" onclick="openDatePicker(currentTargetsDate, onTargetsDateChange, {showScores: false})"
               style="background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--sans);font-size:14px;padding:10px 14px;border-radius:10px;width:100%;text-align:left;cursor:pointer">—</button>
-      <div id="phase-badge" class="phase-badge" style="margin-top:10px"></div>
+      <div id="countdown-badge" class="countdown-badge" style="margin-top:10px"></div>
     </div>
 
     <!-- Valores nutricionais (populados pelo DCB via daily_targets) -->
@@ -194,6 +194,7 @@
         <div class="target-section" style="padding-top:16px">
           <div class="target-section-title" style="margin-bottom:10px">Blocos activos</div>
           <div id="targets-blocks-chips" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+          <div id="targets-blocks-warning" class="blocks-warning" style="display:none"></div>
         </div>
       </div>
 
@@ -210,17 +211,6 @@
     <div class="view-header">
       <button onclick="go('mais')" style="background:none;border:none;color:var(--text2);font-size:15px;cursor:pointer;padding:0;font-family:var(--sans)">←</button>
       <div class="view-title">Settings</div>
-    </div>
-
-    <!-- PERFIL -->
-    <div class="settings-section-title">Perfil</div>
-    <div class="settings-row settings-row--static">
-      <span class="settings-row-label">Fase activa</span>
-      <span class="settings-row-value" id="settings-phase-num">—</span>
-    </div>
-    <div class="settings-row settings-row--static">
-      <span class="settings-row-label">Objectivo</span>
-      <span class="settings-row-value" id="settings-objetivo">—</span>
     </div>
 
     <!-- APP -->
@@ -512,17 +502,17 @@
 
 <div id="toast" aria-live="polite"></div>
 
-<script src="js/config.js?v=20260702"></script>
-<script src="js/nutrition.js?v=20260702"></script>
-<script src="js/db.js?v=20260702"></script>
-<script src="js/ui.js?v=20260702"></script>
-<script src="js/views/diary.js?v=20260702-6"></script>
-<script src="js/views/log.js?v=20260702"></script>
-<script src="js/views/foods.js?v=20260702-6"></script>
-<script src="js/views/meals.js?v=20260702"></script>
-<script src="js/views/targets.js?v=20260702"></script>
-<script src="js/views/stats.js?v=20260702-5"></script>
-<script src="js/views/body.js?v=20260702"></script>
-<script src="js/app.js?v=20260702"></script>
+<script src="js/config.js?v=20260826c"></script>
+<script src="js/nutrition.js?v=20260826c"></script>
+<script src="js/db.js?v=20260826c"></script>
+<script src="js/ui.js?v=20260826c"></script>
+<script src="js/views/diary.js?v=20260826c-6"></script>
+<script src="js/views/log.js?v=20260826c"></script>
+<script src="js/views/foods.js?v=20260826c-6"></script>
+<script src="js/views/meals.js?v=20260826c"></script>
+<script src="js/views/targets.js?v=20260826c"></script>
+<script src="js/views/stats.js?v=20260826c-5"></script>
+<script src="js/views/body.js?v=20260826c"></script>
+<script src="js/app.js?v=20260826c"></script>
 </body>
 </html>

@@ -113,19 +113,11 @@ async function loadSettingsView() {
   const verEl = document.getElementById('settings-version');
   if (verEl && typeof APP_VERSION !== 'undefined') verEl.textContent = 'v' + APP_VERSION;
 
-  const today = new Date().toISOString().split('T')[0];
-  const phase = await getActivePhase(today);
-  const phaseNumEl  = document.getElementById('settings-phase-num');
-  const objetivoEl  = document.getElementById('settings-objetivo');
-  if (phase) {
-    // Extract number from label e.g. "Fase 3" → "3", fallback to full label
-    const num = phase.label.replace(/[^0-9]/g, '') || phase.label;
-    if (phaseNumEl)  phaseNumEl.textContent  = num;
-    if (objetivoEl)  objetivoEl.textContent  = phase.objetivo || '—';
-  } else {
-    if (phaseNumEl)  phaseNumEl.textContent  = '—';
-    if (objetivoEl)  objetivoEl.textContent  = '—';
-  }
+  // "Fase activa"/"Objectivo" removidos (plans/011) -- liam phases.objetivo,
+  // uma tabela que sobreviveu ao modelo de fases/mesociclos purgado do
+  // sistema de coaching a 10 Ago 2026 (sync_hub plans/013+014). Não há
+  // conceito equivalente a mostrar aqui; T (semanas até Porto) já vive em
+  // #targets, não em Settings.
 
   // Estado ICU/Hevy (ID, key, toggle) vive nos sheets de configuração.
 }

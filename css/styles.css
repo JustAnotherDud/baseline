@@ -544,8 +544,9 @@ input[type="number"] { font-family: var(--mono); }
   background: none; border: 1px solid var(--border); border-radius: 6px;
   cursor: pointer;
 }
-.phase-badge { font-family: var(--mono); font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: .08em; padding: 6px 10px; background: var(--accent-a08); border-radius: 6px; display: inline-block; }
-.phase-badge-empty { color: var(--text3); background: transparent; }
+.countdown-badge { font-family: var(--mono); font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: .08em; padding: 6px 10px; background: var(--accent-a08); border-radius: 6px; display: inline-block; }
+.countdown-badge-empty { color: var(--text3); background: transparent; }
+.blocks-warning { font-family: var(--mono); font-size: 11px; color: var(--red); padding: 8px 10px; margin-top: 8px; background: color-mix(in srgb, var(--red) 10%, transparent); border-radius: 6px; }
 /* ── LOG VIEW ── */
 .log-meal-wrap { padding: 0 20px 4px; }
 .log-meal-label { font-family: var(--mono); font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px; }

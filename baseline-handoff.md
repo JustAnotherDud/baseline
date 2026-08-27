@@ -57,7 +57,7 @@ baseline/
 │   ├── nutrition.js            — getNutrientColor()
 │   ├── db.js                   — Supabase queries: getTargetsForDate, loadToday,
 │   │                             saveDiary, saveEditEntry, delEntryFromEdit,
-│   │                             getDayScores, getActivePhase, moveEntryToMeal
+│   │                             getDayScores, moveEntryToMeal
 │   ├── ui.js                   — Componentes reutilizáveis (sheets, date picker,
 │   │                             nutrient sheet, meal breakdown donut, segmented bar,
 │   │                             move-meal sheet, keyword highlight, parseGramsExpr…)

@@ -168,18 +168,6 @@ async function getDayScores(year, month) {
   }
 }
 
-async function getActivePhase(dateStr) {
-  if (!db) return null;
-  const { data, error } = await db
-    .from('phases')
-    .select('id, label, objetivo')
-    .lte('start_date', dateStr)
-    .or(`end_date.is.null,end_date.gte.${dateStr}`)
-    .maybeSingle();
-  if (error || !data) return null;
-  return data;
-}
-
 async function moveEntryToMeal(entryId, newMeal) {
   if (!db) return false;
   const { error } = await db

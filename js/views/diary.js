@@ -57,14 +57,12 @@ function renderToday(entries, t) {
       if (pct !== null) topRight = `<span style="font-size:11px;color:var(--text3);font-family:var(--mono)">${pct}%</span>`;
       valLine = `<span class="macro-cell-val" style="color:${m.color}">${val}</span>`;
     } else {
-      // Floor (P/F): abaixo → restante + %; atingido → só ✓; fat >90 sinaliza.
+      // Floor (P/F): abaixo → restante + %; atingido → só ✓.
       const tgtHTML = hasTargets ? `<span class="macro-cell-tgt" style="color:var(--text3)">≥${m.floor}</span>` : '';
       valLine = `<span class="macro-cell-val" style="color:${m.color}">${val}</span>${tgtHTML}`;
       const st = hasTargets ? macroFloorState(m.key, m.actual, m.floor) : null;
       if (st && st.status === 'below') {
         topRight = `<span style="display:inline-flex;align-items:baseline;gap:4px;font-family:var(--mono)"><span style="font-size:11px;color:var(--red)">−${st.deficit} ↓</span><span style="font-size:11px;color:var(--text3)">${st.pct}%</span></span>`;
-      } else if (st && st.status === 'over') {
-        topRight = `<span style="font-size:11px;color:var(--red);font-family:var(--mono)">&gt;90 ↑</span>`;
       } else if (st) {
         topRight = `<span style="font-size:11px;color:var(--accent);font-family:var(--mono)">✓</span>`;
       }

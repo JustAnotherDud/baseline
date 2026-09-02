@@ -14,7 +14,7 @@ Para contexto de produto/design, consulta `PRODUCT.md` e `DESIGN.md`.
 
 ```bash
 node --check js/views/ficheiro_alterado.js
-npm test          # deve passar 92 testes
+npm test          # deve passar 91 testes
 node bump.js      # actualiza ?v= timestamps
 ```
 

@@ -119,7 +119,7 @@ Sticky ao topo, `--bg`, border-bottom. Título em `.view-title` (mono 15px upper
 ### 3.2 Resumo de macros (header do Diário)
 
 `renderToday()` reescreve `.macro-summary`: linha de kcal (alvo primário, cor por `getNutrientColor`) + grid de 3 macros, cada uma com um papel:
-- **Proteína / Gordura** — floors mínimos. Linha 1: `%` do floor (verde se atingido, vermelho `−Xg` se abaixo; gordura `>90` sinaliza). Linha 2: valor na cor da macro + `≥floor`. Atingido → só `✓`.
+- **Proteína / Gordura** — floors mínimos. Linha 1: `%` do floor (verde se atingido, vermelho `−Xg` se abaixo). Linha 2: valor na cor da macro + `≥floor`. Atingido → só `✓`. Gordura já não tem tecto absoluto (`>90g`) — o alvo do dia vem de uma banda de 20-35% da energia (sync_hub plans/030/031) e ronda regularmente 100-150g; um tecto fixo disparava mesmo em cima do alvo prescrito.
 - **Hidratos** — residual: valor na cor própria + `%` neutra, nunca sinalizado.
 
 > A antiga barra segmentada (`buildSegmentedBar`) foi removida quando o header passou a compacto/pinado — só restava como dead code.

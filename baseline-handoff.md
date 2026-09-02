@@ -382,7 +382,7 @@ Usado na view Forma: `bodyFormChart` (CTL/ATL linha dupla) e `bodyCompChart` (Pe
 ### Antes de cada push
 ```bash
 node --check js/views/ficheiro_alterado.js   # syntax check
-npm test                                      # 92 testes node:test (hook pre-push automatiza)
+npm test                                      # 91 testes node:test (hook pre-push automatiza)
 node bump.js                                  # actualizar ?v= timestamps + APP_VERSION
 ```
 
@@ -430,7 +430,7 @@ Criar `<div class="sheet-overlay">` dinamicamente uma vez (cache por `id`), `app
 - Debounce na pesquisa de alimentos (300 ms) — commit `d1d2048`
 - SRI + CDN pinado (supabase-js) — commit `eb7ad30`
 - `escHtml()` em todos os interpolações innerHTML com dados externos (XSS hardening) — commits `a629026`, `85baeb7`
-- Suite de testes `npm test` (92 testes, `node:test`) + hook `githooks/pre-push` + `contrast-check.js` (gate WCAG AA)
+- Suite de testes `npm test` (91 testes, `node:test`) + hook `githooks/pre-push` + `contrast-check.js` (gate WCAG AA)
 - `bump.js` para cache-busting automático (`?v=` + `APP_VERSION`, sufixo z→aa)
 
 **Pendente / ideias**

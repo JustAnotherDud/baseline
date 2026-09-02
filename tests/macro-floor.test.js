@@ -27,12 +27,11 @@ test('gordura: abaixo do floor → below', () => {
   assert.deepEqual(norm(macroFloorState('fat', 50, 70)), { status: 'below', pct: 71, deficit: 20 });
 });
 
-test('gordura: dentro de [floor, 90] → met', () => {
+test('gordura: no/acima do floor → met (nunca over — sem tecto absoluto)', () => {
   assert.deepEqual(norm(macroFloorState('fat', 70, 70)), { status: 'met', pct: 100 });
   assert.deepEqual(norm(macroFloorState('fat', 90, 70)), { status: 'met', pct: 129 });
-});
-
-test('gordura: >90 → over (só gordura)', () => {
-  assert.deepEqual(norm(macroFloorState('fat', 91, 70)), { status: 'over', pct: 130 });
-  assert.deepEqual(norm(macroFloorState('fat', 95, 70)), { status: 'over', pct: 136 });
+  // Alvos reais (sync_hub plans/030/031, banda 20-35% da energia) rondam
+  // 100-150g regularmente — o antigo tecto de 90g disparava em cima do
+  // próprio alvo prescrito. Removido; ver js/nutrition.js.
+  assert.deepEqual(norm(macroFloorState('fat', 150, 130)), { status: 'met', pct: 115 });
 });

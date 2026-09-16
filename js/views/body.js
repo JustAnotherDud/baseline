@@ -23,9 +23,6 @@ let bodyTrendRows = [];   // merge wellness + body_comp por data: {date, ctl, at
 let bodyRecentActivities = [];   // activities ICU dos últimos 14 dias (sheet de detalhe)
 let bodyHevyWorkouts = [];       // workouts Hevy dos últimos 14 dias
 let bodyGymCurrent   = [];       // sessões de ginásio na janela [hoje-6, hoje]
-let bodyWeightGainIsGood = false; // surplus hoje → subir peso é o objectivo (cor do delta)
-                                   // derivado de daily_targets.blocks_active.surplus (hoje),
-                                   // NUNCA de phases.objetivo — ver plans/011
 
 const ICU_BASE = 'https://intervals.icu/api/v1';
 
@@ -171,39 +168,19 @@ async function loadBody() {
     ],
   })).catch(() => null) : Promise.resolve(null);
 
-  // NUNCA ler phases.objetivo aqui — é uma terceira cópia do surplus (além de
-  // athlete.json e do vault do sync_hub), ficou errada 3 meses sem ninguém
-  // dar por isso (plans/011). blocks_active.surplus do daily_targets de hoje
-  // é o backend a dizer o valor real, não uma cópia.
-  const todaysTargetPromise = db
-    ? db.from('daily_targets').select('blocks_active').eq('date', today).maybeSingle()
-    : Promise.resolve({ data: null });
-
-  const [bodyRes, wellness, activities, hevyData, todaysTargetRes] = await Promise.all([
+  const [bodyRes, wellness, activities, hevyData] = await Promise.all([
     db.from('body_comp').select('*').order('date', { ascending: true }),
     hasIcu ? icuFetch(`/athlete/${icuId}/wellness?oldest=${back90}&newest=${today}`).catch(() => null)
            : Promise.resolve(null),
     hasIcu ? icuFetch(`/athlete/${icuId}/activities?oldest=${back14}&newest=${today}&fields=name,type,distance,moving_time,icu_training_load,start_date_local`).catch(() => null)
            : Promise.resolve(null),
     hevyPromise,
-    // O query builder do Supabase é thenable (.then) mas NÃO implementa
-    // .catch() -- chamá-lo directamente lança TypeError síncrono e aborta
-    // loadBody() antes de qualquer render (bug real, apanhado ao testar esta
-    // correcção). Erros de query resolvem como {data:null,error:{...}}, não
-    // rejeitam a promise -- não há nada para apanhar aqui.
-    todaysTargetPromise,
   ]);
   if (gen !== loadBodyGen) return;
 
   bodyAsc      = (bodyRes && !bodyRes.error && bodyRes.data) ? bodyRes.data : [];
   bodyWellness = tWellnessSorted(wellness);
   bodyRecentActivities = Array.isArray(activities) ? activities : [];
-
-  // Surplus hoje → subir peso é bom (delta verde); sem surplus (0/negativo,
-  // ex. cut pós-Porto) → subir peso é mau. Lido directo do bloco de hoje,
-  // não de um rótulo de fase.
-  const todaysSurplus = +(todaysTargetRes?.data?.blocks_active?.surplus);
-  bodyWeightGainIsGood = Number.isFinite(todaysSurplus) && todaysSurplus > 0;
 
   // Hevy — normalizar (array directo ou {workouts:[...]}), filtrar 14 dias e a
   // janela [hoje-6, hoje] (7 dias, hoje incluído). Falha silenciosa → arrays vazios.
@@ -315,10 +292,9 @@ function bodyWeighInHtml(asc) {
   let deltaHtml = '';
   if (wNow != null && prev && tNum(prev.weight_kg) != null) {
     const delta = parseFloat((wNow - tNum(prev.weight_kg)).toFixed(1));
-    // Cor por surplus real de hoje: em surplus subir é bom (accent), descer é mau (red); sem surplus é o inverso.
-    const deltaColor = delta === 0 ? 'var(--text3)'
-      : (delta > 0) === bodyWeightGainIsGood ? 'var(--accent)'
-      : 'var(--red)';
+    // Sem surplus/bulk (plans/032, manutenção pura) não há um "lado bom"
+    // para o peso subir ou descer. Delta é sempre neutro, sem julgamento de cor.
+    const deltaColor = 'var(--text3)';
     if (delta > 0)      deltaHtml = `<span style="font-family:var(--mono);font-size:10px;color:${deltaColor}">↑ ${delta.toFixed(1)} kg</span>`;
     else if (delta < 0) deltaHtml = `<span style="font-family:var(--mono);font-size:10px;color:${deltaColor}">↓ ${Math.abs(delta).toFixed(1)} kg</span>`;
     else                deltaHtml = `<span style="font-family:var(--mono);font-size:10px;color:${deltaColor}">= 0.0 kg</span>`;

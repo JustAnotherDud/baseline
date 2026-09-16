@@ -55,14 +55,21 @@ function updateCountdownBadge() {
  * entrada por actividade (nunca agregado — dias com 2-3 actividades vão ser
  * comuns); qualquer outra coisa (strings como run_type_context, zeros,
  * nulls) fica de fora sem precisar de saber o nome do campo à partida. */
+// plans/032: energy_lookback_days_used/energy_days_logged_in_window são
+// metadados de cobertura (badge em refreshTargets), não blocos de kcal.
+// Excluídos aqui como run_type_context, senão apareciam como chips falsos
+// ("energy_lookback_days_used 45kcal").
+const ENERGY_META_KEYS = new Set(['energy_lookback_days_used', 'energy_days_logged_in_window']);
+
 function deriveBlocks(blocksActive) {
   const BLOCK_LABELS = {
-    base: 'Base', work: 'Trabalho', gym: 'Ginásio', run: 'Corrida', surplus: 'Surplus',
+    base: 'Base', work: 'Trabalho', gym: 'Ginásio', run: 'Corrida',
   };
   const chips = [];
   let sum = 0;
 
   for (const [key, value] of Object.entries(blocksActive)) {
+    if (ENERGY_META_KEYS.has(key)) continue;
     if (key === 'activity_kcal_by_id' && value && typeof value === 'object') {
       const activityEntries = Object.entries(value);
       activityEntries.forEach(([activityId, kcal]) => {
@@ -108,8 +115,22 @@ async function refreshTargets() {
   const chipsEl    = document.getElementById('targets-blocks-chips');
   const warningEl  = document.getElementById('targets-blocks-warning');
   const pushTime   = document.getElementById('targets-push-time');
+  const coverageEl = document.getElementById('targets-coverage-badge');
 
   if (row) {
+    // Badge de cobertura (plans/032). Só aparece quando a janela de
+    // expenditure/weight_kg_ref teve de alargar além de 21d por falta de
+    // dados logados. Ausência do badge = janela normal, sem aviso a dar.
+    if (coverageEl) {
+      const lookbackDays = row.blocks_active?.energy_lookback_days_used;
+      const loggedDays   = row.blocks_active?.energy_days_logged_in_window;
+      if (Number.isFinite(lookbackDays) && lookbackDays > 21) {
+        coverageEl.textContent = `Estimativa alargada a ${lookbackDays}d (${loggedDays ?? '—'}d logados)`;
+        coverageEl.style.display = 'inline-block';
+      } else {
+        coverageEl.style.display = 'none';
+      }
+    }
     // ── Com target ──────────────────────────────────────────────
     document.getElementById('t-kcal').textContent  = row.calories ?? '—';
     document.getElementById('t-fat').textContent   = row.fat      ?? '—';
@@ -181,6 +202,7 @@ async function refreshTargets() {
     blocksEl.style.display   = 'none';
     if (warningEl) warningEl.style.display = 'none';
     pushTime.style.display   = 'none';
+    if (coverageEl) coverageEl.style.display = 'none';
     if (hint) {
       hint.textContent = 'Sem target para esta data. Pede ao DCB para fazer push dos blocos de hoje.';
       hint.style.display = 'block';

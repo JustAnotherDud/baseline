@@ -55,11 +55,18 @@ function updateCountdownBadge() {
  * entrada por actividade (nunca agregado — dias com 2-3 actividades vão ser
  * comuns); qualquer outra coisa (strings como run_type_context, zeros,
  * nulls) fica de fora sem precisar de saber o nome do campo à partida. */
-// plans/032: energy_lookback_days_used/energy_days_logged_in_window são
-// metadados de cobertura (badge em refreshTargets), não blocos de kcal.
-// Excluídos aqui como run_type_context, senão apareciam como chips falsos
-// ("energy_lookback_days_used 45kcal").
-const ENERGY_META_KEYS = new Set(['energy_lookback_days_used', 'energy_days_logged_in_window']);
+// plans/032/033: metadados de blocks_active que não são blocos de kcal --
+// nunca chips. energy_lookback_days_used/energy_days_logged_in_window são
+// inteiros (cobertura, badge em refreshTargets); run_type_source/gym_source
+// são strings, já ficam de fora sozinhos (+string vira NaN, falha o teste
+// `n > 0`); gym_planned é BOOLEANO -- +true === 1, passava o teste `n > 0`
+// e desenhava um chip falso ("gym_planned 1kcal") sem esta exclusão
+// explícita (achado ao rever este ficheiro, plans/033, antes de qualquer
+// linha real ter gym_planned=true).
+const NON_BLOCK_KEYS = new Set([
+  'energy_lookback_days_used', 'energy_days_logged_in_window',
+  'run_type_source', 'gym_planned', 'gym_source',
+]);
 
 function deriveBlocks(blocksActive) {
   const BLOCK_LABELS = {
@@ -69,7 +76,7 @@ function deriveBlocks(blocksActive) {
   let sum = 0;
 
   for (const [key, value] of Object.entries(blocksActive)) {
-    if (ENERGY_META_KEYS.has(key)) continue;
+    if (NON_BLOCK_KEYS.has(key)) continue;
     if (key === 'activity_kcal_by_id' && value && typeof value === 'object') {
       const activityEntries = Object.entries(value);
       activityEntries.forEach(([activityId, kcal]) => {

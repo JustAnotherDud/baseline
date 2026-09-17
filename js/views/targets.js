@@ -63,9 +63,15 @@ function updateCountdownBadge() {
 // e desenhava um chip falso ("gym_planned 1kcal") sem esta exclusão
 // explícita (achado ao rever este ficheiro, plans/033, antes de qualquer
 // linha real ter gym_planned=true).
+// plans/034: work_hours_today é HORAS, não kcal (+6 passava o teste n>0 e
+// desenhava "work_hours_today 6kcal", errado por unidade); avg_work_kcal_per_day
+// é uma média de diagnóstico da janela, não uma contribuição real de HOJE --
+// nunca chips, tal como avg_activity_kcal_per_day nunca foi (não vem em
+// blocks_active, só no retorno da RPC).
 const NON_BLOCK_KEYS = new Set([
   'energy_lookback_days_used', 'energy_days_logged_in_window',
   'run_type_source', 'gym_planned', 'gym_source',
+  'work_hours_today', 'avg_work_kcal_per_day',
 ]);
 
 function deriveBlocks(blocksActive) {
@@ -148,6 +154,22 @@ async function refreshTargets() {
     // Blocos activos — chips derivados de blocks_active inteiro
     if (row.blocks_active && typeof row.blocks_active === 'object' && chipsEl) {
       const { chips, sum } = deriveBlocks(row.blocks_active);
+
+      // plans/034: desde o plans/031 as calorias já não são soma-de-blocos
+      // -- vêm de expenditure_estimate_kcal (medido) menos médias mais os
+      // extras reais de hoje, depois compostas por compose_macros. Os
+      // "blocos" aqui só listam os EXTRAS conhecidos (corrida/trabalho/
+      // ginásio); o baseline (metabolismo + manutenção) nunca teve chave
+      // própria em blocks_active. Um diff positivo é esperado sempre --
+      // vira o chip "Baseline" em vez de aviso. Um diff NEGATIVO (blocos
+      // somam mais do que o target) é que continua a ser suspeito a sério
+      // (dupla contagem) e mantém o aviso vermelho.
+      const calories = +row.calories;
+      const diff = Number.isFinite(calories) ? calories - sum : null;
+      if (diff !== null && diff > 1) {
+        chips.unshift({ label: 'Baseline', value: diff });
+      }
+
       if (chips.length) {
         chipsEl.innerHTML = '';
         chips.forEach(({ label, value }) => {
@@ -158,16 +180,11 @@ async function refreshTargets() {
         });
         blocksEl.style.display = 'block';
 
-        // Verificação visível: soma dos blocos vs calories. Foi por acaso
-        // que se reparou que faltava activity_kcal_by_id na soma — sem isto
-        // visível, a próxima chave nova a desaparecer passa despercebida.
-        const calories = +row.calories;
-        const diff = Number.isFinite(calories) ? calories - sum : null;
         if (warningEl) {
-          if (diff !== null && Math.abs(diff) > 1) {
+          if (diff !== null && diff < -1) {
             warningEl.textContent =
-              `⚠ Blocos somam ${sum}kcal, mas o target é ${calories}kcal ` +
-              `(diferença de ${diff > 0 ? '+' : ''}${diff}kcal não explicada por nenhum bloco listado acima).`;
+              `⚠ Blocos somam ${sum}kcal, mais do que o target (${calories}kcal) ` +
+              `-- excesso de ${Math.abs(diff)}kcal, possível dupla contagem.`;
             warningEl.style.display = 'block';
           } else {
             warningEl.style.display = 'none';

@@ -55,34 +55,46 @@ function updateCountdownBadge() {
  * entrada por actividade (nunca agregado — dias com 2-3 actividades vão ser
  * comuns); qualquer outra coisa (strings como run_type_context, zeros,
  * nulls) fica de fora sem precisar de saber o nome do campo à partida. */
-// plans/032/033: metadados de blocks_active que não são blocos de kcal --
-// nunca chips. energy_lookback_days_used/energy_days_logged_in_window são
-// inteiros (cobertura, badge em refreshTargets); run_type_source/gym_source
-// são strings, já ficam de fora sozinhos (+string vira NaN, falha o teste
-// `n > 0`); gym_planned é BOOLEANO -- +true === 1, passava o teste `n > 0`
-// e desenhava um chip falso ("gym_planned 1kcal") sem esta exclusão
-// explícita (achado ao rever este ficheiro, plans/033, antes de qualquer
-// linha real ter gym_planned=true).
-// plans/034: work_hours_today é HORAS, não kcal (+6 passava o teste n>0 e
-// desenhava "work_hours_today 6kcal", errado por unidade); avg_work_kcal_per_day
-// é uma média de diagnóstico da janela, não uma contribuição real de HOJE --
-// nunca chips, tal como avg_activity_kcal_per_day nunca foi (não vem em
-// blocks_active, só no retorno da RPC).
-const NON_BLOCK_KEYS = new Set([
-  'energy_lookback_days_used', 'energy_days_logged_in_window',
-  'run_type_source', 'gym_planned', 'gym_source',
-  'work_hours_today', 'avg_work_kcal_per_day',
-]);
+// plans/035: um bloco de kcal é, por CONVENÇÃO DE NOME, uma chave de topo
+// terminada em `_kcal` (mais o caso especial `activity_kcal_by_id`). Tudo o
+// resto -- proveniência (run_type_source, gym_planned, gym_source), contexto
+// e diagnóstico (agora aninhado em `energy_diag`) -- fica de fora por
+// construção, sem precisar de ser enumerado.
+//
+// Isto substitui a lista NON_BLOCK_KEYS que existia aqui desde plans/032.
+// Uma blacklist tem de ser actualizada a cada campo novo do backend e falha
+// EM SILÊNCIO quando alguém se esquece. Falhou duas vezes em duas rondas:
+// `gym_planned` (booleano, +true === 1) desenhou "gym_planned 1kcal", e
+// `work_hours_today` (horas) desenhou "work_hours_today 6kcal" -- errado na
+// unidade, não só no rótulo. Um sufixo não tem esse modo de falha: um campo
+// novo só vira chip se for mesmo kcal, e um campo de kcal novo aparece
+// sozinho (que era o objectivo original do derive genérico).
+const BLOCK_LABELS = {
+  baseline_kcal: 'Baseline',
+  work_kcal: 'Trabalho',
+  gym_kcal: 'Ginásio',
+};
+// Ordem de apresentação; chaves desconhecidas vão para o fim.
+const BLOCK_ORDER = ['baseline_kcal', 'work_kcal', 'gym_kcal', 'activity_kcal_by_id'];
+
+function blockLabel(key) {
+  if (BLOCK_LABELS[key]) return BLOCK_LABELS[key];
+  const bare = key.replace(/_kcal$/, '').replace(/_/g, ' ');
+  return bare.charAt(0).toUpperCase() + bare.slice(1);
+}
 
 function deriveBlocks(blocksActive) {
-  const BLOCK_LABELS = {
-    base: 'Base', work: 'Trabalho', gym: 'Ginásio', run: 'Corrida',
-  };
   const chips = [];
   let sum = 0;
 
-  for (const [key, value] of Object.entries(blocksActive)) {
-    if (NON_BLOCK_KEYS.has(key)) continue;
+  const keys = Object.keys(blocksActive).sort((a, b) => {
+    const ia = BLOCK_ORDER.indexOf(a), ib = BLOCK_ORDER.indexOf(b);
+    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+  });
+
+  for (const key of keys) {
+    const value = blocksActive[key];
+
     if (key === 'activity_kcal_by_id' && value && typeof value === 'object') {
       const activityEntries = Object.entries(value);
       activityEntries.forEach(([activityId, kcal]) => {
@@ -96,13 +108,48 @@ function deriveBlocks(blocksActive) {
       });
       continue;
     }
+
+    if (!key.endsWith('_kcal')) continue;
     const n = +value;
-    if (!(n > 0)) continue; // exclui strings (run_type_context), 0, null, undefined
+    if (!(n > 0)) continue;
     sum += n;
-    chips.push({ label: BLOCK_LABELS[key] || key, value: n });
+    chips.push({ label: blockLabel(key), value: n });
   }
 
   return { chips, sum: Math.round(sum) };
+}
+
+/** Linha de contexto energético a partir de blocks_active.energy_diag
+ * (plans/035). Antes, expenditure/SE/unallocated/rolling_7d eram calculados
+ * pela RPC e deitados fora -- nunca chegavam à linha nem a esta página, o que
+ * tornava possível o sistema descartar 11% da energia sem aparecer em lado
+ * nenhum. Devolve [] quando não há nada a dizer. */
+function energyNotes(diag) {
+  if (!diag || typeof diag !== 'object') return [];
+  const notes = [];
+
+  const exp = +diag.expenditure_estimate_kcal;
+  if (Number.isFinite(exp)) {
+    const se = +diag.expenditure_se_kcal;
+    const margin = Number.isFinite(se) && se > 0 ? ` ±${Math.round(se)}` : '';
+    const days = diag.lookback_days_used;
+    const logged = diag.days_logged_in_window;
+    const win = days ? ` · janela ${days}d (${logged ?? '—'}d logados)` : '';
+    notes.push(`Gasto medido ${Math.round(exp)}${margin} kcal/dia${win}`);
+  } else if (diag.energy_source === 'modeled_fallback') {
+    notes.push('Energia por fallback modelado — sem dias suficientes de diário para medir o gasto.');
+  }
+
+  // unallocated é estruturalmente 0 desde plans/035 (sem tectos). Se voltar a
+  // aparecer, é bug -- por isso é que continua a ser mostrado.
+  const unalloc = +diag.unallocated_kcal;
+  if (Number.isFinite(unalloc) && unalloc > 0) {
+    notes.push(`⚠ ${unalloc} kcal descartadas na composição de macros — não devia acontecer.`);
+  }
+  if (diag.floors_conflict === true || diag.floors_conflict === 'true') {
+    notes.push('⚠ Piso de hidratos e piso de gordura em conflito — gordura ficou no mínimo.');
+  }
+  return notes;
 }
 
 async function refreshTargets() {
@@ -127,17 +174,22 @@ async function refreshTargets() {
   const blocksEl   = document.getElementById('targets-blocks');
   const chipsEl    = document.getElementById('targets-blocks-chips');
   const warningEl  = document.getElementById('targets-blocks-warning');
+  const noteEl     = document.getElementById('targets-energy-note');
   const pushTime   = document.getElementById('targets-push-time');
   const coverageEl = document.getElementById('targets-coverage-badge');
 
   if (row) {
-    // Badge de cobertura (plans/032). Só aparece quando a janela de
-    // expenditure/weight_kg_ref teve de alargar além de 21d por falta de
-    // dados logados. Ausência do badge = janela normal, sem aviso a dar.
+    // plans/035: o diagnóstico mudou-se para blocks_active.energy_diag. Linhas
+    // antigas (pré-035) têm os mesmos campos no topo -- ler os dois, para o
+    // histórico não ficar sem badge ao navegar para trás.
+    const diag = row.blocks_active?.energy_diag ?? null;
+    const lookbackDays = diag?.lookback_days_used ?? row.blocks_active?.energy_lookback_days_used;
+    const loggedDays   = diag?.days_logged_in_window ?? row.blocks_active?.energy_days_logged_in_window;
+
+    // Badge de cobertura: só aparece quando a janela teve de alargar além da
+    // normal (28d desde plans/035, era 21d) por falta de dias logados.
     if (coverageEl) {
-      const lookbackDays = row.blocks_active?.energy_lookback_days_used;
-      const loggedDays   = row.blocks_active?.energy_days_logged_in_window;
-      if (Number.isFinite(lookbackDays) && lookbackDays > 21) {
+      if (Number.isFinite(lookbackDays) && lookbackDays > 28) {
         coverageEl.textContent = `Estimativa alargada a ${lookbackDays}d (${loggedDays ?? '—'}d logados)`;
         coverageEl.style.display = 'inline-block';
       } else {
@@ -154,21 +206,12 @@ async function refreshTargets() {
     // Blocos activos — chips derivados de blocks_active inteiro
     if (row.blocks_active && typeof row.blocks_active === 'object' && chipsEl) {
       const { chips, sum } = deriveBlocks(row.blocks_active);
-
-      // plans/034: desde o plans/031 as calorias já não são soma-de-blocos
-      // -- vêm de expenditure_estimate_kcal (medido) menos médias mais os
-      // extras reais de hoje, depois compostas por compose_macros. Os
-      // "blocos" aqui só listam os EXTRAS conhecidos (corrida/trabalho/
-      // ginásio); o baseline (metabolismo + manutenção) nunca teve chave
-      // própria em blocks_active. Um diff positivo é esperado sempre --
-      // vira o chip "Baseline" em vez de aviso. Um diff NEGATIVO (blocos
-      // somam mais do que o target) é que continua a ser suspeito a sério
-      // (dupla contagem) e mantém o aviso vermelho.
       const calories = +row.calories;
-      const diff = Number.isFinite(calories) ? calories - sum : null;
-      if (diff !== null && diff > 1) {
-        chips.unshift({ label: 'Baseline', value: diff });
-      }
+      // plans/035: `baseline_kcal` passou a ser um bloco escrito pelo backend.
+      // A sua presença é o que distingue uma linha nova de uma pré-035 -- e
+      // é só nas novas que a soma dos blocos PODE fechar com o total, logo
+      // só nessas é que uma divergência significa alguma coisa.
+      const hasBaseline = Object.hasOwn(row.blocks_active, 'baseline_kcal');
 
       if (chips.length) {
         chipsEl.innerHTML = '';
@@ -180,23 +223,49 @@ async function refreshTargets() {
         });
         blocksEl.style.display = 'block';
 
+        // Até plans/034 este aviso era um falso-positivo permanente: desde
+        // plans/031 as calorias deixaram de ser soma-de-blocos, mas a baseline
+        // não tinha chave própria, por isso a soma NUNCA fechava. Agora fecha
+        // por construção (baseline + trabalho + ginásio + actividade == energia
+        // base), e o aviso volta a significar o que sempre quis dizer: dupla
+        // contagem. Tolerância de 15kcal para o arredondamento à grama dos
+        // macros (P×4+C×4+F×9 não bate ao kcal exacto).
         if (warningEl) {
-          if (diff !== null && diff < -1) {
+          const diff = hasBaseline && Number.isFinite(calories) ? sum - calories : 0;
+          if (Math.abs(diff) > 15) {
             warningEl.textContent =
-              `⚠ Blocos somam ${sum}kcal, mais do que o target (${calories}kcal) ` +
-              `-- excesso de ${Math.abs(diff)}kcal, possível dupla contagem.`;
+              `⚠ Blocos somam ${sum}kcal contra um target de ${calories}kcal ` +
+              `(${diff > 0 ? '+' : ''}${diff}kcal). Os dois deviam fechar — ` +
+              `possível dupla contagem ou bloco em falta.`;
             warningEl.style.display = 'block';
           } else {
             warningEl.style.display = 'none';
           }
         }
+
+        if (noteEl) {
+          const notes = energyNotes(diag);
+          if (notes.length) {
+            noteEl.innerHTML = '';
+            notes.forEach((text) => {
+              const line = document.createElement('div');
+              line.textContent = text;
+              noteEl.appendChild(line);
+            });
+            noteEl.style.display = 'block';
+          } else {
+            noteEl.style.display = 'none';
+          }
+        }
       } else {
         blocksEl.style.display = 'none';
         if (warningEl) warningEl.style.display = 'none';
+        if (noteEl) noteEl.style.display = 'none';
       }
     } else {
       blocksEl.style.display = 'none';
       if (warningEl) warningEl.style.display = 'none';
+      if (noteEl) noteEl.style.display = 'none';
     }
 
     // Push time — mostra data quando o push não é de hoje
@@ -225,6 +294,7 @@ async function refreshTargets() {
     });
     blocksEl.style.display   = 'none';
     if (warningEl) warningEl.style.display = 'none';
+    if (noteEl) noteEl.style.display = 'none';
     pushTime.style.display   = 'none';
     if (coverageEl) coverageEl.style.display = 'none';
     if (hint) {

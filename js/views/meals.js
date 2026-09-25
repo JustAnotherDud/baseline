@@ -77,7 +77,7 @@ let mcItemCounter = 0;
 
 function mcAddItem() {
   const id = ++mcItemCounter;
-  mealItems.push({ id, food_id: null, food_name: '', grams: '', calories: 0, protein: 0, carbs: 0, fat: 0, saturated_fat: 0, sugar: 0, fiber: 0 });
+  mealItems.push({ id, food_id: null, food_name: '', grams: '', ...mapNutrients(() => 0) });
   renderMcItems();
   // Focus the new search input
   setTimeout(() => {
@@ -166,15 +166,8 @@ function mcGramsChange(itemId, val) {
   if (!item || !item._food) return;
   const g = parseFloat(val) || 0;
   const f = item._food;
-  const factor = g / 100;
-  item.grams         = g;
-  item.calories      = (f.calories_per_100g      || 0) * factor;
-  item.protein       = (f.protein_per_100g       || 0) * factor;
-  item.carbs         = (f.carbs_per_100g         || 0) * factor;
-  item.fat           = (f.fat_per_100g           || 0) * factor;
-  item.saturated_fat = (f.saturated_fat_per_100g || 0) * factor;
-  item.sugar         = (f.sugar_per_100g         || 0) * factor;
-  item.fiber         = (f.fiber_per_100g         || 0) * factor;
+  item.grams = g;
+  Object.assign(item, mapNutrients(k => (f[k + '_per_100g'] || 0) * (g / 100)));
   // Update only the kcal label — no full re-render to preserve input focus
   const itemEl = document.getElementById(`mc-item-${itemId}`);
   if (itemEl) {
@@ -209,13 +202,7 @@ async function saveMeal() {
       food_id:       i.food_id,
       food_name:     i.food_name,
       grams:         parseFloat(i.grams),
-      calories:      i.calories,
-      protein:       i.protein,
-      carbs:         i.carbs,
-      fat:           i.fat,
-      saturated_fat: i.saturated_fat,
-      sugar:         i.sugar,
-      fiber:         i.fiber,
+      ...mapNutrients(k => i[k]),
     }));
 
     const { error: e2 } = await db.from('meal_template_items').insert(rows);
@@ -306,13 +293,7 @@ async function applyMealToDiary() {
       food_id:       i.food_id || null,
       food_name:     i.food_name,
       grams:         +(i.grams),
-      calories:      +(i.calories),
-      protein:       +(i.protein),
-      carbs:         +(i.carbs),
-      fat:           +(i.fat),
-      saturated_fat: +(i.saturated_fat || 0),
-      sugar:         +(i.sugar || 0),
-      fiber:         +(i.fiber || 0),
+      ...mapNutrients(k => SECONDARY_NUTRIENTS.includes(k) ? +(i[k] || 0) : +(i[k])),
     }));
 
     const { error } = await db.from('diary').insert(rows);

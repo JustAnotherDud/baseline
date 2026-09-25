@@ -31,13 +31,7 @@ async function saveDiary(extra = {}) {
     date:currentDate, meal:selectedMeal,
     food_id:selectedFood.id, food_name:selectedFood.name,
     grams:g,
-    calories:      c(selectedFood.calories_per_100g),
-    protein:       c(selectedFood.protein_per_100g),
-    carbs:         c(selectedFood.carbs_per_100g),
-    fat:           c(selectedFood.fat_per_100g),
-    saturated_fat: c(selectedFood.saturated_fat_per_100g),
-    sugar:         c(selectedFood.sugar_per_100g),
-    fiber:         c(selectedFood.fiber_per_100g),
+    ...mapNutrients(k => c(selectedFood[k + '_per_100g'])),
     has_tara:      !!extra.has_tara,
   });
   if (error) { toast('Erro ao guardar'); return false; }
@@ -54,13 +48,7 @@ async function saveEditEntry() {
   if (isQuick) {
     const n = id => { const el = document.getElementById(id); return el ? parseFloat(el.value) || 0 : 0; };
     const { error } = await db.from('diary').update({
-      calories:      n('eq-calories'),
-      protein:       n('eq-protein'),
-      carbs:         n('eq-carbs'),
-      fat:           n('eq-fat'),
-      saturated_fat: n('eq-satfat'),
-      sugar:         n('eq-sugar'),
-      fiber:         n('eq-fiber'),
+      ...mapNutrients(k => n('eq-' + k)),
       has_tara:      hasTara,
     }).eq('id', editingEntry.id);
     if (error) { toast('Erro ao guardar'); return; }
@@ -80,13 +68,7 @@ async function saveEditEntry() {
 
   const { error } = await db.from('diary').update({
     grams:         g,
-    calories:      r(editingEntry.calories),
-    protein:       r(editingEntry.protein),
-    carbs:         r(editingEntry.carbs),
-    fat:           r(editingEntry.fat),
-    saturated_fat: r(editingEntry.saturated_fat),
-    sugar:         r(editingEntry.sugar),
-    fiber:         r(editingEntry.fiber),
+    ...mapNutrients(k => r(editingEntry[k])),
     has_tara:      hasTara,
   }).eq('id', editingEntry.id);
 

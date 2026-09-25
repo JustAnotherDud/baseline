@@ -96,7 +96,7 @@ test('2. saveEditEntry (entrada rápida): lê os 7 campos do sheet', async () =>
   const { ctx, document } = load(['js/ui.js', 'js/db.js'], { db, editingEntry: { id: 9, grams: null } });
   const set = (id, v) => { document.getElementById(id).value = v; };
   set('eq-calories', '250'); set('eq-protein', '10'); set('eq-carbs', ''); set('eq-fat', '5.5');
-  set('eq-satfat', '1'); set('eq-sugar', '0'); set('eq-fiber', 'abc');
+  set('eq-saturated_fat', '1'); set('eq-sugar', '0'); set('eq-fiber', 'abc');
   document.getElementById('edit-tara-box').classList.add('checked');
   await ctx.saveEditEntry();
   assert.deepEqual(plain(calls[0]), {

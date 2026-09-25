@@ -150,7 +150,7 @@ async function openEditEntry(id) {
         <label><span class="lt">Proteína (g)</span><input type="number" id="eq-protein" inputmode="decimal" placeholder="0"></label>
         <label><span class="lt">Hidratos (g)</span><input type="number" id="eq-carbs" inputmode="decimal" placeholder="0"></label>
         <label><span class="lt">Gordura (g)</span><input type="number" id="eq-fat" inputmode="decimal" placeholder="0"></label>
-        <input type="hidden" id="eq-satfat">
+        <input type="hidden" id="eq-saturated_fat">
         <input type="hidden" id="eq-sugar">
         <input type="hidden" id="eq-fiber">`;
       previewEl.after(qf);
@@ -162,7 +162,7 @@ async function openEditEntry(id) {
     document.getElementById('eq-carbs').value    = data.carbs    ?? '';
     document.getElementById('eq-fat').value      = data.fat      ?? '';
     // Preservar satfat/sugar/fibra (sem input visível) — senão saveEditEntry zera-os.
-    document.getElementById('eq-satfat').value = data.saturated_fat || 0;
+    document.getElementById('eq-saturated_fat').value = data.saturated_fat || 0;
     document.getElementById('eq-sugar').value  = data.sugar         || 0;
     document.getElementById('eq-fiber').value  = data.fiber         || 0;
 
@@ -435,23 +435,12 @@ function openMealBreakdown(mealKey, allEntries) {
       food_id:       e.food_id || null,
       food_name:     e.food_name,
       grams:         e.grams,
-      calories:      e.calories,
-      protein:       e.protein,
-      carbs:         e.carbs,
-      fat:           e.fat,
-      saturated_fat: e.saturated_fat || 0,
-      sugar:         e.sugar || 0,
-      fiber:         e.fiber || 0,
+      ...mapNutrients(k => SECONDARY_NUTRIENTS.includes(k) ? e[k] || 0 : e[k]),
+      // Alimento reconstruído do snapshot, para mcGramsChange poder reescalar.
       _food:         e.food_id ? {
-        id:                     e.food_id,
-        calories_per_100g:      e.calories           / e.grams * 100,
-        protein_per_100g:       e.protein            / e.grams * 100,
-        carbs_per_100g:         e.carbs              / e.grams * 100,
-        fat_per_100g:           e.fat                / e.grams * 100,
-        saturated_fat_per_100g: (e.saturated_fat||0) / e.grams * 100,
-        sugar_per_100g:         (e.sugar||0)         / e.grams * 100,
-        fiber_per_100g:         (e.fiber||0)         / e.grams * 100,
-        serving_size_g:         e.grams,
+        id: e.food_id,
+        ...Object.fromEntries(NUTRIENTS.map(k => [k + '_per_100g', (e[k] || 0) / e.grams * 100])),
+        serving_size_g: e.grams,
       } : null,
     }));
     if (skippedCount > 0) {

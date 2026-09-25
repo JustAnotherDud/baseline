@@ -4,6 +4,7 @@ const vm = require('node:vm');
 const fs = require('node:fs');
 const path = require('node:path');
 
+// relFile: um ficheiro ou uma lista, carregados por ordem depois de config.js.
 function loadScript(relFile, extra = {}) {
   const ctx = vm.createContext({
     console,
@@ -14,7 +15,7 @@ function loadScript(relFile, extra = {}) {
     ...extra,
   });
   // config.js vem sempre primeiro, como no index.html (localDate, MEALS).
-  for (const f of new Set(['js/config.js', relFile])) {
+  for (const f of new Set(['js/config.js', ...[].concat(relFile)])) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, '..', f), 'utf8'), ctx, { filename: f });
   }
   return ctx; // as funções top-level do ficheiro ficam como propriedades do ctx

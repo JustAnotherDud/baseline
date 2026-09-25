@@ -11,7 +11,7 @@ const SECONDARY_NUTRIENTS = ['saturated_fat', 'sugar', 'fiber'];
 // { calories: fn('calories'), ... } pela ordem de NUTRIENTS.
 const mapNutrients = fn => Object.fromEntries(NUTRIENTS.map(k => [k, fn(k)]));
 
-const APP_VERSION = '20260925b';
+const APP_VERSION = '20260925c';
 
 const MEALS = {
   breakfast:   'Pequeno-almoço',

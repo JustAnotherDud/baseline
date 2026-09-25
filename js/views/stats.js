@@ -140,14 +140,12 @@ async function loadStats() {
   // Streak: dias seguidos com registos
   const secStreak = document.createElement('div');
   secStreak.className = 'stats-section';
-  const streakMsg = streak >= 7 ? 'Mantém o ritmo!' : streak >= 3 ? 'Bom começo!' : streak === 0 ? 'Começa hoje!' : '';
   secStreak.innerHTML = `
     <div class="stats-section-title">Streak de registo</div>
     <div style="display:flex;align-items:baseline;gap:8px">
       <span style="font-family:var(--mono);font-size:36px;font-weight:600;color:var(--accent)">${streak}</span>
       <span style="font-size:14px;color:var(--text2)">dias consecutivos</span>
-    </div>
-    <div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:4px">${streakMsg}</div>`;
+    </div>`;
   container.appendChild(secStreak);
 
   // Aderência calórica

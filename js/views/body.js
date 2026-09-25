@@ -37,6 +37,37 @@ const chartTheme = {
 const chartAnim = () =>
   window.matchMedia('(prefers-reduced-motion: reduce)').matches ? false : { duration: 400 };
 
+const chartTicks = () => ({ color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } });
+
+// Opções comuns aos dois charts de linha. label(name, v) formata o tooltip.
+function baseChartOptions(label, yScales) {
+  return {
+    devicePixelRatio: window.devicePixelRatio * (window.outerWidth / window.innerWidth || 1.5),
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: chartAnim(),
+    plugins: {
+      legend: { display: true, position: 'top', labels: { color: chartTheme.legend, font: { size: 11 }, boxWidth: 12 } },
+      tooltip: {
+        enabled: true,
+        mode: 'index',
+        intersect: false,
+        backgroundColor: chartTheme.surface, borderColor: '#2e2e2e', borderWidth: 1, titleColor: chartTheme.legend, bodyColor: '#f0f0f0',
+        callbacks: {
+          label(ctx) {
+            const v = ctx.parsed.y;
+            return v == null ? null : label(ctx.dataset.label, v);
+          },
+        },
+      },
+    },
+    scales: {
+      x: { grid: { color: chartTheme.grid }, ticks: { ...chartTicks(), maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }, border: { color: '#2e2e2e' } },
+      ...yScales,
+    },
+  };
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function tNum(v) { const n = parseFloat(v); return Number.isFinite(n) ? n : null; }
@@ -381,34 +412,10 @@ function buildBodyFormChart() {
         { label: 'ATL', data: rows.map(r => r.atl ?? null), borderColor: chartTheme.orange, backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, tension: 0.3, spanGaps: true, hidden: !bodyFormActive.atl, yAxisID: 'y' },
       ],
     },
-    options: {
-      devicePixelRatio: window.devicePixelRatio * (window.outerWidth / window.innerWidth || 1.5),
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: chartAnim(),
-      plugins: {
-        legend: { display: true, position: 'top', labels: { color: chartTheme.legend, font: { size: 11 }, boxWidth: 12 } },
-        tooltip: {
-          enabled: true,
-          mode: 'index',
-          intersect: false,
-          backgroundColor: chartTheme.surface, borderColor: '#2e2e2e', borderWidth: 1, titleColor: chartTheme.legend, bodyColor: '#f0f0f0',
-          callbacks: {
-            label(ctx) {
-              const v = ctx.parsed.y;
-              if (v == null) return null;
-              const labels = { CTL: 'Fitness (CTL)', ATL: 'Fadiga (ATL)' };
-              const name = labels[ctx.dataset.label] || ctx.dataset.label;
-              return `${name}: ${v.toFixed(1)}`;
-            },
-          },
-        },
-      },
-      scales: {
-        x: { grid: { color: chartTheme.grid }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }, border: { color: '#2e2e2e' } },
-        y: { position: 'left', suggestedMin: 0, suggestedMax: 60, grid: { color: chartTheme.grid }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } }, border: { color: '#2e2e2e' } },
-      },
-    },
+    options: baseChartOptions(
+      (name, v) => `${{ CTL: 'Fitness (CTL)', ATL: 'Fadiga (ATL)' }[name] || name}: ${v.toFixed(1)}`,
+      { y: { position: 'left', suggestedMin: 0, suggestedMax: 60, grid: { color: chartTheme.grid }, ticks: chartTicks(), border: { color: '#2e2e2e' } } },
+    ),
   });
 }
 
@@ -478,53 +485,32 @@ function buildBodyCompChart() {
         { label: 'LBM', data: lbmData,     borderColor: chartTheme.orange, backgroundColor: 'transparent', borderWidth: 2, pointRadius: ptR, pointBackgroundColor: chartTheme.orange, tension: 0.3, spanGaps: true, hidden: !bodyCompActive.lbm,    yAxisID: 'yLBM' },
       ],
     },
-    options: {
-      devicePixelRatio: window.devicePixelRatio * (window.outerWidth / window.innerWidth || 1.5),
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: chartAnim(),
-      plugins: {
-        legend: { display: true, position: 'top', labels: { color: chartTheme.legend, font: { size: 11 }, boxWidth: 12 } },
-        tooltip: {
-          enabled: true,
-          mode: 'index',
-          intersect: false,
-          backgroundColor: chartTheme.surface, borderColor: '#2e2e2e', borderWidth: 1, titleColor: chartTheme.legend, bodyColor: '#f0f0f0',
-          callbacks: {
-            label(ctx) {
-              const v = ctx.parsed.y;
-              if (v == null) return null;
-              const fmt = { 'Peso': `Peso: ${v.toFixed(1)} kg`, 'BF%': `BF%: ${v.toFixed(1)}%`, 'LBM': `LBM: ${v.toFixed(1)} kg` };
-              return fmt[ctx.dataset.label] || `${ctx.dataset.label}: ${v.toFixed(1)}`;
-            },
-          },
-        },
-      },
-      scales: {
-        x: { grid: { color: chartTheme.grid }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }, border: { color: '#2e2e2e' } },
+    options: baseChartOptions(
+      (name, v) => ({ 'Peso': `Peso: ${v.toFixed(1)} kg`, 'BF%': `BF%: ${v.toFixed(1)}%`, 'LBM': `LBM: ${v.toFixed(1)} kg` }[name] || `${name}: ${v.toFixed(1)}`),
+      {
         yWeight: {
           type: 'linear', position: 'left',
           display: bodyCompActive.weight,
           min: pesoValues.length ? Math.floor(pMin - pPad) : undefined,
           max: pesoValues.length ? Math.ceil(pMax + pPad) : undefined,
-          grid: { color: chartTheme.grid }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } }, border: { color: '#2e2e2e' },
+          grid: { color: chartTheme.grid }, ticks: chartTicks(), border: { color: '#2e2e2e' },
         },
         yLBM: {
           type: 'linear', position: 'left',
           display: bodyCompActive.lbm && !bodyCompActive.weight,
           min: lbmValues.length ? Math.floor(lMin - lPad) : undefined,
           max: lbmValues.length ? Math.ceil(lMax + lPad) : undefined,
-          grid: { drawOnChartArea: false }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } }, border: { color: '#2e2e2e' },
+          grid: { drawOnChartArea: false }, ticks: chartTicks(), border: { color: '#2e2e2e' },
         },
         yFat: {
           type: 'linear', position: 'right',
           display: bodyCompActive.fat,
           min: fatValues.length ? parseFloat((fMin - fPad).toFixed(1)) : undefined,
           max: fatValues.length ? parseFloat((fMax + fPad).toFixed(1)) : undefined,
-          grid: { drawOnChartArea: false }, ticks: { color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } }, border: { color: '#2e2e2e' },
+          grid: { drawOnChartArea: false }, ticks: chartTicks(), border: { color: '#2e2e2e' },
         },
       },
-    },
+    ),
   });
 }
 

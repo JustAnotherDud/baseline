@@ -53,7 +53,6 @@ function startApp() {
   document.getElementById('setup-screen').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
   setDateLabel();
-  updateLogDateLabel();
   loadTargetsForm();
   const _initialView = location.hash.replace('#', '') || 'today';
   history.replaceState({ view: _initialView }, '', '#' + _initialView);

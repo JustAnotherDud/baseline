@@ -34,17 +34,6 @@ function populateMealSelect(selectEl) {
     .map(([k, v]) => `<option value="${k}">${escHtml(v)}</option>`)
     .join('');
 }
-// Gera os botões do meal selector (grid de refeições). onSelect = nome da fn.
-function buildMealSelectorBtns(containerEl, onSelect) {
-  if (!containerEl) return;
-  containerEl.innerHTML = Object.entries(MEALS)
-    .map(([k, v]) => `
-      <button class="meal-selector-opt" data-meal="${k}"
-              onclick="${onSelect}('${k}')">
-        ${escHtml(v)}
-      </button>`)
-    .join('');
-}
 
 // ── TARA no sheet de edição ───────────────────────────────────────────────────
 function setEditTaraUI(checked) {
@@ -62,10 +51,7 @@ function openLog(mode) {
   pushSheetState();
   resetLogTara();
   initMealSelectors();
-  if (!mealManuallySelected) {
-    selectedMeal = getMealByHour();
-    updateMealSelectorLabel(selectedMeal);
-  }
+  if (!mealManuallySelected) selectedMeal = getMealByHour();
   updateSheetMealTabs();
   document.getElementById('log-sheet-title').textContent = mode==='db' ? 'Pesquisar alimento' : 'Entrada rápida';
   document.getElementById('log-db').style.display    = mode==='db'    ? 'block' : 'none';

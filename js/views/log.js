@@ -218,30 +218,15 @@ function clearQuick() {
   ['q-name','q-kcal','q-fat','q-carb','q-fiber','q-prot'].forEach(id=>document.getElementById(id).value='');
 }
 
-// Gera o seletor de refeição e o dropdown do sheet de log a partir de MEALS.
-// Guard: só popula se ainda estiver vazio (não regenera a cada abertura).
+// Popula o dropdown de refeição do sheet de log uma só vez.
 function initMealSelectors() {
-  const grid = document.getElementById('meal-selector-grid');
-  const sel  = document.getElementById('sheet-meal-select');
-
-  // childElementCount ignora whitespace/text nodes (hasChildNodes não).
-  if (grid && grid.childElementCount === 0) {
-    buildMealSelectorBtns(grid, 'selectMealFromSelector');
-  }
-  if (sel && sel.childElementCount === 0) {
-    populateMealSelect(sel);
-  }
-
-  const lbl = document.getElementById('meal-selector-label');
-  if (lbl && !lbl.textContent.trim()) {
-    lbl.textContent = Object.values(MEALS)[0];
-  }
+  const sel = document.getElementById('sheet-meal-select');
+  if (sel && sel.childElementCount === 0) populateMealSelect(sel);
 }
 
 function openLogForMeal(mealKey) {
   selectedMeal = mealKey;
   mealManuallySelected = true;
-  updateMealSelectorLabel(mealKey);
   updateSheetMealTabs();
   openLog('db');
 }
@@ -262,7 +247,6 @@ function updateSheetMealTabs() {
 function selectSheetMealFromDropdown(mealKey) {
   selectedMeal = mealKey;
   mealManuallySelected = true;
-  updateMealSelectorLabel(mealKey);
 }
 
 function getMealByHour() {
@@ -274,36 +258,6 @@ function getMealByHour() {
   if (h >= 18 && h < 20) return 'afternoon2';
   if (h >= 20 && h < 23) return 'dinner';
   return 'supper';
-}
-
-// ── COLLAPSED MEAL SELECTOR ──────────────────────────────────────────────────
-
-function updateMealSelectorLabel(mealKey) {
-  const el = document.getElementById('meal-selector-label');
-  if (el) el.textContent = (typeof MEALS !== 'undefined' && MEALS[mealKey]) || mealKey;
-  document.querySelectorAll('.meal-selector-opt').forEach(b => {
-    b.classList.toggle('active', b.dataset.meal === mealKey);
-  });
-}
-
-function toggleMealSelector() {
-  const grid = document.getElementById('meal-selector-grid');
-  const chev = document.getElementById('meal-selector-chevron');
-  if (!grid) return;
-  const isOpen = grid.classList.toggle('open');
-  if (chev) chev.textContent = isOpen ? '▴' : '▾';
-}
-
-function selectMealFromSelector(mealKey) {
-  selectedMeal = mealKey;
-  mealManuallySelected = true;
-  updateMealSelectorLabel(mealKey);
-  updateSheetMealTabs();
-  // Collapse grid
-  const grid = document.getElementById('meal-selector-grid');
-  const chev = document.getElementById('meal-selector-chevron');
-  if (grid) grid.classList.remove('open');
-  if (chev) chev.textContent = '▾';
 }
 
 // ── LOG MEALS SHEET (Refeição chip) ─────────────────────────────────────────
@@ -357,25 +311,6 @@ async function openLogMeals() {
       openApplyMeal(t.id, t.name);
     },
   });
-}
-
-// ── LOG DATE / STRIP / RECENTS ───────────────────────────────────────────────
-
-function pickLogDate() {
-  openDatePicker(currentDate, date => {
-    currentDate = date;
-    setDateLabel();
-    loadToday();
-    updateLogDateLabel();
-  });
-}
-
-function updateLogDateLabel() {
-  const today = new Date().toISOString().split('T')[0];
-  const d = new Date(currentDate+'T12:00:00');
-  const dateStr = d.toLocaleDateString('pt-PT',{weekday:'long',day:'numeric',month:'long'});
-  const el = document.getElementById('log-date-label');
-  if (el) el.textContent = currentDate === today ? `Hoje — ${dateStr}` : dateStr;
 }
 
 // ── SAVE DIARY HANDLER (DOM side of saveDiary) ───────────────────────────────

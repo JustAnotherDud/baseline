@@ -78,33 +78,6 @@
     <div id="diary-container"></div>
   </div>
 
-  <!-- ─── VIEW: REGISTAR ─── -->
-  <div id="view-log" class="view">
-    <div class="view-header">
-      <div class="view-title">Registar</div>
-    </div>
-    <div class="log-meal-wrap" style="padding-top:14px">
-      <div class="log-meal-label" style="margin-bottom:8px">Data</div>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
-        <div class="view-sub" id="log-date-label" style="flex:1;font-size:14px"></div>
-        <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:13px;min-width:44px;min-height:44px" onclick="pickLogDate()">📅</button>
-      </div>
-      <div class="log-meal-label" style="margin-bottom:8px">Refeição</div>
-      <div id="meal-selector">
-        <div class="meal-selector-collapsed" id="meal-selector-head" onclick="toggleMealSelector()">
-          <span id="meal-selector-label"></span>
-          <span id="meal-selector-chevron">▾</span>
-        </div>
-        <div class="meal-selector-expanded" id="meal-selector-grid"></div>
-      </div>
-    </div>
-    <div class="log-type-chips">
-      <button class="log-type-chip" onclick="openLog('db')">Alimento</button>
-      <button class="log-type-chip" onclick="openLogMeals()">Refeição</button>
-      <button class="log-type-chip" onclick="openLog('quick')">Entrada rápida</button>
-    </div>
-  </div>
-
   <!-- ─── VIEW: COMIDA ─── -->
   <div id="view-foods" class="view">
     <div class="view-header">

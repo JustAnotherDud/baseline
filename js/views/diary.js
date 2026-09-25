@@ -205,7 +205,6 @@ function changeDay(delta) {
   currentDate = d.toISOString().split('T')[0];
   setDateLabel();
   loadToday();
-  updateLogDateLabel();
 }
 
 function pickDate() {
@@ -213,7 +212,6 @@ function pickDate() {
     currentDate = date;
     setDateLabel();
     loadToday();
-    updateLogDateLabel();
   });
 }
 

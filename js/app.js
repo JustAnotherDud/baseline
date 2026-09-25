@@ -172,38 +172,25 @@ function updateSheetToggle(id, enabled) {
 
 function editIcuSettings() {
   pushSheetState();
-  let overlay = document.getElementById('icu-settings-overlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.id = 'icu-settings-overlay';
-    overlay.className = 'sheet-overlay';
-    overlay.innerHTML = `
-      <div class="sheet">
-        <div class="sheet-handle"></div>
-        <div class="sheet-header">
-          <div class="sheet-title">Intervals.icu</div>
-          <div class="sheet-close" id="icu-settings-close">×</div>
-        </div>
-        <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:14px">
-          <div style="display:flex;align-items:center;justify-content:space-between">
-            <span class="lt">Integração</span>
-            <button id="icu-sheet-toggle" class="settings-toggle-inline" style="margin-right:0" onclick="toggleIcu()"></button>
-          </div>
-          <label>
-            <span class="lt">Athlete ID</span>
-            <input type="text" id="icu-settings-id" placeholder="i123456" autocomplete="off">
-          </label>
-          <label>
-            <span class="lt">API Key</span>
-            <input type="password" id="icu-settings-key" placeholder="••••••••" autocomplete="off">
-          </label>
-          <button class="btn btn-primary" onclick="saveIcuSettings()">Guardar</button>
-        </div>
-      </div>`;
-    document.body.appendChild(overlay);
-    overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('open'); };
-    document.getElementById('icu-settings-close').onclick = () => overlay.classList.remove('open');
-  }
+  const overlay = ensureSheet('icu-settings-overlay', {
+    header: `<div class="sheet-title">Intervals.icu</div>`,
+    body: `
+    <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span class="lt">Integração</span>
+        <button id="icu-sheet-toggle" class="settings-toggle-inline" style="margin-right:0" onclick="toggleIcu()"></button>
+      </div>
+      <label>
+        <span class="lt">Athlete ID</span>
+        <input type="text" id="icu-settings-id" placeholder="i123456" autocomplete="off">
+      </label>
+      <label>
+        <span class="lt">API Key</span>
+        <input type="password" id="icu-settings-key" placeholder="••••••••" autocomplete="off">
+      </label>
+      <button class="btn btn-primary" onclick="saveIcuSettings()">Guardar</button>
+    </div>`,
+  });
 
   document.getElementById('icu-settings-id').value  = localStorage.getItem('icu_id')  || '';
   document.getElementById('icu-settings-key').value = localStorage.getItem('icu_key') || '';
@@ -226,35 +213,21 @@ function saveIcuSettings() {
 
 function editHevySettings() {
   pushSheetState();
-  let overlay = document.getElementById('hevy-settings-overlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.id = 'hevy-settings-overlay';
-    overlay.className = 'sheet-overlay';
-    overlay.innerHTML = `
-      <div class="sheet">
-        <div class="sheet-handle"></div>
-        <div class="sheet-header">
-          <span class="sheet-title">Hevy</span>
-          <div class="sheet-close" onclick="document.getElementById('hevy-settings-overlay').classList.remove('open')">×</div>
-        </div>
-        <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:14px">
-          <div style="display:flex;align-items:center;justify-content:space-between">
-            <span class="lt">Integração</span>
-            <button id="hevy-sheet-toggle" class="settings-toggle-inline" style="margin-right:0" onclick="toggleHevy()"></button>
-          </div>
-          <label>
-            <span class="lt">API Key</span>
-            <input type="password" id="hevy-key-input" placeholder="••••••••" autocomplete="off">
-          </label>
-          <button class="btn btn-primary" onclick="saveHevySettings()">Guardar</button>
-        </div>
-      </div>`;
-    overlay.addEventListener('click', e => {
-      if (e.target === overlay) overlay.classList.remove('open');
-    });
-    document.body.appendChild(overlay);
-  }
+  const overlay = ensureSheet('hevy-settings-overlay', {
+    header: `<span class="sheet-title">Hevy</span>`,
+    body: `
+    <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span class="lt">Integração</span>
+        <button id="hevy-sheet-toggle" class="settings-toggle-inline" style="margin-right:0" onclick="toggleHevy()"></button>
+      </div>
+      <label>
+        <span class="lt">API Key</span>
+        <input type="password" id="hevy-key-input" placeholder="••••••••" autocomplete="off">
+      </label>
+      <button class="btn btn-primary" onclick="saveHevySettings()">Guardar</button>
+    </div>`,
+  });
   const input = document.getElementById('hevy-key-input');
   if (input) input.value = hevyKey || '';
   updateSheetToggle('hevy-sheet-toggle', hevyEnabled);

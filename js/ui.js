@@ -24,6 +24,29 @@ function toast(msg) {
   }, 2400);
 }
 
+// Sheet criado uma vez por id e reutilizado. Fecha no overlay e no ×.
+// header: título (markup); body: conteúdo; onCreate corre só na criação.
+function ensureSheet(id, { header = '', body = '', sheetStyle = '', zIndex, onCreate } = {}) {
+  let overlay = document.getElementById(id);
+  if (overlay) return overlay;
+  overlay = document.createElement('div');
+  overlay.id = id;
+  overlay.className = 'sheet-overlay';
+  if (zIndex) overlay.style.zIndex = zIndex;
+  overlay.innerHTML = `
+    <div class="sheet"${sheetStyle ? ` style="${sheetStyle}"` : ''}>
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">${header}<div class="sheet-close">×</div></div>
+      ${body}
+    </div>`;
+  document.body.appendChild(overlay);
+  const close = () => overlay.classList.remove('open');
+  overlay.onclick = e => { if (e.target === overlay) close(); };
+  overlay.querySelector('.sheet-close').onclick = close;
+  if (onCreate) onCreate(overlay);
+  return overlay;
+}
+
 function overlayClose(e, id) { if(e.target.id===id) document.getElementById(id).classList.remove('open'); }
 
 // ── MEAL SELECTORS (gerados a partir de MEALS — fonte canónica) ───────────────
@@ -197,29 +220,20 @@ async function openDatePicker(selectedVal, onSelect, opts = {}) {
   const DAYS   = ['S','T','Q','Q','S','S','D'];
   const today  = new Date().toISOString().split('T')[0];
 
-  let overlay = document.getElementById('dp-overlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.id = 'dp-overlay';
-    overlay.className = 'sheet-overlay';
-    overlay.style.zIndex = '300';
-    overlay.innerHTML = `
-      <div class="sheet" style="max-height:420px">
-        <div class="sheet-handle"></div>
-        <div class="sheet-header">
-          <div style="display:flex;align-items:center;gap:8px">
-            <button id="dp-prev" style="background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px 10px;line-height:1">←</button>
-            <div id="dp-label" class="sheet-title" style="min-width:150px;text-align:center"></div>
-            <button id="dp-next" style="background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px 10px;line-height:1">→</button>
-          </div>
-          <div class="sheet-close" id="dp-close">×</div>
-        </div>
-        <div style="padding:10px 14px 20px">
-          <div id="dp-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center"></div>
-        </div>
-      </div>`;
-    document.body.appendChild(overlay);
-  }
+  const overlay = ensureSheet('dp-overlay', {
+    zIndex: 300,
+    sheetStyle: 'max-height:420px',
+    header: `
+    <div style="display:flex;align-items:center;gap:8px">
+      <button id="dp-prev" style="background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px 10px;line-height:1">←</button>
+      <div id="dp-label" class="sheet-title" style="min-width:150px;text-align:center"></div>
+      <button id="dp-next" style="background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px 10px;line-height:1">→</button>
+    </div>`,
+    body: `
+    <div style="padding:10px 14px 20px">
+      <div id="dp-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center"></div>
+    </div>`,
+  });
 
   const parts = selectedVal.split('-');
   let viewYear  = parseInt(parts[0]);
@@ -283,8 +297,6 @@ async function openDatePicker(selectedVal, onSelect, opts = {}) {
   document.getElementById('dp-next').onclick = () => {
     if (++viewMonth > 11) { viewMonth = 0; viewYear++; } render();
   };
-  document.getElementById('dp-close').onclick = () => overlay.classList.remove('open');
-  overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('open'); };
 
   render();
   overlay.classList.add('open');
@@ -292,24 +304,12 @@ async function openDatePicker(selectedVal, onSelect, opts = {}) {
 
 function openNutrientSheet(entries, nutrient) {
   pushSheetState();
-  let overlay = document.getElementById('nutri-overlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.id = 'nutri-overlay';
-    overlay.className = 'sheet-overlay';
-    overlay.innerHTML = `
-      <div class="sheet" style="max-height:80dvh">
-        <div class="sheet-handle"></div>
-        <div class="sheet-header">
-          <div id="nutri-rank-title" class="sheet-title"></div>
-          <div class="sheet-close" id="nutri-close">×</div>
-        </div>
-        <div id="nutri-rank-list"></div>
-      </div>`;
-    document.body.appendChild(overlay);
-    overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('open'); };
-    document.getElementById('nutri-close').onclick = () => overlay.classList.remove('open');
-  }
+  const overlay = ensureSheet('nutri-overlay', {
+    sheetStyle: 'max-height:80dvh',
+    header: `<div id="nutri-rank-title" class="sheet-title"></div>`,
+    body: `
+    <div id="nutri-rank-list"></div>`,
+  });
 
   function showRanking(n) {
     const r   = v => Math.round(+(v || 0) * 10) / 10;
@@ -411,29 +411,17 @@ function openMealBreakdown(mealKey, allEntries) {
   const totalFat   = mes.reduce((s, e) => s + +(e.fat      || 0), 0);
 
   // ── Create overlay once ──────────────────────────────────────────────────
-  let overlay = document.getElementById('meal-bd-overlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.id = 'meal-bd-overlay';
-    overlay.className = 'sheet-overlay';
-    overlay.innerHTML = `
-      <div class="sheet" style="max-height:80dvh;overflow-y:auto">
-        <div class="sheet-handle"></div>
-        <div class="sheet-header">
-          <div id="meal-bd-title" class="sheet-title"></div>
-          <div class="sheet-close" id="meal-bd-close">×</div>
-        </div>
-        <div id="meal-bd-content" class="meal-bd-content"></div>
-        <div style="padding:0 14px 8px">
-          <button id="meal-bd-save-btn" class="btn btn-secondary" style="font-size:13px;padding:10px">
-            Guardar como refeição
-          </button>
-        </div>
-      </div>`;
-    document.body.appendChild(overlay);
-    overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('open'); };
-    document.getElementById('meal-bd-close').onclick = () => overlay.classList.remove('open');
-  }
+  const overlay = ensureSheet('meal-bd-overlay', {
+    sheetStyle: 'max-height:80dvh;overflow-y:auto',
+    header: `<div id="meal-bd-title" class="sheet-title"></div>`,
+    body: `
+    <div id="meal-bd-content" class="meal-bd-content"></div>
+    <div style="padding:0 14px 8px">
+      <button id="meal-bd-save-btn" class="btn btn-secondary" style="font-size:13px;padding:10px">
+        Guardar como refeição
+      </button>
+    </div>`,
+  });
 
   document.getElementById('meal-bd-title').textContent =
     `${mealLabel.toUpperCase()} · ${Math.round(totalKcal)} KCAL`;
@@ -627,24 +615,11 @@ function updateEditPreview() {
 
 function openMoveMealSheet(entryId, currentMeal) {
   pushSheetState();
-  let overlay = document.getElementById('move-meal-overlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.id = 'move-meal-overlay';
-    overlay.className = 'sheet-overlay';
-    overlay.innerHTML = `
-      <div class="sheet">
-        <div class="sheet-handle"></div>
-        <div class="sheet-header">
-          <div class="sheet-title">Mover para refeição</div>
-          <div class="sheet-close" id="move-meal-close">×</div>
-        </div>
-        <div id="move-meal-list"></div>
-      </div>`;
-    document.body.appendChild(overlay);
-    overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('open'); };
-    document.getElementById('move-meal-close').onclick = () => overlay.classList.remove('open');
-  }
+  const overlay = ensureSheet('move-meal-overlay', {
+    header: `<div class="sheet-title">Mover para refeição</div>`,
+    body: `
+    <div id="move-meal-list"></div>`,
+  });
 
   const list = document.getElementById('move-meal-list');
   list.innerHTML = '';

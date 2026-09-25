@@ -32,36 +32,24 @@ async function deleteMeal(id) {
 
 function openCreateMeal(prefillName, prefillItems) {
   pushSheetState();
-  let overlay = document.getElementById('meal-create-overlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.id = 'meal-create-overlay';
-    overlay.className = 'sheet-overlay';
-    overlay.style.zIndex = '250';
-    overlay.innerHTML = `
-      <div class="sheet" style="max-height:90dvh;overflow-y:auto">
-        <div class="sheet-handle"></div>
-        <div class="sheet-header">
-          <div class="sheet-title">Nova refeição</div>
-          <div class="sheet-close" id="meal-create-close">×</div>
-        </div>
-        <div class="form-body">
-          <label>
-            <span class="lt">Nome da refeição *</span>
-            <input type="text" id="mc-name" placeholder="ex: Pequeno-almoço habitual" autocomplete="off">
-          </label>
-          <div class="divider"></div>
-          <div class="section-label" style="margin-bottom:8px">Alimentos</div>
-          <div id="mc-items"></div>
-          <button class="btn btn-secondary" style="margin-top:4px" onclick="mcAddItem()">+ Adicionar alimento</button>
-          <div class="divider"></div>
-          <button class="btn btn-primary" onclick="saveMeal()">Guardar refeição</button>
-        </div>
-      </div>`;
-    document.body.appendChild(overlay);
-    overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('open'); };
-    document.getElementById('meal-create-close').onclick = () => overlay.classList.remove('open');
-  }
+  const overlay = ensureSheet('meal-create-overlay', {
+    zIndex: 250,
+    sheetStyle: 'max-height:90dvh;overflow-y:auto',
+    header: `<div class="sheet-title">Nova refeição</div>`,
+    body: `
+    <div class="form-body">
+      <label>
+        <span class="lt">Nome da refeição *</span>
+        <input type="text" id="mc-name" placeholder="ex: Pequeno-almoço habitual" autocomplete="off">
+      </label>
+      <div class="divider"></div>
+      <div class="section-label" style="margin-bottom:8px">Alimentos</div>
+      <div id="mc-items"></div>
+      <button class="btn btn-secondary" style="margin-top:4px" onclick="mcAddItem()">+ Adicionar alimento</button>
+      <div class="divider"></div>
+      <button class="btn btn-primary" onclick="saveMeal()">Guardar refeição</button>
+    </div>`,
+  });
 
   // Prefill vem do "Guardar como refeição" do donut.
   document.getElementById('mc-name').value = prefillName || '';
@@ -249,35 +237,25 @@ let openApplyMealGen = 0;
 async function openApplyMeal(templateId, templateName) {
   pushSheetState();
   const gen = ++openApplyMealGen;
-  let overlay = document.getElementById('apply-meal-overlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.id = 'apply-meal-overlay';
-    overlay.className = 'sheet-overlay';
-    overlay.style.zIndex = '220';
-    overlay.innerHTML = `
-      <div class="sheet" style="max-height:80dvh;overflow-y:auto">
-        <div class="sheet-handle"></div>
-        <div class="sheet-header">
-          <div id="apply-meal-title" class="sheet-title"></div>
-          <div class="sheet-close" id="apply-meal-close">×</div>
-        </div>
-        <div class="form-body">
-          <div id="apply-meal-items"></div>
-          <div class="divider"></div>
-          <label>
-            <span class="lt">Adicionar a</span>
-            <select id="apply-meal-select"></select>
-          </label>
-          <button class="btn btn-primary" id="apply-meal-btn">Adicionar ao diário</button>
-        </div>
-      </div>`;
-    document.body.appendChild(overlay);
-    overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('open'); };
-    document.getElementById('apply-meal-close').onclick = () => overlay.classList.remove('open');
-    document.getElementById('apply-meal-btn').onclick = applyMealToDiary;
-    populateMealSelect(document.getElementById('apply-meal-select'));
-  }
+  const overlay = ensureSheet('apply-meal-overlay', {
+    zIndex: 220,
+    sheetStyle: 'max-height:80dvh;overflow-y:auto',
+    header: `<div id="apply-meal-title" class="sheet-title"></div>`,
+    body: `
+    <div class="form-body">
+      <div id="apply-meal-items"></div>
+      <div class="divider"></div>
+      <label>
+        <span class="lt">Adicionar a</span>
+        <select id="apply-meal-select"></select>
+      </label>
+      <button class="btn btn-primary" id="apply-meal-btn">Adicionar ao diário</button>
+    </div>`,
+    onCreate: () => {
+      document.getElementById('apply-meal-btn').onclick = applyMealToDiary;
+      populateMealSelect(document.getElementById('apply-meal-select'));
+    },
+  });
 
   document.getElementById('apply-meal-title').textContent = templateName.toUpperCase();
 

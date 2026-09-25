@@ -749,26 +749,11 @@ function openActivityDetailSheet(metric) {
         }).join('')
     : '';
 
-  let overlay = document.getElementById('act-detail-overlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.id = 'act-detail-overlay';
-    overlay.className = 'sheet-overlay';
-    overlay.innerHTML = `
-      <div class="sheet">
-        <div class="sheet-handle"></div>
-        <div class="sheet-header">
-          <span id="act-detail-title" class="sheet-title"></span>
-          <div class="sheet-close" id="act-detail-close">×</div>
-        </div>
-        <div id="act-detail-list" class="act-detail-list"></div>
-      </div>`;
-    overlay.addEventListener('click', e => {
-      if (e.target === overlay) overlay.classList.remove('open');
-    });
-    document.body.appendChild(overlay);
-    document.getElementById('act-detail-close').onclick = () => overlay.classList.remove('open');
-  }
+  const overlay = ensureSheet('act-detail-overlay', {
+    header: `<span id="act-detail-title" class="sheet-title"></span>`,
+    body: `
+    <div id="act-detail-list" class="act-detail-list"></div>`,
+  });
 
   document.getElementById('act-detail-title').textContent = cfg.label;
   document.getElementById('act-detail-list').innerHTML = (rows + gymRows) ||
@@ -804,25 +789,11 @@ function openGymDetailSheet() {
       </div>`;
   }).join('') || '<p style="padding:16px;color:var(--text3)">Sem sessões neste período.</p>';
 
-  let overlay = document.getElementById('gym-detail-overlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.id = 'gym-detail-overlay';
-    overlay.className = 'sheet-overlay';
-    overlay.innerHTML = `
-      <div class="sheet">
-        <div class="sheet-handle"></div>
-        <div class="sheet-header">
-          <span class="sheet-title">Ginásio · 7 dias</span>
-          <div class="sheet-close" onclick="document.getElementById('gym-detail-overlay').classList.remove('open')">×</div>
-        </div>
-        <div id="gym-detail-list" class="act-detail-list"></div>
-      </div>`;
-    overlay.addEventListener('click', e => {
-      if (e.target === overlay) overlay.classList.remove('open');
-    });
-    document.body.appendChild(overlay);
-  }
+  const overlay = ensureSheet('gym-detail-overlay', {
+    header: `<span class="sheet-title">Ginásio · 7 dias</span>`,
+    body: `
+    <div id="gym-detail-list" class="act-detail-list"></div>`,
+  });
 
   document.getElementById('gym-detail-list').innerHTML = rows;
   overlay.classList.add('open');

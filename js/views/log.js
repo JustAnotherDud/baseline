@@ -264,25 +264,13 @@ function getMealByHour() {
 
 async function openLogMeals() {
   pushSheetState();
-  let overlay = document.getElementById('log-meals-overlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.id = 'log-meals-overlay';
-    overlay.className = 'sheet-overlay';
-    overlay.style.zIndex = '210';
-    overlay.innerHTML = `
-      <div class="sheet" style="max-height:80dvh;overflow-y:auto">
-        <div class="sheet-handle"></div>
-        <div class="sheet-header">
-          <div class="sheet-title">Aplicar refeição</div>
-          <div class="sheet-close" id="log-meals-close">×</div>
-        </div>
-        <div id="log-meals-list"></div>
-      </div>`;
-    document.body.appendChild(overlay);
-    overlay.onclick = e => { if (e.target === overlay) overlay.classList.remove('open'); };
-    document.getElementById('log-meals-close').onclick = () => overlay.classList.remove('open');
-  }
+  const overlay = ensureSheet('log-meals-overlay', {
+    zIndex: 210,
+    sheetStyle: 'max-height:80dvh;overflow-y:auto',
+    header: `<div class="sheet-title">Aplicar refeição</div>`,
+    body: `
+    <div id="log-meals-list"></div>`,
+  });
 
   const listEl = document.getElementById('log-meals-list');
   listEl.innerHTML = '<div class="loading">A carregar...</div>';

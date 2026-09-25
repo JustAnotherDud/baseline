@@ -3,13 +3,7 @@ let refreshTargetsGen   = 0;
 
 const TARGET_FIELD_IDS = ['t-kcal','t-fat','t-carb','t-fiber','t-prot'];
 
-// Porto Marathon — única data de prova fixa da app. NÃO é o mesmo tipo de
-// dado que causou o bug desta página (surplus/fase): uma data de prova não
-// muda sozinha semana a semana como um bloco de nutrição — só muda se a
-// prova em si mudar, e nesse caso este valor tem de ser actualizado à mão de
-// propósito. O que NUNCA se hardcoda é o número de semanas (T) — esse é
-// sempre calculado a partir de hoje, nunca escrito como texto fixo (mesma
-// regra de cd_protocol.md/dcb_prompt.md do lado do coaching).
+// Data da prova: muda-se à mão. As semanas até lá (T) calculam-se sempre.
 const PORTO_MARATHON_DATE = '2026-11-08';
 
 async function loadTargetsForm() {
@@ -27,9 +21,6 @@ function updateTargetsDateLabel() {
   el.textContent = currentTargetsDate === today ? `Hoje — ${label}` : label;
 }
 
-/** T = semanas até à prova, sempre calculado a partir de hoje — nunca um
- * número fixo escrito em prosa (mesma regra do lado do coaching, ver
- * shared/lib/race_countdown.py::weeks_until no repo sync_hub). */
 function weeksToPorto() {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const race  = new Date(PORTO_MARATHON_DATE + 'T00:00:00');
@@ -44,31 +35,8 @@ function updateCountdownBadge() {
   el.classList.remove('countdown-badge-empty');
 }
 
-/** Deriva os blocos activos e a lista de chips a partir de blocks_active
- * INTEIRO — nunca de uma lista fixa de chaves conhecidas. Uma chave nova
- * (ex.: um bloco de ginásio via Hevy, plano D3) passa a aparecer sozinha em
- * vez de ser ignorada em silêncio, que foi como a chave activity_kcal_by_id
- * do plans/020 desapareceu desta página sem nenhum erro visível.
- *
- * Distingue por TIPO, não por nome: um valor numérico >0 é um bloco de kcal;
- * `activity_kcal_by_id` é o único campo-objecto conhecido e expande-se numa
- * entrada por actividade (nunca agregado — dias com 2-3 actividades vão ser
- * comuns); qualquer outra coisa (strings como run_type_context, zeros,
- * nulls) fica de fora sem precisar de saber o nome do campo à partida. */
-// plans/035: um bloco de kcal é, por CONVENÇÃO DE NOME, uma chave de topo
-// terminada em `_kcal` (mais o caso especial `activity_kcal_by_id`). Tudo o
-// resto -- proveniência (run_type_source, gym_planned, gym_source), contexto
-// e diagnóstico (agora aninhado em `energy_diag`) -- fica de fora por
-// construção, sem precisar de ser enumerado.
-//
-// Isto substitui a lista NON_BLOCK_KEYS que existia aqui desde plans/032.
-// Uma blacklist tem de ser actualizada a cada campo novo do backend e falha
-// EM SILÊNCIO quando alguém se esquece. Falhou duas vezes em duas rondas:
-// `gym_planned` (booleano, +true === 1) desenhou "gym_planned 1kcal", e
-// `work_hours_today` (horas) desenhou "work_hours_today 6kcal" -- errado na
-// unidade, não só no rótulo. Um sufixo não tem esse modo de falha: um campo
-// novo só vira chip se for mesmo kcal, e um campo de kcal novo aparece
-// sozinho (que era o objectivo original do derive genérico).
+// Bloco de kcal = chave de topo terminada em `_kcal`, mais `activity_kcal_by_id`
+// (uma entrada por actividade). O resto de blocks_active fica de fora.
 const BLOCK_LABELS = {
   baseline_kcal: 'Baseline',
   work_kcal: 'Trabalho',
@@ -119,11 +87,7 @@ function deriveBlocks(blocksActive) {
   return { chips, sum: Math.round(sum) };
 }
 
-/** Linha de contexto energético a partir de blocks_active.energy_diag
- * (plans/035). Antes, expenditure/SE/unallocated/rolling_7d eram calculados
- * pela RPC e deitados fora -- nunca chegavam à linha nem a esta página, o que
- * tornava possível o sistema descartar 11% da energia sem aparecer em lado
- * nenhum. Devolve [] quando não há nada a dizer. */
+// Notas de contexto energético a partir de blocks_active.energy_diag.
 function energyNotes(diag) {
   if (!diag || typeof diag !== 'object') return [];
   const notes = [];
@@ -140,8 +104,7 @@ function energyNotes(diag) {
     notes.push('Energia por fallback modelado — sem dias suficientes de diário para medir o gasto.');
   }
 
-  // unallocated é estruturalmente 0 desde plans/035 (sem tectos). Se voltar a
-  // aparecer, é bug -- por isso é que continua a ser mostrado.
+  // unallocated > 0 é bug do backend: mostrar.
   const unalloc = +diag.unallocated_kcal;
   if (Number.isFinite(unalloc) && unalloc > 0) {
     notes.push(`⚠ ${unalloc} kcal descartadas na composição de macros — não devia acontecer.`);
@@ -179,15 +142,12 @@ async function refreshTargets() {
   const coverageEl = document.getElementById('targets-coverage-badge');
 
   if (row) {
-    // plans/035: o diagnóstico mudou-se para blocks_active.energy_diag. Linhas
-    // antigas (pré-035) têm os mesmos campos no topo -- ler os dois, para o
-    // histórico não ficar sem badge ao navegar para trás.
+    // Linhas antigas têm o diagnóstico no topo de blocks_active.
     const diag = row.blocks_active?.energy_diag ?? null;
     const lookbackDays = diag?.lookback_days_used ?? row.blocks_active?.energy_lookback_days_used;
     const loggedDays   = diag?.days_logged_in_window ?? row.blocks_active?.energy_days_logged_in_window;
 
-    // Badge de cobertura: só aparece quando a janela teve de alargar além da
-    // normal (28d desde plans/035, era 21d) por falta de dias logados.
+    // Badge só quando a janela passou dos 28d normais.
     if (coverageEl) {
       if (Number.isFinite(lookbackDays) && lookbackDays > 28) {
         coverageEl.textContent = `Estimativa alargada a ${lookbackDays}d (${loggedDays ?? '—'}d logados)`;
@@ -207,10 +167,7 @@ async function refreshTargets() {
     if (row.blocks_active && typeof row.blocks_active === 'object' && chipsEl) {
       const { chips, sum } = deriveBlocks(row.blocks_active);
       const calories = +row.calories;
-      // plans/035: `baseline_kcal` passou a ser um bloco escrito pelo backend.
-      // A sua presença é o que distingue uma linha nova de uma pré-035 -- e
-      // é só nas novas que a soma dos blocos PODE fechar com o total, logo
-      // só nessas é que uma divergência significa alguma coisa.
+      // Só linhas com baseline_kcal fecham a soma com o total.
       const hasBaseline = Object.hasOwn(row.blocks_active, 'baseline_kcal');
 
       if (chips.length) {
@@ -223,13 +180,8 @@ async function refreshTargets() {
         });
         blocksEl.style.display = 'block';
 
-        // Até plans/034 este aviso era um falso-positivo permanente: desde
-        // plans/031 as calorias deixaram de ser soma-de-blocos, mas a baseline
-        // não tinha chave própria, por isso a soma NUNCA fechava. Agora fecha
-        // por construção (baseline + trabalho + ginásio + actividade == energia
-        // base), e o aviso volta a significar o que sempre quis dizer: dupla
-        // contagem. Tolerância de 15kcal para o arredondamento à grama dos
-        // macros (P×4+C×4+F×9 não bate ao kcal exacto).
+        // Soma != total indica dupla contagem. 15kcal de folga para o
+        // arredondamento dos macros.
         if (warningEl) {
           const diff = hasBaseline && Number.isFinite(calories) ? sum - calories : 0;
           if (Math.abs(diff) > 15) {

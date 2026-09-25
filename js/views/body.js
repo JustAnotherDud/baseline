@@ -1,9 +1,5 @@
-// ── Body — composição corporal (Supabase) + forma de treino (Intervals.icu) ──
-// View única em scroll que funde body_comp (peso/BF/músculo/água) com as
-// métricas de forma do Intervals.icu (CTL/ATL/TSB, HRV, sono, carga semanal).
-//
-// Secções: 1 Forma actual · 2 Última pesagem · 3 Chart Forma · 4 Chart Composição
-//          5 Últimos 7 dias
+// View Forma: body_comp (Supabase), forma e actividades (Intervals.icu), ginásio (Hevy).
+// Secções: Forma actual, Última pesagem, Chart Forma, Chart Composição, Últimos 7 dias.
 
 let loadBodyGen = 0;
 
@@ -190,10 +186,7 @@ async function loadBody() {
   const hevy7  = new Date(todayMid); hevy7.setDate(todayMid.getDate() - 6);
   bodyHevyWorkouts = rawWorkouts.filter(w => w.start_time && new Date(w.start_time) >= hevy14);
   bodyGymCurrent = bodyHevyWorkouts.filter(w => new Date(w.start_time) >= hevy7);
-  // bodyPeriod/bodyFormActive/bodyCompActive NÃO se repõem aqui - já têm o
-  // default certo na declaração (topo do ficheiro) para o 1º load, e repor
-  // em toda chamada apagava a escolha do utilizador (período, datasets) a
-  // cada auto-refresh (visibilitychange/focus/poll 60s em app.js).
+  // Período e datasets não se repõem: o auto-refresh apagava a escolha.
 
   bodyTrendRows = buildBodyTrendRows(bodyWellness, bodyAsc);
 
@@ -292,8 +285,7 @@ function bodyWeighInHtml(asc) {
   let deltaHtml = '';
   if (wNow != null && prev && tNum(prev.weight_kg) != null) {
     const delta = parseFloat((wNow - tNum(prev.weight_kg)).toFixed(1));
-    // Sem surplus/bulk (plans/032, manutenção pura) não há um "lado bom"
-    // para o peso subir ou descer. Delta é sempre neutro, sem julgamento de cor.
+    // Delta de peso neutro: não há lado bom.
     const deltaColor = 'var(--text3)';
     if (delta > 0)      deltaHtml = `<span style="font-family:var(--mono);font-size:10px;color:${deltaColor}">↑ ${delta.toFixed(1)} kg</span>`;
     else if (delta < 0) deltaHtml = `<span style="font-family:var(--mono);font-size:10px;color:${deltaColor}">↓ ${Math.abs(delta).toFixed(1)} kg</span>`;
@@ -345,7 +337,7 @@ function setBodyPeriod(p) {
   buildBodyCompChart();
 }
 
-// ── Chart 1 — Forma · 60 dias (CTL / ATL, eixo único) ─────────────────────────
+// ── Chart Forma (CTL / ATL) ──────────────────────────────────────────────────
 
 function bodyFormChartSectionHtml(hasIcu) {
   const header = tSecLabel('Fitness');

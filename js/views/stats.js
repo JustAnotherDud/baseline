@@ -89,9 +89,7 @@ async function loadStats() {
   // ── Build sections ─────────────────────────────────────────────────────
   container.innerHTML = '';
 
-  // ════════════════════════════════════════════════════════════════════════
-  // SECTION 1 — Daily averages
-  // ════════════════════════════════════════════════════════════════════════
+  // Médias diárias
   const sec1 = document.createElement('div');
   sec1.className = 'stats-section';
 
@@ -144,9 +142,7 @@ async function loadStats() {
   }
   container.appendChild(sec1);
 
-  // ════════════════════════════════════════════════════════════════════════
-  // SECTION STREAK — consecutive days with diary entries
-  // ════════════════════════════════════════════════════════════════════════
+  // Streak: dias seguidos com registos
   const secStreak = document.createElement('div');
   secStreak.className = 'stats-section';
   const streakMsg = streak >= 7 ? 'Mantém o ritmo!' : streak >= 3 ? 'Bom começo!' : streak === 0 ? 'Começa hoje!' : '';
@@ -159,9 +155,7 @@ async function loadStats() {
     <div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:4px">${streakMsg}</div>`;
   container.appendChild(secStreak);
 
-  // ════════════════════════════════════════════════════════════════════════
-  // SECTION 2 — Calorie adherence dots
-  // ════════════════════════════════════════════════════════════════════════
+  // Aderência calórica
   const sec2 = document.createElement('div');
   sec2.className = 'stats-section';
 
@@ -211,9 +205,7 @@ async function loadStats() {
     ${dotsHtml}`;
   container.appendChild(sec2);
 
-  // ════════════════════════════════════════════════════════════════════════
-  // SECTION 3 — Top 5 foods
-  // ════════════════════════════════════════════════════════════════════════
+  // Top 5 alimentos
   const sec3 = document.createElement('div');
   sec3.className = 'stats-section';
 

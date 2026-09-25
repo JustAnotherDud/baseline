@@ -160,14 +160,6 @@ function switchFoodsTab(tab) {
 async function loadSettingsView() {
   const verEl = document.getElementById('settings-version');
   if (verEl && typeof APP_VERSION !== 'undefined') verEl.textContent = 'v' + APP_VERSION;
-
-  // "Fase activa"/"Objectivo" removidos (plans/011) -- liam phases.objetivo,
-  // uma tabela que sobreviveu ao modelo de fases/mesociclos purgado do
-  // sistema de coaching a 10 Ago 2026 (sync_hub plans/013+014). Não há
-  // conceito equivalente a mostrar aqui; T (semanas até Porto) já vive em
-  // #targets, não em Settings.
-
-  // Estado ICU/Hevy (ID, key, toggle) vive nos sheets de configuração.
 }
 
 // Toggle ON/OFF dentro dos sheets de configuração (criados lazy e cacheados,

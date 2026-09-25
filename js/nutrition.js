@@ -25,20 +25,9 @@ function getNutrientColor(nutrient, pct) {
   }
 }
 
-// Estado de um macro "floor" (proteína/gordura) para a célula do diário.
-// floor é um mínimo, não um teto. Devolve null se não houver floor válido.
-// status: 'below' (abaixo do mínimo) | 'met'.
-//
-// O caso 'over' (gordura >90g absolutos) foi removido — era calibrado para
-// um modelo onde a gordura era um floor pequeno e fixo (~60-80g). Desde a
-// prescrição por âncoras+banda (sync_hub plans/030/031), a gordura é uma
-// banda de 20-35% da energia medida — o alvo do próprio dia (`floor` aqui)
-// já ronda regularmente 100-150g, muito acima do antigo tecto de 90g. Um
-// tecto absoluto fixo passou a disparar mesmo quando a ingestão bate
-// exactamente o alvo prescrito nesse dia. Sem um tecto real vindo do
-// backend (daily_targets só expõe um único valor de fat, não a banda
-// [min,max]), gordura passa a comportar-se como proteína: floor puro,
-// sem sinalização de excesso.
+// Estado de um macro mínimo (proteína/gordura) no diário. Sem tecto:
+// daily_targets só traz um valor de gordura, não a banda.
+// Devolve null sem floor; status 'below' ou 'met'.
 function macroFloorState(key, actual, floor) {
   if (!(floor > 0)) return null;
   const val = Math.round(actual);

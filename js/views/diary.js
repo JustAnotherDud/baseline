@@ -115,10 +115,7 @@ function renderToday(entries, t) {
     const macroStr = mes.length > 0
       ? `<div class="meal-macros">F ${r(mfat)} · C ${r(mcarb)} · P ${r(mprot)}</div>`
       : '';
-    // "Lock" reenquadrado como collapse/expand: meal_locks guarda o estado
-    // recolhido. Só faz sentido recolher quando há entradas para esconder.
-    // "Lock" reenquadrado como collapse/expand: meal_locks guarda o estado
-    // recolhido. Só faz sentido recolher quando há entradas para esconder.
+    // meal_locks guarda as refeições recolhidas. Só recolhe com entradas.
     const hasEntries = mes.length > 0;
     const collapsed = hasEntries && isMealLocked(currentDate, k);
     // Chevron único (▼); roda para ▲ via CSS quando a refeição está aberta.
@@ -221,7 +218,7 @@ function pickDate() {
 }
 
 // ── MEAL LOCKS (localStorage) ────────────────────────────────────────────────
-// Bloqueio por (data + refeição): impede log/edição de entradas nessa refeição.
+// Estado recolhido por (data + refeição).
 function getMealLocks() {
   try { return JSON.parse(localStorage.getItem('meal_locks') || '{}'); }
   catch { return {}; }

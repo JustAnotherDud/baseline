@@ -28,7 +28,7 @@ Login obrigatório (Supabase Auth, email e password, utilizador único, signups 
 
 Ordem de carregamento em `index.html`: `config.js`, `nutrition.js`, `db.js`, `ui.js`, `views/*.js`, `app.js` (último, chama `init()`).
 
-- `js/config.js`: `APP_VERSION` e `MEALS` (7 refeições).
+- `js/config.js`: `localDate()`, `APP_VERSION` e `MEALS` (7 refeições).
 - `js/nutrition.js`: `getNutrientColor` (semáforo de aderência) e `macroFloorState`.
 - `js/db.js`: queries do diário e scores do date picker.
 - `js/ui.js`: toast, sheets partilhados (edição, date picker, ranking, donut, mover refeição), `parseGramsExpr`.

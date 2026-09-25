@@ -218,7 +218,7 @@ async function openDatePicker(selectedVal, onSelect, opts = {}) {
   const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
                   'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const DAYS   = ['S','T','Q','Q','S','S','D'];
-  const today  = new Date().toISOString().split('T')[0];
+  const today  = localDate();
 
   const overlay = ensureSheet('dp-overlay', {
     zIndex: 300,

@@ -1,4 +1,4 @@
-let currentTargetsDate  = new Date().toISOString().split('T')[0];
+let currentTargetsDate  = localDate();
 let refreshTargetsGen   = 0;
 
 const TARGET_FIELD_IDS = ['t-kcal','t-fat','t-carb','t-fiber','t-prot'];
@@ -7,7 +7,7 @@ const TARGET_FIELD_IDS = ['t-kcal','t-fat','t-carb','t-fiber','t-prot'];
 const PORTO_MARATHON_DATE = '2026-11-08';
 
 async function loadTargetsForm() {
-  currentTargetsDate = new Date().toISOString().split('T')[0];
+  currentTargetsDate = localDate();
   updateTargetsDateLabel();
   await refreshTargets();
 }
@@ -15,7 +15,7 @@ async function loadTargetsForm() {
 function updateTargetsDateLabel() {
   const el = document.getElementById('targets-date-btn');
   if (!el) return;
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDate();
   const d     = new Date(currentTargetsDate + 'T12:00:00');
   const label = d.toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' });
   el.textContent = currentTargetsDate === today ? `Hoje — ${label}` : label;

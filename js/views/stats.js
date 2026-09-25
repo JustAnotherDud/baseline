@@ -11,16 +11,16 @@ async function loadStats() {
   // ── Date range: from = today - N days, to = yesterday ──────────────────
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  const to = yesterday.toISOString().split('T')[0];
+  const to = localDate(yesterday);
 
   const fromDate = new Date();
   fromDate.setDate(fromDate.getDate() - statsPeriod);
-  const from = fromDate.toISOString().split('T')[0];
+  const from = localDate(fromDate);
 
   // Streak: always last 60 days regardless of selected period
   const sixtyDaysAgo = new Date();
   sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-  const streakFrom = sixtyDaysAgo.toISOString().split('T')[0];
+  const streakFrom = localDate(sixtyDaysAgo);
 
   if (periodEl) {
     const fmt = d => { const p = d.split('-'); return `${p[2]}/${p[1]}`; };
@@ -74,7 +74,7 @@ async function loadStats() {
     const checkDate = new Date(to + 'T12:00:00');
     checkDate.setDate(checkDate.getDate() - 1);
     while (true) {
-      const ds = checkDate.toISOString().split('T')[0];
+      const ds = localDate(checkDate);
       if (!datesWithEntries.has(ds)) break;
       streak++;
       checkDate.setDate(checkDate.getDate() - 1);
@@ -158,7 +158,7 @@ async function loadStats() {
   const iterDate = new Date(from + 'T12:00:00');
   const toDateObj = new Date(to + 'T12:00:00');
   while (iterDate <= toDateObj) {
-    const dateStr = iterDate.toISOString().split('T')[0];
+    const dateStr = localDate(iterDate);
     const dd = String(iterDate.getDate()).padStart(2, '0');
     const mm = String(iterDate.getMonth() + 1).padStart(2, '0');
     const label = `${dd}/${mm}`;

@@ -202,7 +202,7 @@ function setDateLabel() {
 function changeDay(delta) {
   const d = new Date(currentDate + 'T12:00:00');
   d.setDate(d.getDate() + delta);
-  currentDate = d.toISOString().split('T')[0];
+  currentDate = localDate(d);
   setDateLabel();
   loadToday();
 }

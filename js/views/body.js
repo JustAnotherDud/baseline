@@ -120,7 +120,7 @@ function icuHeaders() { return { 'Authorization': 'Basic ' + btoa('API_KEY:' + i
 function icuDateOffset(days) {
   const d = new Date();
   d.setDate(d.getDate() + days);
-  return d.toISOString().split('T')[0];
+  return localDate(d);
 }
 
 async function icuFetch(path) {
@@ -161,7 +161,7 @@ function bodyFilterByPeriod(rows, period, today = new Date()) {
   else if (period === '3m')    cutoff.setMonth(base.getMonth() - 3);
   else if (period === '6m')    cutoff.setMonth(base.getMonth() - 6);
   else if (period === '1y')    cutoff.setFullYear(base.getFullYear() - 1);
-  const cutoffStr = cutoff.toISOString().split('T')[0];
+  const cutoffStr = localDate(cutoff);
   return rows.filter(r => r.date >= cutoffStr);
 }
 
@@ -178,7 +178,7 @@ async function loadBody() {
   c.innerHTML = '<div class="loading">A carregar...</div>';
 
   const hasIcu = !!(icuId && icuKey && icuEnabled);
-  const today  = new Date().toISOString().split('T')[0];
+  const today  = localDate();
   const back90 = icuDateOffset(-90);
   const back14 = icuDateOffset(-14);
 

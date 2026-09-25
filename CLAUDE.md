@@ -8,6 +8,7 @@ Mapa da app, schema e integrações: `README.md`. Produto e design: `PRODUCT.md`
 - `escHtml()` em toda a interpolação `innerHTML` com dados externos (alimentos, ICU, Hevy).
 - Diário em snapshot: editar `foods` não muda registos antigos.
 - `daily_targets` é só de leitura na PWA. Só o DCB escreve.
+- Datas `YYYY-MM-DD` por `localDate()`, nunca `toISOString()`.
 
 ## Antes de cada push
 

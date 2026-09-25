@@ -13,8 +13,10 @@ function loadScript(relFile, extra = {}) {
     localStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} },
     ...extra,
   });
-  const src = fs.readFileSync(path.join(__dirname, '..', relFile), 'utf8');
-  vm.runInContext(src, ctx, { filename: relFile });
+  // config.js vem sempre primeiro, como no index.html (localDate, MEALS).
+  for (const f of new Set(['js/config.js', relFile])) {
+    vm.runInContext(fs.readFileSync(path.join(__dirname, '..', f), 'utf8'), ctx, { filename: f });
+  }
   return ctx; // as funções top-level do ficheiro ficam como propriedades do ctx
 }
 

@@ -39,7 +39,7 @@ Sem build step, sem bundler, sem framework.
 | `hevy_key` | API key do Hevy |
 | `hevy_enabled` | `'false'` se integração Hevy desactivada (default: true) |
 
-**RLS activo** em todas as 9 tabelas com políticas permissivas `anon_all` (projecto pessoal — acesso único via publishable key). As credenciais ICU e Hevy são opcionais: sem elas, as secções de Treino/Ginásio mostram empty states a pedir configuração.
+**Login obrigatório (Supabase Auth, email+password, utilizador único; signups desligados).** RLS activo em todas as tabelas com políticas restritas a `authenticated` — a publishable key sozinha não lê nada. Sessão persistida pelo `supabase-js` em `localStorage` (refresh automático); sem sessão a UI fica bloqueada no ecrã de login. Logout em Settings → Terminar sessão. As credenciais ICU e Hevy são opcionais: sem elas, as secções de Treino/Ginásio mostram empty states a pedir configuração.
 
 ---
 

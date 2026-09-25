@@ -13,7 +13,12 @@ let editingEntry = null;
 let fromLogContext = false;
 let mealManuallySelected = false;
 
-function init() {
+let appStarted = false;
+
+// Sessão Supabase Auth: as policies RLS só aceitam o utilizador
+// `authenticated`; sem sessão a UI fica bloqueada no ecrã de login.
+// supabase-js persiste a sessão em localStorage e renova o token sozinho.
+async function init() {
   const url = localStorage.getItem('nt_url');
   const key = localStorage.getItem('nt_key');
   icuId  = localStorage.getItem('icu_id')  || null;
@@ -21,44 +26,87 @@ function init() {
   hevyKey = localStorage.getItem('hevy_key') || '';
   icuEnabled = localStorage.getItem('icu_enabled') !== 'false';
   hevyEnabled = localStorage.getItem('hevy_enabled') !== 'false';
-  if (url && key) {
-    db = createClient(url, key);
-    document.getElementById('setup-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
-    setDateLabel();
-    updateLogDateLabel();
-    loadTargetsForm();
-    const _initialView = location.hash.replace('#', '') || 'today';
-    history.replaceState({ view: _initialView }, '', '#' + _initialView);
-    go(_initialView, false);
-    loadFoods();
-    window.addEventListener('popstate', () => {
-      const _openSheet = document.querySelector('.sheet-overlay.open');
-      if (_openSheet) {
-        _openSheet.classList.remove('open');
-      } else {
-        const _view = location.hash.replace('#', '') || 'today';
-        go(_view, false);
-      }
+  if (!url || !key) { db = null; showLogin(); return; }
+  if (!db) {
+    db = createClient(url, key, { auth: { persistSession: true, autoRefreshToken: true } });
+    db.auth.onAuthStateChange((event, session) => {
+      if (!session) showLogin();
     });
-  } else {
-    document.getElementById('setup-screen').style.display = 'flex';
-    document.getElementById('app').style.display = 'none';
+  }
+  const { data: { session } } = await db.auth.getSession();
+  if (session) startApp();
+  else showLogin();
+}
+
+function showLogin() {
+  const hasConn = !!(localStorage.getItem('nt_url') && localStorage.getItem('nt_key'));
+  document.getElementById('setup-conn').style.display = hasConn ? 'none' : 'flex';
+  document.getElementById('setup-sub').textContent = hasConn
+    ? 'Sessão terminada. Entra com a tua conta.'
+    : 'Introduz as credenciais do teu projecto Supabase e a tua conta.';
+  document.getElementById('setup-password').value = '';
+  document.getElementById('setup-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+
+function startApp() {
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  setDateLabel();
+  updateLogDateLabel();
+  loadTargetsForm();
+  const _initialView = location.hash.replace('#', '') || 'today';
+  history.replaceState({ view: _initialView }, '', '#' + _initialView);
+  go(_initialView, false);
+  loadFoods();
+  if (appStarted) return;
+  appStarted = true;
+  window.addEventListener('popstate', () => {
+    const _openSheet = document.querySelector('.sheet-overlay.open');
+    if (_openSheet) {
+      _openSheet.classList.remove('open');
+    } else {
+      const _view = location.hash.replace('#', '') || 'today';
+      go(_view, false);
+    }
+  });
+}
+
+async function saveSetup() {
+  const hasConn = !!(localStorage.getItem('nt_url') && localStorage.getItem('nt_key'));
+  const url = hasConn ? localStorage.getItem('nt_url')
+    : document.getElementById('setup-url').value.trim().replace(/\/$/,'');
+  const key = hasConn ? localStorage.getItem('nt_key')
+    : document.getElementById('setup-key').value.trim();
+  const email = document.getElementById('setup-email').value.trim();
+  const password = document.getElementById('setup-password').value;
+  if (!url || !key || !email || !password) { toast('Preenche todos os campos'); return; }
+  const btn = document.getElementById('setup-submit');
+  btn.disabled = true;
+  try {
+    if (!db) db = createClient(url, key, { auth: { persistSession: true, autoRefreshToken: true } });
+    const { error } = await db.auth.signInWithPassword({ email, password });
+    if (error) { if (!hasConn) db = null; toast('Login falhou: ' + error.message); return; }
+    // URL/key só ficam guardados depois de um login válido.
+    localStorage.setItem('nt_url', url);
+    localStorage.setItem('nt_key', key);
+    // ICU configura-se em Settings → Intervals.icu, não no setup inicial.
+    await init();
+  } finally {
+    btn.disabled = false;
   }
 }
 
-function saveSetup() {
-  const url = document.getElementById('setup-url').value.trim().replace(/\/$/,'');
-  const key = document.getElementById('setup-key').value.trim();
-  if (!url || !key) { toast('Preenche os dois campos'); return; }
-  localStorage.setItem('nt_url', url);
-  localStorage.setItem('nt_key', key);
-  // ICU configura-se em Settings → Intervals.icu, não no setup inicial.
-  init();
+async function logout() {
+  if (!confirm('Terminar sessão?')) return;
+  if (db) await db.auth.signOut();
+  showLogin();
 }
 
-function resetSetup() {
+async function resetSetup() {
   if (!confirm('Redefinir ligação Supabase?')) return;
+  if (db) await db.auth.signOut();
+  db = null;
   localStorage.removeItem('nt_url'); localStorage.removeItem('nt_key'); init();
 }
 
@@ -264,7 +312,7 @@ async function clearCacheAndReload() {
 let lastAutoRefresh = 0;
 
 function refreshCurrentView() {
-  if (!db || document.hidden) return;
+  if (!db || document.hidden || document.getElementById('app').style.display === 'none') return;
   if (document.querySelector('.sheet-overlay.open') || editingEntry || selectedFood) return;
   const now = Date.now();
   if (now - lastAutoRefresh < 15000) return;

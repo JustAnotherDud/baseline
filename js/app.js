@@ -115,6 +115,14 @@ function pushSheetState() {
   history.pushState({ sheet: true }, '', location.hash);
 }
 
+// Loader de cada view com dados que podem mudar noutro dispositivo.
+function loadView(view) {
+  if (view === 'today') loadToday();
+  else if (view === 'foods') { if (currentFoodsTab === 'foods') loadFoods(); else loadMeals(); }
+  else if (view === 'forma') loadBody();
+  else if (view === 'stats') loadStats();
+}
+
 function go(view, _pushState = true) {
   // Hash de view desconhecido (bookmark velho, typo) → cai para 'today'.
   let viewEl = document.getElementById('view-' + view);
@@ -124,20 +132,12 @@ function go(view, _pushState = true) {
   viewEl.classList.add('active');
   const nb = document.getElementById('nav-'+view);
   if (nb) nb.classList.add('active');
-  if (view==='today')    loadToday();
-  if (view==='foods') {
-    if (currentFoodsTab === 'foods') loadFoods();
-    else loadMeals();
-  }
-  if (view==='forma') loadBody();
+  loadView(view);
   if (view==='settings') loadSettingsView();
-  if (view==='stats')    loadStats();
   if (_pushState) {
     history.pushState({ view }, '', '#' + view);
   }
 }
-
-
 
 function switchFoodsTab(tab) {
   currentFoodsTab = tab;
@@ -308,11 +308,7 @@ function refreshCurrentView() {
   const now = Date.now();
   if (now - lastAutoRefresh < 15000) return;
   lastAutoRefresh = now;
-  const view = location.hash.replace('#', '') || 'today';
-  if (view === 'today') loadToday();
-  else if (view === 'foods') { if (currentFoodsTab === 'foods') loadFoods(); else loadMeals(); }
-  else if (view === 'forma') loadBody();
-  else if (view === 'stats') loadStats();
+  loadView(location.hash.replace('#', '') || 'today');
 }
 
 document.addEventListener('visibilitychange', refreshCurrentView);

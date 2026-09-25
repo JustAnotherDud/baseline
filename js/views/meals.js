@@ -6,27 +6,12 @@ async function loadMeals() {
   const el = document.getElementById('meals-list');
   if (!db || !el) return;
 
-  const { data: templates, error } = await db
-    .from('meal_templates')
-    .select('id, name, created_at')
-    .order('name');
-
+  const { templates, countMap, error } = await fetchMealTemplates();
   if (error) { el.innerHTML = '<div class="loading">Erro ao carregar refeições</div>'; return; }
-
-  if (!templates || !templates.length) {
+  if (!templates.length) {
     el.innerHTML = '<div class="empty-meals">Sem refeições guardadas. Cria a primeira abaixo.</div>';
     return;
   }
-
-  // Fetch item counts for all templates in one query
-  const ids = templates.map(t => t.id);
-  const { data: items } = await db
-    .from('meal_template_items')
-    .select('template_id')
-    .in('template_id', ids);
-
-  const countMap = new Map();
-  (items || []).forEach(i => countMap.set(i.template_id, (countMap.get(i.template_id) || 0) + 1));
 
   renderMealTemplateList(el, templates, countMap, {
     showDelete: true,

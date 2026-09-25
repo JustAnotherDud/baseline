@@ -163,4 +163,13 @@ async function moveEntryToMeal(entryId, newMeal) {
   return true;
 }
 
-
+// Templates por nome e número de itens de cada um.
+async function fetchMealTemplates() {
+  const { data: templates, error } = await db.from('meal_templates').select('id, name').order('name');
+  const countMap = new Map();
+  if (error || !templates || !templates.length) return { templates: templates || [], countMap, error };
+  const { data: items } = await db
+    .from('meal_template_items').select('template_id').in('template_id', templates.map(t => t.id));
+  (items || []).forEach(i => countMap.set(i.template_id, (countMap.get(i.template_id) || 0) + 1));
+  return { templates, countMap, error: null };
+}

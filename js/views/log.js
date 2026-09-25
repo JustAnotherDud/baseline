@@ -290,19 +290,11 @@ async function openLogMeals() {
 
   if (!db) { listEl.innerHTML = '<div class="loading">Sem ligação</div>'; return; }
 
-  const { data: templates } = await db
-    .from('meal_templates').select('id, name').order('name');
-
-  if (!templates || !templates.length) {
+  const { templates, countMap } = await fetchMealTemplates();
+  if (!templates.length) {
     listEl.innerHTML = '<div style="padding:20px;font-size:13px;color:var(--text3)">Sem refeições guardadas.<br><br>Cria uma na tab <b style="color:var(--text2)">Comida → Refeições</b>.</div>';
     return;
   }
-
-  const ids = templates.map(t => t.id);
-  const { data: items } = await db
-    .from('meal_template_items').select('template_id').in('template_id', ids);
-  const countMap = new Map();
-  (items || []).forEach(i => countMap.set(i.template_id, (countMap.get(i.template_id) || 0) + 1));
 
   renderMealTemplateList(listEl, templates, countMap, {
     showDelete: false,

@@ -141,118 +141,78 @@ async function refreshTargets() {
   const pushTime   = document.getElementById('targets-push-time');
   const coverageEl = document.getElementById('targets-coverage-badge');
 
-  if (row) {
-    // Linhas antigas têm o diagnóstico no topo de blocks_active.
-    const diag = row.blocks_active?.energy_diag ?? null;
-    const lookbackDays = diag?.lookback_days_used ?? row.blocks_active?.energy_lookback_days_used;
-    const loggedDays   = diag?.days_logged_in_window ?? row.blocks_active?.energy_days_logged_in_window;
+  // Tudo o que é opcional começa escondido; cada parte mostra-se se tiver dados.
+  const show = (el, display = 'block') => { el.style.display = display; };
+  [hint, blocksEl, warningEl, noteEl, pushTime, coverageEl].forEach(el => show(el, 'none'));
 
-    // Badge só quando a janela passou dos 28d normais.
-    if (coverageEl) {
-      if (Number.isFinite(lookbackDays) && lookbackDays > 28) {
-        coverageEl.textContent = `Estimativa alargada a ${lookbackDays}d (${loggedDays ?? '—'}d logados)`;
-        coverageEl.style.display = 'inline-block';
-      } else {
-        coverageEl.style.display = 'none';
-      }
-    }
-    // ── Com target ──────────────────────────────────────────────
-    document.getElementById('t-kcal').textContent  = row.calories ?? '—';
-    document.getElementById('t-fat').textContent   = row.fat      ?? '—';
-    document.getElementById('t-carb').textContent  = row.carbs    ?? '—';
-    document.getElementById('t-fiber').textContent = row.fiber    ?? '—';
-    document.getElementById('t-prot').textContent  = row.protein  ?? '—';
+  if (!row) {
+    TARGET_FIELD_IDS.forEach(id => { document.getElementById(id).textContent = '—'; });
+    hint.textContent = 'Sem target para esta data. Pede ao DCB para fazer push dos blocos de hoje.';
+    show(hint);
+    return;
+  }
 
-    // Blocos activos — chips derivados de blocks_active inteiro
-    if (row.blocks_active && typeof row.blocks_active === 'object' && chipsEl) {
-      const { chips, sum } = deriveBlocks(row.blocks_active);
-      const calories = +row.calories;
-      // Só linhas com baseline_kcal fecham a soma com o total.
-      const hasBaseline = Object.hasOwn(row.blocks_active, 'baseline_kcal');
+  // Linhas antigas têm o diagnóstico no topo de blocks_active.
+  const blocks = row.blocks_active;
+  const diag = blocks?.energy_diag ?? null;
+  const lookbackDays = diag?.lookback_days_used ?? blocks?.energy_lookback_days_used;
+  const loggedDays   = diag?.days_logged_in_window ?? blocks?.energy_days_logged_in_window;
 
-      if (chips.length) {
-        chipsEl.innerHTML = '';
-        chips.forEach(({ label, value }) => {
-          const chip = document.createElement('span');
-          chip.className = 'block-chip';
-          chip.textContent = `${label} ${Math.round(value)}kcal`;
-          chipsEl.appendChild(chip);
-        });
-        blocksEl.style.display = 'block';
+  // Badge só quando a janela passou dos 28d normais.
+  if (Number.isFinite(lookbackDays) && lookbackDays > 28) {
+    coverageEl.textContent = `Estimativa alargada a ${lookbackDays}d (${loggedDays ?? '—'}d logados)`;
+    show(coverageEl, 'inline-block');
+  }
 
-        // Soma != total indica dupla contagem. 15kcal de folga para o
-        // arredondamento dos macros.
-        if (warningEl) {
-          const diff = hasBaseline && Number.isFinite(calories) ? sum - calories : 0;
-          if (Math.abs(diff) > 15) {
-            warningEl.textContent =
-              `⚠ Blocos somam ${sum}kcal contra um target de ${calories}kcal ` +
-              `(${diff > 0 ? '+' : ''}${diff}kcal). Os dois deviam fechar — ` +
-              `possível dupla contagem ou bloco em falta.`;
-            warningEl.style.display = 'block';
-          } else {
-            warningEl.style.display = 'none';
-          }
-        }
+  document.getElementById('t-kcal').textContent  = row.calories ?? '—';
+  document.getElementById('t-fat').textContent   = row.fat      ?? '—';
+  document.getElementById('t-carb').textContent  = row.carbs    ?? '—';
+  document.getElementById('t-fiber').textContent = row.fiber    ?? '—';
+  document.getElementById('t-prot').textContent  = row.protein  ?? '—';
 
-        if (noteEl) {
-          const notes = energyNotes(diag);
-          if (notes.length) {
-            noteEl.innerHTML = '';
-            notes.forEach((text) => {
-              const line = document.createElement('div');
-              line.textContent = text;
-              noteEl.appendChild(line);
-            });
-            noteEl.style.display = 'block';
-          } else {
-            noteEl.style.display = 'none';
-          }
-        }
-      } else {
-        blocksEl.style.display = 'none';
-        if (warningEl) warningEl.style.display = 'none';
-        if (noteEl) noteEl.style.display = 'none';
-      }
-    } else {
-      blocksEl.style.display = 'none';
-      if (warningEl) warningEl.style.display = 'none';
-      if (noteEl) noteEl.style.display = 'none';
-    }
-
-    // Push time — mostra data quando o push não é de hoje
-    if (row.updated_at) {
-      const pushDate = new Date(row.updated_at);
-      const hhmm     = pushDate.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
-      const isToday  = pushDate.toLocaleDateString('pt-PT') === new Date().toLocaleDateString('pt-PT');
-      if (isToday) {
-        pushTime.textContent = `Push às ${hhmm}`;
-      } else {
-        const ddmm = pushDate.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' });
-        pushTime.textContent = `Push a ${ddmm} às ${hhmm}`;
-      }
-      pushTime.style.display = 'block';
-    } else {
-      pushTime.style.display = 'none';
-    }
-
-    if (hint) hint.style.display = 'none';
-
-  } else {
-    // ── Sem target ───────────────────────────────────────────────
-    TARGET_FIELD_IDS.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = '—';
+  const { chips, sum } = blocks && typeof blocks === 'object' ? deriveBlocks(blocks) : { chips: [] };
+  if (chips.length) {
+    chipsEl.innerHTML = '';
+    chips.forEach(({ label, value }) => {
+      const chip = document.createElement('span');
+      chip.className = 'block-chip';
+      chip.textContent = `${label} ${Math.round(value)}kcal`;
+      chipsEl.appendChild(chip);
     });
-    blocksEl.style.display   = 'none';
-    if (warningEl) warningEl.style.display = 'none';
-    if (noteEl) noteEl.style.display = 'none';
-    pushTime.style.display   = 'none';
-    if (coverageEl) coverageEl.style.display = 'none';
-    if (hint) {
-      hint.textContent = 'Sem target para esta data. Pede ao DCB para fazer push dos blocos de hoje.';
-      hint.style.display = 'block';
+    show(blocksEl);
+
+    // Só linhas com baseline_kcal fecham a soma com o total. Soma != total
+    // indica dupla contagem; 15kcal de folga para o arredondamento dos macros.
+    const calories = +row.calories;
+    const diff = Object.hasOwn(blocks, 'baseline_kcal') && Number.isFinite(calories) ? sum - calories : 0;
+    if (Math.abs(diff) > 15) {
+      warningEl.textContent =
+        `⚠ Blocos somam ${sum}kcal contra um target de ${calories}kcal ` +
+        `(${diff > 0 ? '+' : ''}${diff}kcal). Os dois deviam fechar — ` +
+        `possível dupla contagem ou bloco em falta.`;
+      show(warningEl);
     }
+
+    const notes = energyNotes(diag);
+    if (notes.length) {
+      noteEl.innerHTML = '';
+      notes.forEach((text) => {
+        const line = document.createElement('div');
+        line.textContent = text;
+        noteEl.appendChild(line);
+      });
+      show(noteEl);
+    }
+  }
+
+  // Push de outro dia mostra também a data.
+  if (row.updated_at) {
+    const pushDate = new Date(row.updated_at);
+    const hhmm     = pushDate.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+    const isToday  = pushDate.toLocaleDateString('pt-PT') === new Date().toLocaleDateString('pt-PT');
+    const ddmm     = pushDate.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' });
+    pushTime.textContent = isToday ? `Push às ${hhmm}` : `Push a ${ddmm} às ${hhmm}`;
+    show(pushTime);
   }
 }
 

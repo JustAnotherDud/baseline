@@ -29,16 +29,12 @@ async function loadStats() {
 
   if (!db) { container.innerHTML = '<div class="loading">Sem ligação à base de dados.</div>'; return; }
 
-  // ── 4 parallel queries ─────────────────────────────────────────────────
-  const [diaryRes, targetsRes, foodsRes, streakRes] = await Promise.all([
+  const [diaryRes, targetsRes, streakRes] = await Promise.all([
     db.from('diary')
-      .select('date,calories,protein,carbs,fat,fiber')
+      .select('date,food_name,calories,protein,carbs,fat,fiber')
       .gte('date', from).lte('date', to),
     db.from('daily_targets')
       .select('date,calories,protein,carbs,fat')
-      .gte('date', from).lte('date', to),
-    db.from('diary')
-      .select('food_name,calories')
       .gte('date', from).lte('date', to),
     db.from('diary')
       .select('date')
@@ -47,7 +43,6 @@ async function loadStats() {
 
   const diaryRows  = diaryRes.data   || [];
   const targetRows = targetsRes.data || [];
-  const foodRows   = foodsRes.data   || [];
   const streakRows = streakRes.data  || [];
 
   if (gen !== loadStatsGen) return;
@@ -209,13 +204,13 @@ async function loadStats() {
   const sec3 = document.createElement('div');
   sec3.className = 'stats-section';
 
-  if (foodRows.length === 0) {
+  if (diaryRows.length === 0) {
     sec3.innerHTML = `
       <div class="stats-section-title">Alimentos mais frequentes</div>
       <div class="stats-empty">Sem registos neste período.</div>`;
   } else {
     const foodMap = new Map();
-    foodRows.forEach(({ food_name, calories }) => {
+    diaryRows.forEach(({ food_name, calories }) => {
       const f = foodMap.get(food_name) || { count: 0, totalKcal: 0 };
       f.count++;
       f.totalKcal += +(calories || 0);

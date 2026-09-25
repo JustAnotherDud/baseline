@@ -101,7 +101,6 @@ async function icuFetch(path) {
 // ── Hevy fetch ─────────────────────────────────────────────────────────────────
 
 async function hevyFetch(path) {
-  if (!hevyKey) throw new Error('Hevy key not configured');
   const res = await fetch(`https://api.hevyapp.com${path}`, {
     headers: { 'api-key': hevyKey },
   });
@@ -152,19 +151,16 @@ async function loadBody() {
   const back90 = icuDateOffset(-90);
   const back14 = icuDateOffset(-14);
 
-  // 4 fetches em paralelo. ICU/Hevy degradam de forma independente (catch → null);
-  // sem credenciais, resolvem null sem rede.
-  const hevyPromise = (hevyKey && hevyEnabled) ? Promise.all([
-    hevyFetch('/v1/workouts?page=1&pageSize=10').catch(() => null),
-    hevyFetch('/v1/workouts?page=2&pageSize=10').catch(() => null),
-  ]).then(([p1, p2]) => ({
-    workouts: [
-      ...(Array.isArray(p1) ? p1 : (p1?.workouts || [])),
-      ...(Array.isArray(p2) ? p2 : (p2?.workouts || [])),
-    ],
-  })).catch(() => null) : Promise.resolve(null);
+  // 4 fetches em paralelo; cada integração degrada sozinha e sem credenciais não
+  // faz rede. Hevy devolve array directo ou {workouts:[...]}.
+  const hevyPage = p => hevyFetch(`/v1/workouts?page=${p}&pageSize=10`)
+    .then(r => Array.isArray(r) ? r : (r?.workouts || []))
+    .catch(() => []);
+  const hevyPromise = (hevyKey && hevyEnabled)
+    ? Promise.all([hevyPage(1), hevyPage(2)]).then(([p1, p2]) => [...p1, ...p2])
+    : Promise.resolve([]);
 
-  const [bodyRes, wellness, activities, hevyData] = await Promise.all([
+  const [bodyRes, wellness, activities, rawWorkouts] = await Promise.all([
     db.from('body_comp').select('*').order('date', { ascending: true }),
     hasIcu ? icuFetch(`/athlete/${icuId}/wellness?oldest=${back90}&newest=${today}`).catch(() => null)
            : Promise.resolve(null),
@@ -178,9 +174,7 @@ async function loadBody() {
   bodyWellness = tWellnessSorted(wellness);
   bodyRecentActivities = Array.isArray(activities) ? activities : [];
 
-  // Hevy — normalizar (array directo ou {workouts:[...]}), filtrar 14 dias e a
-  // janela [hoje-6, hoje] (7 dias, hoje incluído). Falha silenciosa → arrays vazios.
-  const rawWorkouts = Array.isArray(hevyData) ? hevyData : (hevyData?.workouts || []);
+  // Hevy: últimos 14 dias e janela [hoje-6, hoje].
   const todayMid = new Date(); todayMid.setHours(0, 0, 0, 0);
   const hevy14 = new Date(todayMid); hevy14.setDate(todayMid.getDate() - 14);
   const hevy7  = new Date(todayMid); hevy7.setDate(todayMid.getDate() - 6);
@@ -656,19 +650,11 @@ function openActivityDetailSheet(metric) {
                 getValue: a => a.icu_training_load ? Math.round(a.icu_training_load) : null },
   };
 
-  const TYPE_EMOJI = {
-    Run: '🏃', VirtualRun: '🏃',
-    WeightTraining: '🏋️', Strength: '🏋️',
-    Ride: '🚴', VirtualRide: '🚴',
-    Walk: '🚶', Hike: '🚶',
-    Swim: '🏊',
-  };
-
-  // Agrupamento por desporto para o detalhe semanal (roadmap: detalhe por tipo).
+  // Só estes tipos entram no detalhe; o ginásio vem do Hevy.
   const TYPE_BUCKET = {
     Run: 'run', VirtualRun: 'run', TrailRun: 'run',
     Ride: 'ride', VirtualRide: 'ride',
-    Walk: 'walk', Hike: 'walk',
+    Walk: 'walk',
     Swim: 'swim',
   };
   const BUCKET_LABEL = {
@@ -676,20 +662,18 @@ function openActivityDetailSheet(metric) {
     ride: '🚴 Bicicleta',
     walk: '🚶 Caminhada',
     swim: '🏊 Natação',
-    other: '🎯 Outros',
   };
+  const TYPE_EMOJI = { Run: '🏃', VirtualRun: '🏃', Ride: '🚴', VirtualRide: '🚴', Walk: '🚶', Swim: '🏊' };
 
   const cfg = METRIC_CONFIG[metric];
 
-  // Só actividades com nome e tipo desportivo (exclui WeightTraining/sem-tipo —
-  // o ginásio vem do Hevy, mostrado em secção própria). Mesma janela [hoje-6, hoje].
-  const ICU_RUNNING_TYPES = ['Run', 'VirtualRun', 'TrailRun', 'Ride', 'VirtualRide', 'Walk', 'Swim'];
+  // Janela [hoje-6, hoje].
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const periodStart = new Date(today); periodStart.setDate(today.getDate() - 6);
 
   const activities = bodyRecentActivities
     .filter(a => {
-      if (!a.name || !ICU_RUNNING_TYPES.includes(a.type)) return false;
+      if (!a.name || !TYPE_BUCKET[a.type]) return false;
       const ds = a.start_date_local || a.start_date;
       if (!ds) return false;
       const d = new Date(ds);
@@ -700,7 +684,7 @@ function openActivityDetailSheet(metric) {
   // Agrupar por tipo de desporto e calcular subtotais por grupo.
   const bucketMap = {};
   for (const a of activities) {
-    const bucket = TYPE_BUCKET[a.type] || 'other';
+    const bucket = TYPE_BUCKET[a.type];
     if (!bucketMap[bucket]) bucketMap[bucket] = { acts: [], meters: 0, secs: 0, load: 0 };
     bucketMap[bucket].acts.push(a);
     bucketMap[bucket].meters += tNum(a.distance)  || 0;

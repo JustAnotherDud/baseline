@@ -352,7 +352,7 @@ function openNutrientSheet(entries, nutrient) {
       item.className = 'nutri-rank-item';
 
       const subsHTML = multi ? group.entries.map(e => {
-        const mealLabel = (typeof MEALS !== 'undefined' && MEALS[e.meal]) || e.meal || '—';
+        const mealLabel = MEALS[e.meal] || e.meal || '—';
         return `<div class="nutri-rank-sub">
           <span class="nutri-rank-sub-meal">${mealLabel}</span>
           <span class="nutri-rank-sub-val">${fmt(+(e[n.key] || 0))}${n.unit}</span>
@@ -400,7 +400,7 @@ function openNutrientSheet(entries, nutrient) {
 
 function openMealBreakdown(mealKey, allEntries) {
   pushSheetState();
-  const mealLabel = (typeof MEALS !== 'undefined' && MEALS[mealKey]) || mealKey;
+  const mealLabel = MEALS[mealKey] || mealKey;
   const mes = allEntries.filter(e => e.meal === mealKey);
   let selectedMacro = null;
 
@@ -439,41 +439,38 @@ function openMealBreakdown(mealKey, allEntries) {
     `${mealLabel.toUpperCase()} · ${Math.round(totalKcal)} KCAL`;
 
   // Wire "Guardar como refeição" — rebind every open so mes/mealLabel are fresh
-  const saveBtn = document.getElementById('meal-bd-save-btn');
-  if (saveBtn) {
-    saveBtn.onclick = () => {
-      overlay.classList.remove('open');
-      const validEntries  = mes.filter(e => e.grams && +e.grams > 0);
-      const skippedCount  = mes.length - validEntries.length;
-      const prefillItems  = validEntries.map(e => ({
-        food_id:       e.food_id || null,
-        food_name:     e.food_name,
-        grams:         e.grams,
-        calories:      e.calories,
-        protein:       e.protein,
-        carbs:         e.carbs,
-        fat:           e.fat,
-        saturated_fat: e.saturated_fat || 0,
-        sugar:         e.sugar || 0,
-        fiber:         e.fiber || 0,
-        _food:         e.food_id ? {
-          id:                     e.food_id,
-          calories_per_100g:      e.calories           / e.grams * 100,
-          protein_per_100g:       e.protein            / e.grams * 100,
-          carbs_per_100g:         e.carbs              / e.grams * 100,
-          fat_per_100g:           e.fat                / e.grams * 100,
-          saturated_fat_per_100g: (e.saturated_fat||0) / e.grams * 100,
-          sugar_per_100g:         (e.sugar||0)         / e.grams * 100,
-          fiber_per_100g:         (e.fiber||0)         / e.grams * 100,
-          serving_size_g:         e.grams,
-        } : null,
-      }));
-      if (skippedCount > 0) {
-        toast(`${skippedCount} entrada${skippedCount > 1 ? 's' : ''} rápida${skippedCount > 1 ? 's' : ''} não incluída${skippedCount > 1 ? 's' : ''}`);
-      }
-      openCreateMeal(mealLabel, prefillItems);
-    };
-  }
+  document.getElementById('meal-bd-save-btn').onclick = () => {
+    overlay.classList.remove('open');
+    const validEntries  = mes.filter(e => e.grams && +e.grams > 0);
+    const skippedCount  = mes.length - validEntries.length;
+    const prefillItems  = validEntries.map(e => ({
+      food_id:       e.food_id || null,
+      food_name:     e.food_name,
+      grams:         e.grams,
+      calories:      e.calories,
+      protein:       e.protein,
+      carbs:         e.carbs,
+      fat:           e.fat,
+      saturated_fat: e.saturated_fat || 0,
+      sugar:         e.sugar || 0,
+      fiber:         e.fiber || 0,
+      _food:         e.food_id ? {
+        id:                     e.food_id,
+        calories_per_100g:      e.calories           / e.grams * 100,
+        protein_per_100g:       e.protein            / e.grams * 100,
+        carbs_per_100g:         e.carbs              / e.grams * 100,
+        fat_per_100g:           e.fat                / e.grams * 100,
+        saturated_fat_per_100g: (e.saturated_fat||0) / e.grams * 100,
+        sugar_per_100g:         (e.sugar||0)         / e.grams * 100,
+        fiber_per_100g:         (e.fiber||0)         / e.grams * 100,
+        serving_size_g:         e.grams,
+      } : null,
+    }));
+    if (skippedCount > 0) {
+      toast(`${skippedCount} entrada${skippedCount > 1 ? 's' : ''} rápida${skippedCount > 1 ? 's' : ''} não incluída${skippedCount > 1 ? 's' : ''}`);
+    }
+    openCreateMeal(mealLabel, prefillItems);
+  };
 
   // ── Donut SVG (F/C/P in kcal space) ─────────────────────────────────────
   function buildMealDonut(protein, carbs, fat, kcal) {
@@ -553,12 +550,6 @@ function openMealBreakdown(mealKey, allEntries) {
   </div>`;
 
   // ── Food list (sorted by calories DESC) ──────────────────────────────────
-  const MACRO_CONFIG = {
-    protein: { field: 'protein', unit: 'g' },
-    carbs:   { field: 'carbs',   unit: 'g' },
-    fat:     { field: 'fat',     unit: 'g' },
-  };
-
   function updateDonutSelection() {
     document.querySelectorAll('#meal-bd-content svg [data-macro]').forEach(el => {
       el.style.opacity = selectedMacro === null || el.dataset.macro === selectedMacro ? '1' : '0.3';
@@ -568,12 +559,9 @@ function openMealBreakdown(mealKey, allEntries) {
   function renderFoodList() {
     const foodListEl = document.getElementById('meal-bd-food-list');
     if (!foodListEl) return;
-    const cfg = selectedMacro && MACRO_CONFIG[selectedMacro] ? MACRO_CONFIG[selectedMacro] : null;
     const MACRO_COLORS = { protein: 'var(--blue)', carbs: 'var(--yellow)', fat: 'var(--orange)' };
-    const sorted = [...mes].sort((a, b) => {
-      if (cfg) return +(b[cfg.field] || 0) - +(a[cfg.field] || 0);
-      return +(b.calories || 0) - +(a.calories || 0);
-    });
+    const sortKey = selectedMacro || 'calories';
+    const sorted = [...mes].sort((a, b) => +(b[sortKey] || 0) - +(a[sortKey] || 0));
     foodListEl.innerHTML = '';
     sorted.forEach(e => {
       const row = document.createElement('div');
@@ -584,9 +572,9 @@ function openMealBreakdown(mealKey, allEntries) {
       nameEl.textContent = e.food_name;
       const metaEl = document.createElement('div');
       metaEl.className = 'meal-bd-food-meta';
-      if (cfg) {
-        const val = e[cfg.field];
-        const valStr = val != null ? `${(Math.round(+val * 10) / 10).toFixed(1)}${cfg.unit}` : '—';
+      if (selectedMacro) {
+        const val = e[selectedMacro];
+        const valStr = val != null ? `${(Math.round(+val * 10) / 10).toFixed(1)}g` : '—';
         const kcal = Math.round(+(e.calories || 0));
         metaEl.innerHTML = `<span style="color:${MACRO_COLORS[selectedMacro]}">${valStr}</span><span style="color:var(--text3)"> · ${kcal} kcal</span>`;
       } else {

@@ -1,29 +1,14 @@
 let loadTodayGen = 0;
 
+// Sem linha para a data: null (sem target).
 async function getTargetsForDate(dateStr) {
   if (!db) return null;
-
-  // 1. Tenta daily_targets para esta data específica
-  const { data: daily } = await db
+  const { data } = await db
     .from('daily_targets')
     .select('calories,fat,saturated_fat,carbs,sugar,fiber,protein')
     .eq('date', dateStr)
     .maybeSingle();
-
-  if (daily) {
-    return {
-      calories:      daily.calories,
-      fat:           daily.fat,
-      saturated_fat: daily.saturated_fat,
-      carbs:         daily.carbs,
-      sugar:         daily.sugar,
-      fiber:         daily.fiber,
-      protein:       daily.protein,
-    };
-  }
-
-  // 2. Sem entrada específica → sem target para esta data
-  return null;
+  return data || null;
 }
 
 async function loadToday() {

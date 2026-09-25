@@ -227,7 +227,6 @@ body {
 .meal-head-line { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; overflow: hidden; }
 .meal-name { font-size: 12px; font-family: var(--mono); color: var(--text); font-weight: 500; text-transform: uppercase; letter-spacing: .12em; }
 .meal-kcal-val { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent); }
-.meal-kcal { font-family: var(--mono); font-size: 13px; color: var(--text); font-weight: 600; }
 .meal-macros { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-top: 3px; }
 
 /* ── MEAL BREAKDOWN SHEET ── */
@@ -497,9 +496,7 @@ input[type="number"] { font-family: var(--mono); }
 .mp-val.kcal { color: var(--accent); }
 .mp-val.prot { color: var(--blue); }
 .mp-val.carb { color: var(--yellow); }
-.mp-val.fat, .mp-val.g  { color: var(--orange); }
-.mp-val.a    { color: #e879f9; }
-.mp-val.f    { color: var(--accent); }
+.mp-val.g    { color: var(--orange); }
 .mp-lbl { font-size: 11px; color: var(--text3); font-family: var(--mono); text-transform: uppercase; margin-top: 2px; }
 
 /* ── FAB ── */
@@ -583,13 +580,11 @@ input[type="number"] { font-family: var(--mono); }
 /* ── DESKTOP SCALING ── */
 @media (min-width: 768px) {
   body { font-size: 25px; }
-  .kcal-num { font-size: 78px; }
   .macro-cell-val { font-size: 33px; }
   .view-title { font-size: 18px; }
   .view-sub { font-size: 14px; }
   .meal-name { font-size: 16px; }
   .meal-macros { font-size: 12px; }
-  .meal-kcal { font-size: 15px; }
   .macro-cell-label { font-size: 13px; }
   .macro-cell-tgt { font-size: 13px; }
   .entry-name { font-size: 19px; }

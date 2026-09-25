@@ -158,7 +158,7 @@ function switchFoodsTab(tab) {
 
 async function loadSettingsView() {
   const verEl = document.getElementById('settings-version');
-  if (verEl && typeof APP_VERSION !== 'undefined') verEl.textContent = 'v' + APP_VERSION;
+  if (verEl) verEl.textContent = 'v' + APP_VERSION;
 }
 
 // Toggle ON/OFF dentro dos sheets de configuração (criados lazy e cacheados,
@@ -262,27 +262,27 @@ function editHevySettings() {
 }
 
 function saveHevySettings() {
-  const key = document.getElementById('hevy-key-input')?.value?.trim() || '';
+  const key = document.getElementById('hevy-key-input').value.trim();
   if (key) localStorage.setItem('hevy_key', key); else localStorage.removeItem('hevy_key');
   hevyKey = key;
-  document.getElementById('hevy-settings-overlay')?.classList.remove('open');
+  document.getElementById('hevy-settings-overlay').classList.remove('open');
   toast('Hevy guardado');
   loadSettingsView();
-  if (typeof loadBody === 'function') loadBody();
+  loadBody();
 }
 
 function toggleIcu() {
   icuEnabled = !icuEnabled;
   localStorage.setItem('icu_enabled', icuEnabled);
   updateSheetToggle('icu-sheet-toggle', icuEnabled);
-  if (typeof loadBody === 'function') loadBody();
+  loadBody();
 }
 
 function toggleHevy() {
   hevyEnabled = !hevyEnabled;
   localStorage.setItem('hevy_enabled', hevyEnabled);
   updateSheetToggle('hevy-sheet-toggle', hevyEnabled);
-  if (typeof loadBody === 'function') loadBody();
+  loadBody();
 }
 
 async function clearCacheAndReload() {

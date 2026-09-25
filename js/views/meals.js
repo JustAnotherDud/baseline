@@ -47,7 +47,6 @@ async function deleteMeal(id) {
 
 function openCreateMeal(prefillName, prefillItems) {
   pushSheetState();
-  mealItems = [];
   let overlay = document.getElementById('meal-create-overlay');
   if (!overlay) {
     overlay = document.createElement('div');
@@ -79,12 +78,8 @@ function openCreateMeal(prefillName, prefillItems) {
     document.getElementById('meal-create-close').onclick = () => overlay.classList.remove('open');
   }
 
-  // Pre-fill if called from meal breakdown "guardar"
-  if (prefillName) {
-    document.getElementById('mc-name').value = prefillName;
-  } else {
-    document.getElementById('mc-name').value = '';
-  }
+  // Prefill vem do "Guardar como refeição" do donut.
+  document.getElementById('mc-name').value = prefillName || '';
 
   if (prefillItems && prefillItems.length) {
     mealItems = prefillItems.map((e, i) => ({ id: i, ...e }));
@@ -303,8 +298,7 @@ async function openApplyMeal(templateId, templateName) {
 
   // Default to current selectedMeal
   const sel = document.getElementById('apply-meal-select');
-  sel.value = (typeof selectedMeal !== 'undefined' ? selectedMeal : null)
-              || (typeof getMealByHour === 'function' ? getMealByHour() : 'breakfast');
+  sel.value = selectedMeal;
 
   // Show overlay immediately, load items async
   const itemsEl = document.getElementById('apply-meal-items');
@@ -366,7 +360,6 @@ async function applyMealToDiary() {
     document.getElementById('apply-meal-overlay').classList.remove('open');
     _applyMealItems = null;
     selectedMeal = meal;
-    loadToday();
     go('today');
   } finally {
     _applyingMeal = false;

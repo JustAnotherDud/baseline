@@ -176,7 +176,7 @@ function updatePreview() {
   document.getElementById('prev-fat').textContent   = c(selectedFood.fat_per_100g);
   document.getElementById('prev-carb').textContent  = c(selectedFood.carbs_per_100g);
   document.getElementById('prev-prot').textContent  = c(selectedFood.protein_per_100g);
-  if (selectedFood && selectedFood.serving_size_g) {
+  if (selectedFood.serving_size_g) {
     const doses = g > 0 ? (g / selectedFood.serving_size_g).toFixed(1) : '';
     const infoEl = document.getElementById('dose-info');
     if (infoEl) infoEl.textContent = doses ? `${doses}×` : '';

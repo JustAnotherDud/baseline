@@ -8,8 +8,12 @@ const SORT_CONFIG = {
   f_kcal:   { asc: 'F/Kcal ↓', desc: 'F/Kcal ↑', default: 'desc' },
 };
 
-// key -> macro field used for the per-kcal ratio chips
-const RATIO_FIELD = { p_kcal: 'protein_per_100g', c_kcal: 'carbs_per_100g', f_kcal: 'fat_per_100g' };
+// Chips de rácio macro/kcal.
+const RATIO_META = {
+  p_kcal: { field: 'protein_per_100g', label: 'P/kcal', macro: 'P' },
+  c_kcal: { field: 'carbs_per_100g',   label: 'C/kcal', macro: 'C' },
+  f_kcal: { field: 'fat_per_100g',     label: 'F/kcal', macro: 'F' },
+};
 
 let currentSortState = { sort: 'name', dir: 'asc' };
 
@@ -43,7 +47,7 @@ function sortFoods(foods) {
     case 'p_kcal':
     case 'c_kcal':
     case 'f_kcal': {
-      const field = RATIO_FIELD[sort];
+      const field = RATIO_META[sort].field;
       return arr.sort((a,b) => mul * (ratio(a[field], a.calories_per_100g) - ratio(b[field], b.calories_per_100g)));
     }
     default:         return arr.sort((a,b) => mul * a.name.localeCompare(b.name, 'pt'));
@@ -90,11 +94,6 @@ function renderFoods(foods) {
 
   const sort = currentSortState.sort;
   const HL = 'color:var(--accent);font-weight:600';
-  const RATIO_META = {
-    p_kcal: { field: 'protein_per_100g', label: 'P/kcal', macro: 'P' },
-    c_kcal: { field: 'carbs_per_100g',   label: 'C/kcal', macro: 'C' },
-    f_kcal: { field: 'fat_per_100g',     label: 'F/kcal', macro: 'F' },
-  };
   const hlMacro = RATIO_META[sort] ? RATIO_META[sort].macro : null;
   const macroStr = (letter, val) =>
     hlMacro === letter ? `<span style="${HL}">${letter}${val}</span>` : `${letter}${val}`;
@@ -105,8 +104,7 @@ function renderFoods(foods) {
     const cStr = macroStr('C', f.carbs_per_100g);
     const gStr = macroStr('F', f.fat_per_100g);
 
-    // Right column: ratio for P/C/F per-kcal chips, otherwise kcal/100g
-    // All values are numeric — safe for innerHTML
+    // Coluna direita: rácio no sort por rácio, senão kcal/100g (só números).
     let rightCol;
     if (RATIO_META[sort]) {
       const meta  = RATIO_META[sort];
@@ -125,7 +123,7 @@ function renderFoods(foods) {
     const info = document.createElement('div');
     info.className = 'fi-info';
 
-    // name and brand are user data — use textContent / createTextNode
+    // Nome por highlightFoodKeywords (escapa); marca por text node.
     const nameEl = document.createElement('div');
     nameEl.className = 'fi-name';
     nameEl.innerHTML = highlightFoodKeywords(f.name);

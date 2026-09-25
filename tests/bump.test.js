@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { incrSuffix, nextVersion } = require('../bump.js');
+const { incrSuffix, nextVersion, applyVersion } = require('../bump.js');
 
 // ── incrSuffix: '' → 'b' … 'z' → 'aa' (sem overflow para '{') ──────────────────
 test("incrSuffix('') → 'b' (primeiro do dia já com data; segundo é 'b')", () => {
@@ -30,4 +30,14 @@ test("nextVersion: hoje em 'z' → 'aa' (a regressão de 2026-06-15)", () => {
 test("nextVersion: 'aa' ordena acima de 'z' (length-aware) → 'ab'", () => {
   const html = `<a href="x?v=20260615z"><b href="y?v=20260615aa">`;
   assert.equal(nextVersion(html, '20260615'), '20260615ab');
+});
+
+// ── sufixo -N antigo (ex.: 20260917b-6) ─────────────────────────────────────
+test('nextVersion: ignora o -N ao escolher o sufixo de hoje', () => {
+  const html = `<a href="x?v=20260917b-6"><b href="y?v=20260917b">`;
+  assert.equal(nextVersion(html, '20260917'), '20260917c');
+});
+test('applyVersion: substitui a versão inteira, -N incluído', () => {
+  const html = `<a href="x.js?v=20260917b-6"></a><b href="y.js?v=20260917b"></b>`;
+  assert.equal(applyVersion(html, '20260925'), `<a href="x.js?v=20260925"></a><b href="y.js?v=20260925"></b>`);
 });

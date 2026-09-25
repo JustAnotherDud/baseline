@@ -19,21 +19,29 @@ function incrSuffix(s) {
   return 'a' + a.join('');
 }
 
+// ?v=AAAAMMDD[letras][-N]. O -N é um formato antigo: lê-se e descarta-se.
+const VERSION_RE = /\?v=(\d{8})([a-z]*)(?:-\d+)?/g;
+
 // Próxima versão dado o HTML actual e o stamp de hoje. Puro (sem IO).
 // Maior sufixo de hoje por comprimento, depois alfabético ('' < 'b' < 'z' < 'aa').
 function nextVersion(html, stamp) {
-  const matches = [...html.matchAll(/\?v=(\d{8})([a-z]*)/g)];
+  const matches = [...html.matchAll(VERSION_RE)];
   const todays = matches.filter(m => m[1] === stamp).map(m => m[2]);
   if (!todays.length) return stamp;
   const cur = todays.sort((a, b) => a.length - b.length || a.localeCompare(b)).pop();
   return stamp + incrSuffix(cur);
 }
 
+// Troca todas as versões por v (incluindo o -N antigo). Puro.
+function applyVersion(html, v) {
+  return html.replace(VERSION_RE, `?v=${v}`);
+}
+
 function run() {
   const stamp = todayStamp();
   let html = fs.readFileSync('index.html', 'utf8');
   const newV = nextVersion(html, stamp);
-  html = html.replace(/\?v=\d{8}[a-z]*/g, `?v=${newV}`);
+  html = applyVersion(html, newV);
   fs.writeFileSync('index.html', html);
   console.log(`Bumped all ?v= to ${newV}`);
 
@@ -47,4 +55,4 @@ function run() {
 
 if (require.main === module) run();
 
-module.exports = { incrSuffix, nextVersion, todayStamp };
+module.exports = { incrSuffix, nextVersion, applyVersion, todayStamp };

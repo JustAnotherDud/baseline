@@ -131,7 +131,7 @@ Desktop (≥768px): uma media query escala tudo ~1.4×. Componente com tamanhos 
 
 - **Sem build.** Um utilizador, sessões curtas: um bundler não se paga. Preço: ordem de scripts manual, `bump.js` para cache-busting, prefixos por módulo (`t*`, `body*`, `mc*`).
 - **Diário em snapshot.** O diário é um livro-razão: corrigir um alimento só afecta registos futuros.
-- **`daily_targets` só de leitura.** Uma fonte de verdade para a lógica nutricional. Sem linha para a data = sem target, nunca fallback.
+- **`daily_targets` só de leitura.** Uma fonte de verdade para a lógica nutricional. Sem linha para a data = sem baseline, nunca fallback.
 - **Guard de geração** em todo o loader async: descarta respostas fora de ordem.
 - **Integrações tolerantes a falha**: cada secção degrada sozinha. Toggles em Settings cortam o fetch.
 - **Charts**: `destroy()` antes de refazer; cores hex lidas de `:root` uma vez (`chartTheme`), porque o canvas não resolve `var(--…)`.

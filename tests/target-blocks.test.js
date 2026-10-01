@@ -18,7 +18,7 @@ const arr = a => (a == null ? a : [...a]);
 
 test('só chaves terminadas em _kcal contam como blocos', () => {
   const { chips, sum } = deriveBlocks({
-    baseline_kcal: 2739.3,
+    core_kcal: 2739.3,
     work_kcal: 595.7,
     gym_kcal: 0,
     activity_kcal_by_id: {},
@@ -27,7 +27,7 @@ test('só chaves terminadas em _kcal contam como blocos', () => {
     gym_planned: false,
     gym_source: 'default',
   });
-  assert.deepEqual(arr(chips.map(c => c.label)), ['Baseline', 'Trabalho']);
+  assert.deepEqual(arr(chips.map(c => c.label)), ['Núcleo', 'Trabalho']);
   assert.equal(sum, 3335);
 });
 
@@ -45,27 +45,27 @@ test('campos em horas ou médias de diagnóstico não viram chips', () => {
     avg_work_kcal_per_day: 411.5,
     work_kcal_per_hour: 108.3,
     energy_lookback_days_used: 28,
-    baseline_kcal: 2739,
+    core_kcal: 2739,
   });
-  assert.deepEqual(arr(chips.map(c => c.label)), ['Baseline']);
+  assert.deepEqual(arr(chips.map(c => c.label)), ['Núcleo']);
   assert.equal(sum, 2739);
 });
 
 test('energy_diag é objecto aninhado — nunca é lido como bloco', () => {
   const { chips, sum } = deriveBlocks({
-    baseline_kcal: 2739,
+    core_kcal: 2739,
     energy_diag: { expenditure_estimate_kcal: 3352, avg_work_kcal_per_day: 411 },
   });
-  assert.deepEqual(arr(chips.map(c => c.label)), ['Baseline']);
+  assert.deepEqual(arr(chips.map(c => c.label)), ['Núcleo']);
   assert.equal(sum, 2739);
 });
 
 test('actividades expandem uma entrada por id, agregadas na soma', () => {
   const { chips, sum } = deriveBlocks({
-    baseline_kcal: 2700,
+    core_kcal: 2700,
     activity_kcal_by_id: { i1: 300, i2: 200 },
   });
-  assert.deepEqual(arr(chips.map(c => c.label)), ['Baseline', 'Actividade i1', 'Actividade i2']);
+  assert.deepEqual(arr(chips.map(c => c.label)), ['Núcleo', 'Actividade i1', 'Actividade i2']);
   assert.equal(sum, 3200);
 });
 
@@ -75,8 +75,8 @@ test('uma só actividade não leva o id no rótulo', () => {
 });
 
 test('blocos a zero não aparecem', () => {
-  const { chips } = deriveBlocks({ gym_kcal: 0, work_kcal: 0, baseline_kcal: 2700 });
-  assert.deepEqual(arr(chips.map(c => c.label)), ['Baseline']);
+  const { chips } = deriveBlocks({ gym_kcal: 0, work_kcal: 0, core_kcal: 2700 });
+  assert.deepEqual(arr(chips.map(c => c.label)), ['Núcleo']);
 });
 
 test('chave _kcal desconhecida aparece sozinha, com rótulo derivado', () => {
@@ -86,7 +86,7 @@ test('chave _kcal desconhecida aparece sozinha, com rótulo derivado', () => {
   assert.deepEqual(norm(chips[0]), { label: 'Steps', value: 120 });
 });
 
-test('linha pré-035 (sem baseline_kcal) não rebenta', () => {
+test('linha pré-035 (sem core_kcal) não rebenta', () => {
   const { chips, sum } = deriveBlocks({
     run_type_context: 'z2_curto',
     work_kcal_today: 596,
@@ -130,4 +130,9 @@ test('energyNotes: floors_conflict aceita booleano e string', () => {
   assert.match(energyNotes({ floors_conflict: true })[0], /conflito/);
   assert.match(energyNotes({ floors_conflict: 'true' })[0], /conflito/);
   assert.deepEqual(arr(energyNotes({ floors_conflict: false })), []);
+});
+
+test('chave antiga baseline_kcal ainda dá o chip Núcleo (transição)', () => {
+  const { chips } = deriveBlocks({ baseline_kcal: 2700, work_kcal: 0, gym_kcal: 0 });
+  assert.deepEqual(arr(chips.map(c => c.label)), ['Núcleo']);
 });

@@ -38,12 +38,13 @@ function updateCountdownBadge() {
 // Bloco de kcal = chave de topo terminada em `_kcal`, mais `activity_kcal_by_id`
 // (uma entrada por actividade). O resto de blocks_active fica de fora.
 const BLOCK_LABELS = {
-  baseline_kcal: 'Baseline',
+  core_kcal: 'Núcleo',
+  baseline_kcal: 'Núcleo', // chave antiga (até 1 Out 2026), linhas históricas já migradas
   work_kcal: 'Trabalho',
   gym_kcal: 'Ginásio',
 };
 // Ordem de apresentação; chaves desconhecidas vão para o fim.
-const BLOCK_ORDER = ['baseline_kcal', 'work_kcal', 'gym_kcal', 'activity_kcal_by_id'];
+const BLOCK_ORDER = ['core_kcal', 'baseline_kcal', 'work_kcal', 'gym_kcal', 'activity_kcal_by_id'];
 
 function blockLabel(key) {
   if (BLOCK_LABELS[key]) return BLOCK_LABELS[key];
@@ -147,7 +148,7 @@ async function refreshTargets() {
 
   if (!row) {
     TARGET_FIELD_IDS.forEach(id => { document.getElementById(id).textContent = '—'; });
-    hint.textContent = 'Sem target para esta data. Pede ao DCB para fazer push dos blocos de hoje.';
+    hint.textContent = 'Sem baseline de manutenção para esta data. Pede ao DCB para fazer push dos blocos de hoje.';
     show(hint);
     return;
   }
@@ -181,13 +182,13 @@ async function refreshTargets() {
     });
     show(blocksEl);
 
-    // Só linhas com baseline_kcal fecham a soma com o total. Soma != total
+    // Só linhas com core_kcal (ou baseline_kcal, chave antiga) fecham a soma com o total. Soma != total
     // indica dupla contagem; 15kcal de folga para o arredondamento dos macros.
     const calories = +row.calories;
-    const diff = Object.hasOwn(blocks, 'baseline_kcal') && Number.isFinite(calories) ? sum - calories : 0;
+    const diff = (Object.hasOwn(blocks, 'core_kcal') || Object.hasOwn(blocks, 'baseline_kcal')) && Number.isFinite(calories) ? sum - calories : 0;
     if (Math.abs(diff) > 15) {
       warningEl.textContent =
-        `⚠ Blocos somam ${sum}kcal contra um target de ${calories}kcal ` +
+        `⚠ Blocos somam ${sum}kcal contra uma baseline de ${calories}kcal ` +
         `(${diff > 0 ? '+' : ''}${diff}kcal). Os dois deviam fechar — ` +
         `possível dupla contagem ou bloco em falta.`;
       show(warningEl);

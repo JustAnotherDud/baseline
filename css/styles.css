@@ -209,11 +209,11 @@ body {
 #diary-container { padding-top: 2px; }
 .meal-section { border-radius: 12px; overflow: hidden; margin: 8px 12px; border: 1px solid var(--border); }
 .meal-header { display: flex; align-items: stretch; border-top: 1px solid var(--surface3); }
-.meal-header-left { flex: 1; min-width: 0; padding: 8px 8px 8px 14px; background: var(--surface2); min-height: 52px; cursor: pointer; display: flex; flex-direction: column; justify-content: center; }
-.meal-header-right { flex: 0 0 auto; padding: 12px 14px; display: flex; align-items: center; justify-content: center; background: var(--accent-a06); min-height: 52px; cursor: pointer; transition: background .15s ease, transform .12s var(--ease-out-quart); }
+.meal-header-left { flex: 1; min-width: 0; padding: 8px 6px 8px 14px; background: var(--surface2); min-height: 52px; cursor: pointer; display: flex; flex-direction: column; justify-content: center; }
+.meal-header-right { flex: 0 0 auto; padding: 12px 10px; display: flex; align-items: center; justify-content: center; background: var(--accent-a06); min-height: 52px; cursor: pointer; transition: background .15s ease, transform .12s var(--ease-out-quart); }
 .meal-header-right:active { background: var(--accent-a12); transform: scale(0.96); }
 /* Toggle de recolher/expandir refeição (chevron). */
-.meal-collapse-btn { position: relative; flex-shrink: 0; align-self: center; margin: 0 8px; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; background: var(--surface3); border: 1px solid var(--border); border-radius: 8px; color: var(--text3); cursor: pointer; transition: transform .12s var(--ease-out-quart), background .15s ease; }
+.meal-collapse-btn { position: relative; flex-shrink: 0; align-self: center; margin: 0 6px; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; background: var(--surface3); border: 1px solid var(--border); border-radius: 8px; color: var(--text3); cursor: pointer; transition: transform .12s var(--ease-out-quart), background .15s ease; }
 .meal-collapse-btn:active { transform: scale(0.92); }
 /* Alvo de toque ≥44×44 (uso a uma mão) sem mudar o visual de 28px. */
 .meal-collapse-btn::before { content: ''; position: absolute; inset: -8px; }
@@ -225,9 +225,9 @@ body {
 .meal-entries-inner { overflow: hidden; min-height: 0; }
 .meal-section.collapsed .meal-entries { grid-template-rows: 0fr; }
 .meal-log-label { color: var(--accent); font-family: var(--mono); font-size: 13px; letter-spacing: .06em; }
-.meal-head-line { display: flex; align-items: baseline; gap: 8px; white-space: nowrap; overflow: hidden; }
-.meal-name { font-size: 12px; font-family: var(--mono); color: var(--text); font-weight: 500; text-transform: uppercase; letter-spacing: .08em; }
-.meal-kcal-val { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent); }
+.meal-head-line { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; overflow: hidden; }
+.meal-name { font-size: 12px; font-family: var(--mono); color: var(--text); font-weight: 500; text-transform: uppercase; letter-spacing: .04em; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.meal-kcal-val { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent); flex-shrink: 0; }
 .meal-macros { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-top: 3px; }
 
 /* ── MEAL BREAKDOWN SHEET ── */
@@ -753,7 +753,7 @@ input[type="range"]::-moz-range-thumb {
 .cost-badge { font-size: 11px; padding: 1px 8px; border-radius: 10px; border: 1px solid currentColor; }
 .cost-badge.ok { color: var(--accent); }
 .cost-badge.low { color: var(--yellow); }
-.meal-cost-val { font-family: var(--mono); font-size: 12px; font-weight: 600; margin-left: 4px; padding-left: 10px; border-left: 1px solid var(--border); }
+.meal-cost-val { font-family: var(--mono); font-size: 12px; font-weight: 600; margin-left: 2px; padding-left: 8px; flex-shrink: 0; white-space: nowrap; border-left: 1px solid var(--border); }
 .entry-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
 .entry-cost { font-family: var(--mono); font-size: 11px; font-weight: 600; white-space: nowrap; }
 .price-promo { display: inline-block; padding: 1px 6px; border-radius: 8px; background: rgba(217,164,65,.14); }

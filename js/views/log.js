@@ -30,7 +30,7 @@ async function searchDB() {
   const q = document.getElementById('log-q').value.trim().toLowerCase();
   const res = document.getElementById('log-results');
   if (q.length<1) { res.innerHTML='<div class="loading">Começa a escrever para pesquisar</div>'; return; }
-  const { data, error } = await db.from('foods').select('id,name,brand,calories_per_100g,protein_per_100g,carbs_per_100g,fat_per_100g').ilike('name',`%${q}%`).limit(25);
+  const { data, error } = await db.from('foods').select('id,name,brand,calories_per_100g,protein_per_100g,carbs_per_100g,fat_per_100g,price_eur,price_qty_g').ilike('name',`%${q}%`).limit(25);
   if (error) {
     console.error('searchDB error:', error.message);
     res.innerHTML = '';
@@ -82,7 +82,7 @@ function buildFoodItem(food) {
   const item = document.createElement('div');
   item.className = 'sr-item';
   item.innerHTML = `
-      <div><div class="sr-name">${highlightFoodKeywords(food.name)}</div><div class="sr-detail">${food.brand?escHtml(food.brand)+' · ':''}${food.calories_per_100g} kcal · P${food.protein_per_100g} C${food.carbs_per_100g} F${food.fat_per_100g}</div></div>
+      <div><div class="sr-name">${highlightFoodKeywords(food.name)}</div><div class="sr-detail">${food.brand?escHtml(food.brand)+' · ':''}${food.calories_per_100g} kcal · P${food.protein_per_100g} C${food.carbs_per_100g} F${food.fat_per_100g}${foodPriceLabel(food)}</div></div>
       <div class="sr-kcal">${food.calories_per_100g}<br><span style="font-size:9px;color:var(--text3)">kcal/100g</span></div>`;
   item.onclick = () => pickFood(food.id);
   return item;
@@ -123,7 +123,7 @@ function toggleFoodGroup(name, items, wrapper) {
       item.className = 'food-brand-item';
       item.innerHTML = `
         <span class="food-brand-name">${food.brand ? escHtml(food.brand) : 'Genérico'}</span>
-        <span class="food-brand-kcal">${Math.round(food.calories_per_100g)} kcal</span>
+        <span class="food-brand-kcal">${Math.round(food.calories_per_100g)} kcal${foodPriceLabel(food)}</span>
       `;
       item.onclick = () => pickFood(food.id);
       brandsEl.appendChild(item);
@@ -162,6 +162,12 @@ async function pickFood(id) {
     }
   }
 
+  // Preço pontual pré-preenchido com o do alimento; só se grava se o mudares.
+  document.getElementById('log-price-eur').value = data.price_eur ?? '';
+  document.getElementById('log-price-qty').value = data.price_qty_g ?? '';
+  document.getElementById('log-price-hint').textContent = data.price_eur
+    ? `Preço do alimento${foodPriceLabel(data)}` : 'Alimento sem preço';
+
   const gi = document.getElementById('log-grams');
   gi.value = '';
   updatePreview();
@@ -199,13 +205,16 @@ async function saveQuick() {
   try {
     const name = document.getElementById('q-name').value.trim();
     if (!name) { toast('Indica o nome'); return; }
+    const cost = manualCostPatch({}, document.getElementById('q-cost').value);
+    if (cost.error) { toast(cost.error); return; }
     const {error} = await db.from('diary').insert({
       date:currentDate, meal:selectedMeal, food_name:name, grams:null,
       calories: parseFloat(document.getElementById('q-kcal').value)||0,
       fat:      parseFloat(document.getElementById('q-fat').value)||0,
       carbs:    parseFloat(document.getElementById('q-carb').value)||0,
       fiber:    parseFloat(document.getElementById('q-fiber').value)||0,
-      protein:  parseFloat(document.getElementById('q-prot').value)||0
+      protein:  parseFloat(document.getElementById('q-prot').value)||0,
+      ...cost
     });
     if (error) { toast('Erro ao guardar'); return; }
     toast('Registado'); closeLog(); clearQuick(); go('today');
@@ -215,7 +224,7 @@ async function saveQuick() {
 }
 
 function clearQuick() {
-  ['q-name','q-kcal','q-fat','q-carb','q-fiber','q-prot'].forEach(id=>document.getElementById(id).value='');
+  ['q-name','q-kcal','q-fat','q-carb','q-fiber','q-prot','q-cost'].forEach(id=>document.getElementById(id).value='');
 }
 
 // Popula o dropdown de refeição do sheet de log uma só vez.

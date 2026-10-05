@@ -19,7 +19,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
           integrity="sha384-bs/nf9FbdNouRbMiFcrcZfLXYPKiPaGVGplVbv7dLGECccEXDW+S3zjqSKR5ZEaD"
           crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="css/styles.css?v=20261001">
+  <link rel="stylesheet" href="css/styles.css?v=20261005">
 </head>
 <body>
 
@@ -374,6 +374,13 @@
             <div class="mp-chip"><div class="mp-val carb" id="prev-carb">0</div><div class="mp-lbl">carbs</div></div>
             <div class="mp-chip"><div class="mp-val prot" id="prev-prot">0</div><div class="mp-lbl">prot</div></div>
           </div>
+          <div class="price-override">
+            <div class="r2">
+              <label><span class="lt">Preço pontual (€)</span><input type="number" id="log-price-eur" inputmode="decimal" step="0.01" placeholder="—"></label>
+              <label><span class="lt">Gramas do preço</span><input type="number" id="log-price-qty" inputmode="decimal" placeholder="—"></label>
+            </div>
+            <div id="log-price-hint" class="cost-hint"></div>
+          </div>
           <div style="display:flex;gap:10px">
             <button class="btn btn-secondary" style="flex:1" onclick="backToSearch()">← Voltar</button>
             <button class="btn btn-primary" style="flex:2" onclick="handleSaveDiary()">Guardar</button>
@@ -394,6 +401,7 @@
           <label><span class="lt">Fibra (g)</span><input type="number" id="q-fiber" inputmode="decimal" placeholder="0"></label>
           <label><span class="lt">Proteína (g)</span><input type="number" id="q-prot" inputmode="decimal" placeholder="0"></label>
         </div>
+        <label><span class="lt">Custo (€, opcional)</span><input type="number" id="q-cost" inputmode="decimal" step="0.01" placeholder="—"></label>
         <button class="btn btn-primary" onclick="saveQuick()">Guardar</button>
       </div>
     </div>
@@ -414,6 +422,12 @@
         <label><span class="lt">Marca</span><input type="text" id="f-brand" placeholder="opcional"></label>
       </div>
       <label><span class="lt">Tamanho da porção (g)</span><input type="number" id="f-serving" inputmode="decimal" placeholder="ex: 150 — pré-preenche ao registar"></label>
+      <div class="section-label">Preço (opcional)</div>
+      <div class="r2">
+        <label><span class="lt">Preço da embalagem (€)</span><input type="number" id="f-price-eur" inputmode="decimal" step="0.01" placeholder="ex: 2.00" oninput="updateFoodPriceCalc()"></label>
+        <label><span class="lt">Gramas da embalagem</span><input type="number" id="f-price-qty" inputmode="decimal" placeholder="ex: 375" oninput="updateFoodPriceCalc()"></label>
+      </div>
+      <div id="f-price-calc" class="cost-hint"></div>
       <div class="divider"></div>
       <div class="section-label">Valores por 100g</div>
       <label><span class="lt">Calorias (kcal) *</span><input type="number" id="f-kcal" inputmode="decimal" placeholder="0"></label>
@@ -476,6 +490,14 @@
         <div class="mp-chip"><div class="mp-val carb" id="ep-carb">0</div><div class="mp-lbl">carbs</div></div>
         <div class="mp-chip"><div class="mp-val prot" id="ep-prot">0</div><div class="mp-lbl">prot</div></div>
       </div>
+      <div id="edit-price-block" class="price-override">
+        <div class="r2">
+          <label><span class="lt">Preço pontual (€)</span><input type="number" id="edit-price-eur" inputmode="decimal" step="0.01" placeholder="—" oninput="onEditPriceInput()"></label>
+          <label><span class="lt">Gramas do preço</span><input type="number" id="edit-price-qty" inputmode="decimal" placeholder="—" oninput="onEditPriceInput()"></label>
+        </div>
+        <div id="edit-price-hint" class="cost-hint"></div>
+        <button type="button" class="btn btn-secondary" style="font-size:13px;padding:8px;min-height:44px" onclick="resetEditPrice()">Usar preço do alimento</button>
+      </div>
       <button class="btn btn-secondary"
               onclick="openMoveMealSheet(editingEntry.id, editingEntry.meal)"
               style="margin-bottom:4px">
@@ -492,17 +514,18 @@
 
 <div id="toast" aria-live="polite"></div>
 
-<script src="js/config.js?v=20261001"></script>
-<script src="js/nutrition.js?v=20261001"></script>
-<script src="js/db.js?v=20261001"></script>
-<script src="js/ui.js?v=20261001"></script>
-<script src="js/views/diary.js?v=20261001"></script>
-<script src="js/views/log.js?v=20261001"></script>
-<script src="js/views/foods.js?v=20261001"></script>
-<script src="js/views/meals.js?v=20261001"></script>
-<script src="js/views/targets.js?v=20261001"></script>
-<script src="js/views/stats.js?v=20261001"></script>
-<script src="js/views/body.js?v=20261001"></script>
-<script src="js/app.js?v=20261001"></script>
+<script src="js/config.js?v=20261005"></script>
+<script src="js/nutrition.js?v=20261005"></script>
+<script src="js/db.js?v=20261005"></script>
+<script src="js/ui.js?v=20261005"></script>
+<script src="js/views/diary.js?v=20261005"></script>
+<script src="js/views/log.js?v=20261005"></script>
+<script src="js/views/foods.js?v=20261005"></script>
+<script src="js/views/meals.js?v=20261005"></script>
+<script src="js/views/targets.js?v=20261005"></script>
+<script src="js/views/stats.js?v=20261005"></script>
+<script src="js/views/cost.js?v=20261005"></script>
+<script src="js/views/body.js?v=20261005"></script>
+<script src="js/app.js?v=20261005"></script>
 </body>
 </html>

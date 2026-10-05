@@ -105,7 +105,8 @@ function openAddFood() {
   editingFoodId=null;
   document.getElementById('food-sheet-title').textContent='Novo alimento';
   document.getElementById('del-food-btn').style.display='none';
-  ['f-name','f-brand','f-serving','f-kcal','f-prot','f-carb','f-fat','f-satfat','f-sugar','f-fiber'].forEach(id=>document.getElementById(id).value='');
+  ['f-name','f-brand','f-serving','f-kcal','f-prot','f-carb','f-fat','f-satfat','f-sugar','f-fiber','f-price-eur','f-price-qty'].forEach(id=>document.getElementById(id).value='');
+  updateFoodPriceCalc();
   document.getElementById('sheet-food').classList.add('open');
   setTimeout(()=>document.getElementById('f-name').focus(),300);
 }
@@ -122,6 +123,7 @@ async function openEditEntry(id) {
   const { data, error } = await db.from('diary').select('*').eq('id', id).single();
   if (error || !data) return;
   editingEntry = data;
+  editingEntry._resetPrice = false;
 
   setEditTaraUI(!!data.has_tara);
 
@@ -140,6 +142,7 @@ async function openEditEntry(id) {
   if (isQuick) {
     gramsLabel.style.display = 'none';
     previewEl.style.display  = 'none';
+    document.getElementById('edit-price-block').style.display = 'none';
 
     let qf = document.getElementById('edit-quick-fields');
     if (!qf) {
@@ -150,6 +153,7 @@ async function openEditEntry(id) {
         <label><span class="lt">Proteína (g)</span><input type="number" id="eq-protein" inputmode="decimal" placeholder="0"></label>
         <label><span class="lt">Hidratos (g)</span><input type="number" id="eq-carbs" inputmode="decimal" placeholder="0"></label>
         <label><span class="lt">Gordura (g)</span><input type="number" id="eq-fat" inputmode="decimal" placeholder="0"></label>
+        <label><span class="lt">Custo (€, opcional)</span><input type="number" id="eq-cost" inputmode="decimal" step="0.01" placeholder="—"></label>
         <input type="hidden" id="eq-saturated_fat">
         <input type="hidden" id="eq-sugar">
         <input type="hidden" id="eq-fiber">`;
@@ -161,6 +165,7 @@ async function openEditEntry(id) {
     document.getElementById('eq-protein').value  = data.protein  ?? '';
     document.getElementById('eq-carbs').value    = data.carbs    ?? '';
     document.getElementById('eq-fat').value      = data.fat      ?? '';
+    document.getElementById('eq-cost').value     = data.cost_eur ?? '';
     // Preservar satfat/sugar/fibra (sem input visível) — senão saveEditEntry zera-os.
     document.getElementById('eq-saturated_fat').value = data.saturated_fat || 0;
     document.getElementById('eq-sugar').value  = data.sugar         || 0;
@@ -173,6 +178,8 @@ async function openEditEntry(id) {
     previewEl.style.display  = '';
     const qf = document.getElementById('edit-quick-fields');
     if (qf) qf.style.display = 'none';
+    document.getElementById('edit-price-block').style.display = '';
+    fillEditPrice(data);
 
     const portionBtn = document.getElementById('edit-portion-btn');
     portionBtn.style.display = 'none';
@@ -180,7 +187,8 @@ async function openEditEntry(id) {
     document.getElementById('edit-dose-info').textContent = '';
 
     if (data.food_id) {
-      const { data: food } = await db.from('foods').select('serving_size_g').eq('id', data.food_id).single();
+      const { data: food } = await db.from('foods').select('serving_size_g,price_eur,price_qty_g').eq('id', data.food_id).single();
+      editingEntry._food_price = food ? { price_eur: food.price_eur, price_qty_g: food.price_qty_g } : null;
       if (food && food.serving_size_g) {
         editingEntry._serving_size_g = food.serving_size_g;
         portionBtn.textContent = `+ porção (${food.serving_size_g}g)`;
@@ -206,6 +214,28 @@ async function openEditEntry(id) {
       if (input) { input.focus(); input.select(); }
     }, 300);
   }
+}
+
+// Preço pontual da entrada: pré-preenchido com o snapshot actual.
+function fillEditPrice(data) {
+  document.getElementById('edit-price-eur').value = data.price_eur ?? '';
+  document.getElementById('edit-price-qty').value = data.price_qty_g ?? '';
+  const src = { default: 'preço do alimento', override: 'preço pontual', manual: 'custo manual' }[data.cost_source] || 'sem custo';
+  document.getElementById('edit-price-hint').textContent = `${src} · ${formatEur(data.cost_eur)}`;
+}
+
+function onEditPriceInput() {
+  if (editingEntry) editingEntry._resetPrice = false;
+}
+
+// Volta ao default: ao guardar, limpa o override e recopia o preço actual do alimento.
+function resetEditPrice() {
+  const fp = editingEntry && editingEntry._food_price;
+  if (!fp || !fp.price_eur) { toast('O alimento não tem preço'); return; }
+  editingEntry._resetPrice = true;
+  document.getElementById('edit-price-eur').value = fp.price_eur;
+  document.getElementById('edit-price-qty').value = fp.price_qty_g;
+  document.getElementById('edit-price-hint').textContent = 'Ao guardar: usa o preço actual do alimento';
 }
 
 function closeEditEntry() {

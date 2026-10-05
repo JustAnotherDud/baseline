@@ -1,5 +1,16 @@
 let loadTodayGen = 0;
 
+// app_config: cost_tracking_start e cost_min_coverage. null até carregar: a UI
+// de custo fica escondida. 0.9 só se a chave faltar na BD.
+let costConfig = null;
+async function loadCostConfig() {
+  if (costConfig || !db) return;
+  const { data } = await db.from('app_config').select('key,value')
+    .in('key', ['cost_tracking_start', 'cost_min_coverage']);
+  const m = Object.fromEntries((data || []).map(r => [r.key, r.value]));
+  if (m.cost_tracking_start) costConfig = { start: m.cost_tracking_start, minCoverage: +(m.cost_min_coverage ?? 0.9) };
+}
+
 // Sem linha para a data: null (sem target).
 async function getTargetsForDate(dateStr) {
   if (!db) return null;
@@ -16,6 +27,7 @@ async function loadToday() {
   const gen = ++loadTodayGen;
   const { data, error } = await db.from('diary').select('*').eq('date', currentDate).order('logged_at');
   if (error) { toast('Erro ao carregar diário'); return; }
+  await loadCostConfig();
   const targets = await getTargetsForDate(currentDate)
     || { calories: 0, fat: 0, saturated_fat: 0, carbs: 0, sugar: 0, fiber: 0, protein: 0 };
   if (gen !== loadTodayGen) return;
@@ -27,12 +39,16 @@ async function saveDiary(extra = {}) {
   const g = parseFloat(document.getElementById('log-grams').value);
   if (!g || g <= 0) { toast('Indica a quantidade em gramas'); return false; }
   const c = v => Math.round((parseFloat(v)||0)/100*g*10)/10;
+  const price = priceOverridePayload(selectedFood,
+    document.getElementById('log-price-eur').value, document.getElementById('log-price-qty').value);
+  if (price.error) { toast(price.error); return false; }
   const { error } = await db.from('diary').insert({
     date:currentDate, meal:selectedMeal,
     food_id:selectedFood.id, food_name:selectedFood.name,
     grams:g,
     ...mapNutrients(k => c(selectedFood[k + '_per_100g'])),
     has_tara:      !!extra.has_tara,
+    ...price,
   });
   if (error) { toast('Erro ao guardar'); return false; }
   toast(`${selectedFood.name} guardado ✓`);
@@ -47,9 +63,13 @@ async function saveEditEntry() {
 
   if (isQuick) {
     const n = id => { const el = document.getElementById(id); return el ? parseFloat(el.value) || 0 : 0; };
+    const costEl = document.getElementById('eq-cost');
+    const cost = manualCostPatch(editingEntry, costEl ? costEl.value : '');
+    if (cost.error) { toast(cost.error); return; }
     const { error } = await db.from('diary').update({
       ...mapNutrients(k => n('eq-' + k)),
       has_tara:      hasTara,
+      ...cost,
     }).eq('id', editingEntry.id);
     if (error) { toast('Erro ao guardar'); return; }
     toast('Actualizado');
@@ -66,10 +86,17 @@ async function saveEditEntry() {
   const factor = g / orig;
   const r = v => Math.round((parseFloat(v) || 0) * factor * 10) / 10;
 
+  // O custo recalcula-se na BD (trigger) a partir do snapshot da entrada.
+  const price = editPricePatch(editingEntry,
+    document.getElementById('edit-price-eur').value, document.getElementById('edit-price-qty').value,
+    !!editingEntry._resetPrice);
+  if (price.error) { toast(price.error); return; }
+
   const { error } = await db.from('diary').update({
     grams:         g,
     ...mapNutrients(k => r(editingEntry[k])),
     has_tara:      hasTara,
+    ...price,
   }).eq('id', editingEntry.id);
 
   if (error) { toast('Erro ao guardar'); return; }

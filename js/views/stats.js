@@ -231,6 +231,8 @@ async function loadStats() {
       ${topRows}`;
   }
   container.appendChild(sec3);
+
+  renderCostStats(container, from, to, gen);
 }
 
 function setStatsPeriod(n) {

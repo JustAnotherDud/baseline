@@ -29,21 +29,31 @@ Login obrigatório (Supabase Auth, email e password, utilizador único, signups 
 Ordem de carregamento em `index.html`: `config.js`, `nutrition.js`, `db.js`, `ui.js`, `views/*.js`, `app.js` (último, chama `init()`).
 
 - `js/config.js`: `localDate()`, `APP_VERSION` e `MEALS` (7 refeições).
-- `js/nutrition.js`: `getNutrientColor` (semáforo de aderência) e `macroFloorState`.
-- `js/db.js`: queries do diário e scores do date picker.
+- `js/nutrition.js`: `getNutrientColor` (semáforo de aderência), `macroFloorState` e os helpers de custo (formatação, somas, payloads de preço).
+- `js/db.js`: queries do diário, scores do date picker e `loadCostConfig` (`app_config`).
 - `js/ui.js`: toast, sheets partilhados (edição, date picker, ranking, donut, mover refeição), `parseGramsExpr`.
 - `js/app.js`: `init` e login, router por hash (`go`), Settings, refresh automático.
-- `js/views/`: `diary`, `log` (sheet de registo), `foods`, `meals` (templates), `targets`, `stats`, `body` (Forma).
+- `js/views/`: `diary`, `log` (sheet de registo), `foods`, `meals` (templates), `targets`, `stats`, `cost` (secção de custo das Estatísticas), `body` (Forma).
 
 Views: Diário, Comida, Forma e Mais (Manutenção, Estatísticas, Settings).
 
 ## Schema Supabase
 
-- `foods`: `name`, `brand`, `serving_size_g`, `calories_per_100g`, `protein_per_100g`, `carbs_per_100g`, `fat_per_100g`, `saturated_fat_per_100g`, `sugar_per_100g`, `fiber_per_100g`.
-- `diary`: uma linha por item. `date`, `meal` (chave de `MEALS`), `food_id` (null em entrada rápida), `food_name`, `grams` (null em entrada rápida), `calories`, `protein`, `carbs`, `fat`, `saturated_fat`, `sugar`, `fiber`, `has_tara`, `logged_at`. Os nutrientes são um snapshot do momento do registo.
+- `foods`: `name`, `brand`, `serving_size_g`, `calories_per_100g`, `protein_per_100g`, `carbs_per_100g`, `fat_per_100g`, `saturated_fat_per_100g`, `sugar_per_100g`, `fiber_per_100g`, `price_eur` e `price_qty_g` (preço da embalagem e gramas que cobre; os dois ou nenhum).
+- `diary`: uma linha por item. `date`, `meal` (chave de `MEALS`), `food_id` (null em entrada rápida), `food_name`, `grams` (null em entrada rápida), `calories`, `protein`, `carbs`, `fat`, `saturated_fat`, `sugar`, `fiber`, `has_tara`, `logged_at`. Os nutrientes são um snapshot do momento do registo. Custo: `price_eur`, `price_qty_g` (snapshot do preço usado), `cost_eur` e `cost_source` (`default` do food, `override` pontual, `manual`). Food sem preço: `cost_eur` NULL, nunca 0.
 - `daily_targets`: uma linha por `date`, escrita só pelo DCB (sync_hub). Nutrientes como em `diary`, mais `blocks_active` (jsonb: chaves `*_kcal` — `core_kcal`, `work_kcal`, `gym_kcal` — `activity_kcal_by_id`, `energy_diag`) e `updated_at`.
 - `meal_templates` (`name`) e `meal_template_items` (`template_id`, `food_id`, `food_name`, `grams` e nutrientes).
+- `app_config`: `cost_tracking_start` (dias antes não têm custo nem entram em agregados) e `cost_min_coverage` (cobertura mínima para um dia entrar nas médias).
 - `body_comp`: `date`, `weight_kg`, `body_fat_pct`, `muscle_mass_kg`, `bone_mass_kg`, `water_pct`. Preenchida pela sincronização do Garmin.
+
+## Custo (€)
+
+A conta `round(gramas × price_eur / price_qty_g, 2)` vive só na BD (`food_cost_eur` e o trigger `diary_cost`); a PWA nunca a grava, só envia preços e mostra o resultado. O trigger copia o preço do food no registo, aceita override (`price_eur`, gramas opcionais) e custo manual (`cost_eur`), e recalcula ao mudar gramas ou preço. Alterar um food não muda entradas antigas. Para preencher o custo de um dia depois de pôr preço num food: tool MCP `sync_hub_diary_resnapshot_cost`.
+
+- Alimento: preço da embalagem + gramas, com o €/100g calculado.
+- Registo e edição de entrada: preço pontual pré-preenchido; "Usar preço do alimento" limpa o override. Entrada rápida: campo de custo.
+- Diário: custo por entrada (— sem custo; etiqueta *pontual*/*manual*), subtotal por refeição, total do dia e badge de cobertura (kcal com custo / kcal).
+- Estatísticas: custo por dia, semana e mês (médias só sobre os dias com cobertura suficiente, com "média sobre N dias"), maior gasto e €/1000 kcal e €/100g proteína por alimento. Vistas: `v_cost_day`, `v_cost_week`, `v_cost_month`, `v_food_cost_efficiency`, RPC `cost_top_foods`.
 
 ## Integrações (view Forma)
 

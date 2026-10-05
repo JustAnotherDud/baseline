@@ -742,3 +742,17 @@ input[type="range"]::-moz-range-thumb {
     animation: none !important;
   }
 }
+
+/* ── Custo (€) ── */
+.cost-row { display: flex; align-items: baseline; gap: 8px; margin-top: 10px; font-family: var(--mono); }
+.cost-val { font-size: 16px; font-weight: 600; color: var(--text); }
+.cost-badge { font-size: 11px; padding: 1px 8px; border-radius: 10px; border: 1px solid currentColor; }
+.cost-badge.ok { color: var(--accent); }
+.cost-badge.low { color: var(--yellow); }
+.meal-cost-val { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-left: 8px; }
+.entry-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.entry-cost { font-family: var(--mono); font-size: 10px; color: var(--text3); white-space: nowrap; }
+.cost-tag { margin-left: 4px; padding: 0 4px; border: 1px solid currentColor; border-radius: 6px; font-size: 9px; color: var(--yellow); }
+.price-override { display: flex; flex-direction: column; gap: 6px; }
+.cost-hint { font-family: var(--mono); font-size: 11px; color: var(--text3); min-height: 14px; }
+.cost-dim { opacity: .55; }

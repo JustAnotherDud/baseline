@@ -131,7 +131,7 @@ function renderFoods(foods) {
     const detail = document.createElement('div');
     detail.className = 'fi-detail';
     const servingStr = f.serving_size_g ? ` · porção ${f.serving_size_g}g` : '';
-    detail.innerHTML = `${pStr} ${cStr} ${gStr}${servingStr}`;
+    detail.innerHTML = `${pStr} ${cStr} ${gStr}${servingStr}${foodPriceLabel(f)}`;
     if (f.brand) {
       detail.insertBefore(document.createTextNode(f.brand + ' · '), detail.firstChild);
     }
@@ -163,7 +163,16 @@ function editFood(id) {
   document.getElementById('f-satfat').value=f.saturated_fat_per_100g||'';
   document.getElementById('f-sugar').value=f.sugar_per_100g||'';
   document.getElementById('f-fiber').value=f.fiber_per_100g||'';
+  document.getElementById('f-price-eur').value=f.price_eur??'';
+  document.getElementById('f-price-qty').value=f.price_qty_g??'';
+  updateFoodPriceCalc();
   document.getElementById('sheet-food').classList.add('open');
+}
+
+// €/100g calculado do preço da embalagem (só para mostrar).
+function updateFoodPriceCalc() {
+  const v = eurPer100g(document.getElementById('f-price-eur').value, document.getElementById('f-price-qty').value);
+  document.getElementById('f-price-calc').textContent = v === null ? '' : `= ${formatEur(v)} / 100g`;
 }
 
 let _savingFood = false;
@@ -177,13 +186,18 @@ async function saveFood() {
     const carb=parseFloat(document.getElementById('f-carb').value);
     const fat=parseFloat(document.getElementById('f-fat').value);
     if (!name||isNaN(kcal)||isNaN(prot)||isNaN(carb)||isNaN(fat)) { toast('Preenche os campos obrigatórios (*)'); return; }
+    const priceEur = parseFloat(document.getElementById('f-price-eur').value);
+    const priceQty = parseFloat(document.getElementById('f-price-qty').value);
+    if ((priceEur > 0) !== (priceQty > 0)) { toast('Preço e gramas da embalagem vêm juntos'); return; }
     const food={
       name, brand:document.getElementById('f-brand').value.trim()||null,
       serving_size_g:parseFloat(document.getElementById('f-serving').value)||null,
       calories_per_100g:kcal, protein_per_100g:prot, carbs_per_100g:carb, fat_per_100g:fat,
       saturated_fat_per_100g:parseFloat(document.getElementById('f-satfat').value)||0,
       sugar_per_100g:parseFloat(document.getElementById('f-sugar').value)||0,
-      fiber_per_100g:parseFloat(document.getElementById('f-fiber').value)||0
+      fiber_per_100g:parseFloat(document.getElementById('f-fiber').value)||0,
+      price_eur: priceEur > 0 ? priceEur : null,
+      price_qty_g: priceQty > 0 ? priceQty : null
     };
     let error, data2;
     if (editingFoodId) {

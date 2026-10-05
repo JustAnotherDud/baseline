@@ -46,16 +46,16 @@ async function renderCostStats(container, from, to, gen) {
   const dailyHtml = dayRows.length === 0
     ? `<div class="stats-empty">Sem custos neste período${costConfig ? ` (registo desde ${ddmm(costConfig.start)})` : ''}.</div>`
     : `<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px">
-         <span style="font-family:var(--mono);font-size:28px;font-weight:600;color:var(--accent)">${formatEur(avg)}</span>
+         <span style="font-family:var(--mono);font-size:28px;font-weight:600;color:var(--price-gold)">${formatEur(avg)}</span>
          <span style="font-size:13px;color:var(--text2)">por dia · média sobre ${n} dia${n !== 1 ? 's' : ''}</span>
        </div>`
       + [...dayRows].reverse().map(d => costRowHtml(
           ddmm(d.date) + (d.counts_in_avg ? '' : ' · cobertura baixa'),
-          `${formatEur(d.cost_eur)} · ${covPct(d.coverage)}`, !d.counts_in_avg)).join('');
+          `${priceHtml(d.cost_eur)} · ${covPct(d.coverage)}`, !d.counts_in_avg)).join('');
 
   // ── Semana / mês ──────────────────────────────────────────────────────
   const periodRow = (label, p) => costRowHtml(label,
-    `${p.avg_daily_cost == null ? '—' : formatEur(p.avg_daily_cost) + '/dia'} · média sobre ${p.n_days_counted}/${p.n_days} dia${p.n_days !== 1 ? 's' : ''} · total ${formatEur(p.total_cost)} · ${covPct(p.coverage)}`, false, true);
+    `${p.avg_daily_cost == null ? '—' : priceHtml(p.avg_daily_cost) + '/dia'} · média sobre ${p.n_days_counted}/${p.n_days} dia${p.n_days !== 1 ? 's' : ''} · total ${priceHtml(p.total_cost)} · ${covPct(p.coverage)}`, false, true);
   const weekHtml = (weeks.data || []).map(p => periodRow('Sem. ' + ddmm(p.period_start), p)).join('')
     || '<div class="stats-empty">Sem dados.</div>';
   const monthHtml = (months.data || []).map(p => {
@@ -68,7 +68,7 @@ async function renderCostStats(container, from, to, gen) {
     <div class="stats-top-item">
       <div class="stats-top-rank">${i + 1}</div>
       <div class="stats-top-name">${escHtml(t.food_name)}</div>
-      <div class="stats-top-meta">${t.n}× · ${formatEur(t.cost_eur)}</div>
+      <div class="stats-top-meta">${t.n}× · ${priceHtml(t.cost_eur)}</div>
     </div>`).join('');
 
   costEffRows = eff.data || [];
@@ -101,6 +101,6 @@ function renderCostEff() {
     .sort((a, b) => a[costEffSort] - b[costEffSort]);
   list.innerHTML = rows.length
     ? rows.map(f => costRowHtml(escHtml(f.name) + (f.brand ? ` · ${escHtml(f.brand)}` : ''),
-        `${formatEur(f[costEffSort])} · ${formatEur(f.eur_per_100g)}/100g`)).join('')
+        `${priceHtml(f[costEffSort])} · ${formatEur(f.eur_per_100g)}/100g`)).join('')
     : '<div class="stats-empty">Nenhum alimento com preço.</div>';
 }

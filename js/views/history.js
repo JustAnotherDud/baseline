@@ -48,7 +48,7 @@ function historyRowHtml(r) {
       <span class="hist-date">${escHtml(m.title)}</span>
       <span class="hist-num${dim}">${escHtml(m.kcal)}</span>
       <span class="hist-num${dim}">${escHtml(m.delta)}</span>
-      <span class="hist-num${m.costDim ? ' hist-dim' : ''}">${escHtml(m.cost)}${cov}</span>
+      <span class="hist-num hist-cost price${m.costDim ? ' hist-dim' : ''}">${escHtml(m.cost)}${cov}</span>
     </div>
     <div class="hist-l2"><span class="hist-macros">${escHtml(m.macros)}</span><span class="hist-tags">${tags}</span></div>
   </div>`;

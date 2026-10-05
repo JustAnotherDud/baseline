@@ -79,12 +79,20 @@ function costAverage(days) {
   return { n: c.length, avg: c.length ? c.reduce((s, d) => s + +d.cost_eur, 0) / c.length : null };
 }
 
+// Etiqueta do preço pontual (cost_source = override). Único sítio a editar.
+const PROMO_LABEL = 'Promo';
+
 // Etiqueta do indicador de fonte do custo na lista do diário.
 function costSourceTag(src) {
-  return src === 'override' ? 'pontual' : src === 'manual' ? 'manual' : '';
+  return src === 'override' ? PROMO_LABEL : src === 'manual' ? 'manual' : '';
 }
 
-const PRICE_PAIR_ERROR = 'Preço pontual: indica o preço e as gramas que cobre';
+// Preço em dourado (--price-gold): entradas, refeição, total do dia, Histórico, Estatísticas.
+function priceHtml(n) {
+  return `<span class="price">${formatEur(n)}</span>`;
+}
+
+const PRICE_PAIR_ERROR = `Preço ${PROMO_LABEL}: indica o preço e as gramas que cobre`;
 
 // Preço pontual no registo (food = alimento escolhido). Igual ao default do
 // alimento não se envia: o trigger copia o preço actual do alimento.

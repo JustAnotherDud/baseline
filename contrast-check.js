@@ -31,6 +31,8 @@ const PAIRS = [
   ['blue PROT (large)', 'blue', 'bg', 'large'],
   ['yellow CARBS (large)', 'yellow', 'bg', 'large'],
   ['orange FAT (large)', 'orange', 'bg', 'large'],
+  ['price-gold em bg', 'price-gold', 'bg', 'body'],
+  ['price-gold em surface2 (cabeçalho refeição)', 'price-gold', 'surface2', 'body'],
   ['accent-ink em botão accent', 'accent-ink', 'accent', 'body'],
 ];
 

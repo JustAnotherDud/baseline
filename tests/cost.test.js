@@ -49,8 +49,13 @@ test('costAverage: só dias que contam; devolve quantos', () => {
   assert.deepEqual(plain(c.costAverage([{ cost_eur: 4, counts_in_avg: false }])), { n: 0, avg: null });
 });
 
+test('priceHtml: formata em € dentro de .price', () => {
+  assert.equal(c.priceHtml(0.9), '<span class="price">0,90 €</span>');
+  assert.equal(c.priceHtml(null), '<span class="price">— €</span>'.replace('— €', '—'));
+});
+
 test('costSourceTag', () => {
-  assert.equal(c.costSourceTag('override'), 'pontual');
+  assert.equal(c.costSourceTag('override'), 'Promo');
   assert.equal(c.costSourceTag('manual'), 'manual');
   assert.equal(c.costSourceTag('default'), '');
   assert.equal(c.costSourceTag(null), '');

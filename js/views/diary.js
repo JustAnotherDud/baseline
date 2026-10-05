@@ -86,7 +86,7 @@ function renderToday(entries, t) {
     const cs = costSummary(entries);
     const ok = cs.coverage !== null && cs.coverage >= costConfig.minCoverage;
     costRow = `<div class="cost-row">
-      <span class="cost-val" id="tot-cost">${formatEur(cs.total)}</span>
+      <span class="cost-val price" id="tot-cost">${formatEur(cs.total)}</span>
       <span class="cost-badge ${ok ? 'ok' : 'low'}" title="Fracção das kcal do dia com custo conhecido">cobertura ${Math.round((cs.coverage || 0) * 100)}%</span>
     </div>`;
   }
@@ -124,7 +124,7 @@ function renderToday(entries, t) {
     div.className = 'meal-section';
     const kcalInline = mes.length > 0
       ? `<span class="meal-kcal-val">${r(mkcal)}</span>`
-        + (showCost ? `<span class="meal-cost-val" title="Custo da refeição">${formatEur(costSummary(mes).total)}</span>` : '')
+        + (showCost ? `<span class="meal-cost-val price" title="Custo da refeição">${formatEur(costSummary(mes).total)}</span>` : '')
       : '';
     const macroStr = mes.length > 0
       ? `<div class="meal-macros">F ${r(mfat)} · C ${r(mcarb)} · P ${r(mprot)}</div>`
@@ -192,7 +192,7 @@ function renderToday(entries, t) {
           </div>
           <div class="entry-right">
             <div class="entry-kcal">${r(entry.calories)}</div>
-            ${showCost ? `<div class="entry-cost">${formatEur(entry.cost_eur)}${costSourceTag(entry.cost_source) ? `<span class="cost-tag">${costSourceTag(entry.cost_source)}</span>` : ''}</div>` : ''}
+            ${showCost ? `<div class="entry-cost price">${formatEur(entry.cost_eur)}${costSourceTag(entry.cost_source) ? `<span class="cost-tag">${costSourceTag(entry.cost_source)}</span>` : ''}</div>` : ''}
           </div>`;
         entryEl.querySelector('.entry-name').innerHTML = highlightFoodKeywords(entry.food_name);
         entryEl.addEventListener('click', () => openEditEntry(entry.id));

@@ -243,7 +243,7 @@ test('7. saveDiary: preço sem gramas num alimento sem preço -> erro, não grav
   document.getElementById('log-price-eur').value = '3';
   assert.equal(await ctx.saveDiary(), false);
   assert.equal(calls.length, 0);
-  assert.match(toasts[0], /Preço pontual/);
+  assert.match(toasts[0], /Preço Promo/);
 });
 
 test('8. saveDiary: preço pontual sem gramas usa as do alimento (omite price_qty_g)', async () => {

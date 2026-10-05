@@ -220,7 +220,7 @@ async function openEditEntry(id) {
 function fillEditPrice(data) {
   document.getElementById('edit-price-eur').value = data.price_eur ?? '';
   document.getElementById('edit-price-qty').value = data.price_qty_g ?? '';
-  const src = { default: 'preço do alimento', override: 'preço pontual', manual: 'custo manual' }[data.cost_source] || 'sem custo';
+  const src = { default: 'preço do alimento', override: `preço ${PROMO_LABEL}`, manual: 'custo manual' }[data.cost_source] || 'sem custo';
   document.getElementById('edit-price-hint').textContent = `${src} · ${formatEur(data.cost_eur)}`;
 }
 

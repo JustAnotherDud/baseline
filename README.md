@@ -40,7 +40,7 @@ Views: Diário, Comida, Forma e Mais (Manutenção, Histórico, Estatísticas, S
 ## Schema Supabase
 
 - `foods`: `name`, `brand`, `serving_size_g`, `calories_per_100g`, `protein_per_100g`, `carbs_per_100g`, `fat_per_100g`, `saturated_fat_per_100g`, `sugar_per_100g`, `fiber_per_100g`, `price_eur` e `price_qty_g` (preço da embalagem e gramas que cobre; os dois ou nenhum).
-- `diary`: uma linha por item. `date`, `meal` (chave de `MEALS`), `food_id` (null em entrada rápida), `food_name`, `grams` (null em entrada rápida), `calories`, `protein`, `carbs`, `fat`, `saturated_fat`, `sugar`, `fiber`, `has_tara`, `logged_at`. Os nutrientes são um snapshot do momento do registo. Custo: `price_eur`, `price_qty_g` (snapshot do preço usado), `cost_eur` e `cost_source` (`default` do food, `override` pontual, `manual`). Food sem preço: `cost_eur` NULL, nunca 0.
+- `diary`: uma linha por item. `date`, `meal` (chave de `MEALS`), `food_id` (null em entrada rápida), `food_name`, `grams` (null em entrada rápida), `calories`, `protein`, `carbs`, `fat`, `saturated_fat`, `sugar`, `fiber`, `has_tara`, `logged_at`. Os nutrientes são um snapshot do momento do registo. Custo: `price_eur`, `price_qty_g` (snapshot do preço usado), `cost_eur` e `cost_source` (`default` do food, `override` = preço pontual, etiqueta *Promo*, `manual`). Food sem preço: `cost_eur` NULL, nunca 0.
 - `daily_targets`: uma linha por `date`, escrita só pelo DCB (sync_hub). Nutrientes como em `diary`, mais `blocks_active` (jsonb: chaves `*_kcal` — `core_kcal`, `work_kcal`, `gym_kcal` — `activity_kcal_by_id`, `energy_diag`) e `updated_at`.
 - `meal_templates` (`name`) e `meal_template_items` (`template_id`, `food_id`, `food_name`, `grams` e nutrientes).
 - `app_config`: `cost_tracking_start` (dias antes não têm custo nem entram em agregados), `cost_min_coverage` (cobertura mínima para um dia entrar nas médias) e `maintenance_baseline_start` (2026-09-16: desde aí o target é manutenção pura e o delta é comparável).
@@ -51,8 +51,8 @@ Views: Diário, Comida, Forma e Mais (Manutenção, Histórico, Estatísticas, S
 A conta `round(gramas × price_eur / price_qty_g, 2)` vive só na BD (`food_cost_eur` e o trigger `diary_cost`); a PWA nunca a grava, só envia preços e mostra o resultado. O trigger copia o preço do food no registo, aceita override (`price_eur`, gramas opcionais) e custo manual (`cost_eur`), e recalcula ao mudar gramas ou preço. Alterar um food não muda entradas antigas. Para preencher o custo de um dia depois de pôr preço num food: tool MCP `sync_hub_diary_resnapshot_cost`.
 
 - Alimento: preço da embalagem + gramas, com o €/100g calculado.
-- Registo e edição de entrada: preço pontual pré-preenchido; "Usar preço do alimento" limpa o override. Entrada rápida: campo de custo.
-- Diário: custo por entrada (— sem custo; etiqueta *pontual*/*manual*), subtotal por refeição, total do dia e badge de cobertura (kcal com custo / kcal).
+- Registo e edição de entrada: preço pontual (*Promo*) pré-preenchido; "Usar preço do alimento" limpa o override. Entrada rápida: campo de custo.
+- Diário: custo por entrada (— sem custo; etiqueta *Promo*/*manual*; `PROMO_LABEL` em `nutrition.js`), subtotal por refeição, total do dia e badge de cobertura (kcal com custo / kcal). Preços a dourado (`--price-gold`) no diário, Histórico e Estatísticas.
 - Estatísticas: custo por dia, semana e mês (médias só sobre os dias com cobertura suficiente, com "média sobre N dias"), maior gasto e €/1000 kcal e €/100g proteína por alimento. Vistas: `v_cost_day`, `v_cost_week`, `v_cost_month`, `v_food_cost_efficiency`, RPC `cost_top_foods`.
 
 ## Histórico

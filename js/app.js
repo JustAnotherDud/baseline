@@ -19,6 +19,7 @@ let appStarted = false;
 // `authenticated`; sem sessão a UI fica bloqueada no ecrã de login.
 // supabase-js persiste a sessão em localStorage e renova o token sozinho.
 async function init() {
+  document.querySelectorAll('[data-promo-label]').forEach(el => { el.textContent = PROMO_LABEL; });
   const url = localStorage.getItem('nt_url');
   const key = localStorage.getItem('nt_key');
   icuId  = localStorage.getItem('icu_id')  || null;

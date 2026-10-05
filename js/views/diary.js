@@ -81,14 +81,18 @@ function renderToday(entries, t) {
 
   // Custo: só a partir de cost_tracking_start (antes não há custo registado).
   const showCost = !!costConfig && currentDate >= costConfig.start;
-  let costRow = '';
-  if (showCost && hasData) {
-    const cs = costSummary(entries);
-    const ok = cs.coverage !== null && cs.coverage >= costConfig.minCoverage;
-    costRow = `<div class="cost-row">
-      <span class="cost-val price" id="tot-cost">${formatEur(cs.total)}</span>
-      <span class="cost-badge ${ok ? 'ok' : 'low'}" title="Fracção das kcal do dia com custo conhecido">cobertura ${Math.round((cs.coverage || 0) * 100)}%</span>
-    </div>`;
+  // Total do dia no cabeçalho, ao lado do dia da semana. Sem badge de cobertura:
+  // só se marca "≥" (total mínimo) quando abaixo de cost_min_coverage (o total está incompleto).
+  const costEl = document.getElementById('tot-cost');
+  if (costEl) {
+    if (showCost && hasData) {
+      const cs = costSummary(entries);
+      const ok = cs.coverage !== null && cs.coverage >= costConfig.minCoverage;
+      costEl.innerHTML = (ok ? '' : `<span class="cost-partial" title="Total incompleto: só ${Math.round((cs.coverage || 0) * 100)}% das kcal do dia têm custo">≥</span> `) + formatEur(cs.total);
+      costEl.style.display = '';
+    } else {
+      costEl.style.display = 'none';
+    }
   }
 
   const summary = document.querySelector('#view-today .macro-summary');
@@ -98,8 +102,7 @@ function renderToday(entries, t) {
       <span class="diary-kcal-tgt" style="cursor:pointer" onclick="go('targets')" title="Ver baseline de manutenção">${hasTargets ? '/ ' + t.calories + ' kcal' : 'kcal'}</span>
       ${kcalRight}
     </div>
-    <div class="macro-grid">${cellsHTML}</div>
-    ${costRow}`;
+    <div class="macro-grid">${cellsHTML}</div>`;
 
   // Tap handlers → open nutrient ranking
   const kcalEl = summary.querySelector('#tot-kcal');
@@ -210,6 +213,8 @@ function setDateLabel() {
   const d = new Date(currentDate+'T12:00:00');
   const fullEl = document.getElementById('today-date-full');
   if (fullEl) fullEl.textContent = d.toLocaleDateString('pt-PT',{day:'numeric',month:'long'});
+  const costEl = document.getElementById('tot-cost');
+  if (costEl) costEl.style.display = 'none'; // até o diário carregar (evita o total do dia anterior)
   const wdEl = document.getElementById('today-weekday');
   if (wdEl) wdEl.textContent = d.toLocaleDateString('pt-PT',{weekday:'long'});
   const moEl = document.getElementById('today-month');

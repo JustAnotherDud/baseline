@@ -124,3 +124,54 @@ function manualCostPatch(entry, costStr) {
   if (had && entry.cost_source === 'manual' && +entry.cost_eur === c) return {};
   return { cost_source: 'manual', cost_eur: c };
 }
+
+// ── HISTÓRICO ────────────────────────────────────────────────────────────────
+// Uma linha de v_day_totals -> texto das células. Só formata: a agregação, o colapso de
+// dias vazios, o delta e a cobertura vêm prontos da vista (nada de contas em JS).
+//   dia sem entradas        -> kcal, macros, delta e custo "—"
+//   delta_tracked = false   -> delta '' (antes da manutenção pura: célula vazia, não "—")
+//   cost_tracked = false    -> custo '' (antes do tracking de custo)
+//   cobertura baixa e hoje  -> etiquetas; hoje esbate kcal e delta (dia a meio, não é défice)
+
+const HIST_DASH = '\u2014';
+const HIST_MINUS = '\u2212';
+
+// Fixo: toLocaleDateString varia com o ICU ('sexta' no Node, 'sex.' no Chrome).
+const HIST_WEEKDAYS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+
+function histDdMm(iso) {
+  const p = iso.split('-');
+  return `${p[2]}/${p[1]}`;
+}
+
+function historyRowModel(r) {
+  if (r.is_gap) {
+    return { gap: true, key: r.date, title: `${histDdMm(r.date_from)} a ${histDdMm(r.date)} \u00B7 sem registo` };
+  }
+  const wd = HIST_WEEKDAYS[new Date(r.date + 'T12:00:00').getDay()];
+  const m = {
+    gap: false, key: r.date, title: `${wd} ${histDdMm(r.date)}`, today: !!r.is_today,
+    empty: r.n_entries === 0, kcal: HIST_DASH, macros: HIST_DASH, delta: HIST_DASH, cost: HIST_DASH,
+    cov: '', dimNums: false, costDim: false, tags: [],
+  };
+  if (m.today) { m.tags.push('em curso'); m.dimNums = true; }
+  if (m.empty) return m;
+
+  const n = v => (v == null ? HIST_DASH : String(Math.round(+v)));
+  m.kcal = n(r.kcal);
+  m.macros = `P ${n(r.protein)} \u00B7 C ${n(r.carbs)} \u00B7 F ${n(r.fat)} \u00B7 Fib ${n(r.fiber)}`;
+
+  if (!r.delta_tracked) m.delta = '';
+  else if (r.delta_kcal != null) {
+    const d = Math.round(+r.delta_kcal);
+    m.delta = (d > 0 ? '+' : d < 0 ? HIST_MINUS : '') + Math.abs(d);
+  }
+
+  if (!r.cost_tracked) m.cost = '';
+  else {
+    if (r.cost_eur != null) m.cost = formatEur(r.cost_eur);
+    if (r.coverage != null) m.cov = Math.round(+r.coverage * 100) + '%';
+    if (r.counts_in_avg === false) { m.costDim = true; m.tags.push('cobertura baixa'); }
+  }
+  return m;
+}

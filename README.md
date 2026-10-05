@@ -33,9 +33,9 @@ Ordem de carregamento em `index.html`: `config.js`, `nutrition.js`, `db.js`, `ui
 - `js/db.js`: queries do diário, scores do date picker e `loadCostConfig` (`app_config`).
 - `js/ui.js`: toast, sheets partilhados (edição, date picker, ranking, donut, mover refeição), `parseGramsExpr`.
 - `js/app.js`: `init` e login, router por hash (`go`), Settings, refresh automático.
-- `js/views/`: `diary`, `log` (sheet de registo), `foods`, `meals` (templates), `targets`, `stats`, `cost` (secção de custo das Estatísticas), `body` (Forma).
+- `js/views/`: `diary`, `log` (sheet de registo), `foods`, `meals` (templates), `targets`, `stats`, `cost` (secção de custo das Estatísticas), `history` (Histórico), `body` (Forma).
 
-Views: Diário, Comida, Forma e Mais (Manutenção, Estatísticas, Settings).
+Views: Diário, Comida, Forma e Mais (Manutenção, Histórico, Estatísticas, Settings).
 
 ## Schema Supabase
 
@@ -43,7 +43,7 @@ Views: Diário, Comida, Forma e Mais (Manutenção, Estatísticas, Settings).
 - `diary`: uma linha por item. `date`, `meal` (chave de `MEALS`), `food_id` (null em entrada rápida), `food_name`, `grams` (null em entrada rápida), `calories`, `protein`, `carbs`, `fat`, `saturated_fat`, `sugar`, `fiber`, `has_tara`, `logged_at`. Os nutrientes são um snapshot do momento do registo. Custo: `price_eur`, `price_qty_g` (snapshot do preço usado), `cost_eur` e `cost_source` (`default` do food, `override` pontual, `manual`). Food sem preço: `cost_eur` NULL, nunca 0.
 - `daily_targets`: uma linha por `date`, escrita só pelo DCB (sync_hub). Nutrientes como em `diary`, mais `blocks_active` (jsonb: chaves `*_kcal` — `core_kcal`, `work_kcal`, `gym_kcal` — `activity_kcal_by_id`, `energy_diag`) e `updated_at`.
 - `meal_templates` (`name`) e `meal_template_items` (`template_id`, `food_id`, `food_name`, `grams` e nutrientes).
-- `app_config`: `cost_tracking_start` (dias antes não têm custo nem entram em agregados) e `cost_min_coverage` (cobertura mínima para um dia entrar nas médias).
+- `app_config`: `cost_tracking_start` (dias antes não têm custo nem entram em agregados), `cost_min_coverage` (cobertura mínima para um dia entrar nas médias) e `maintenance_baseline_start` (2026-09-16: desde aí o target é manutenção pura e o delta é comparável).
 - `body_comp`: `date`, `weight_kg`, `body_fat_pct`, `muscle_mass_kg`, `bone_mass_kg`, `water_pct`. Preenchida pela sincronização do Garmin.
 
 ## Custo (€)
@@ -54,6 +54,15 @@ A conta `round(gramas × price_eur / price_qty_g, 2)` vive só na BD (`food_cost
 - Registo e edição de entrada: preço pontual pré-preenchido; "Usar preço do alimento" limpa o override. Entrada rápida: campo de custo.
 - Diário: custo por entrada (— sem custo; etiqueta *pontual*/*manual*), subtotal por refeição, total do dia e badge de cobertura (kcal com custo / kcal).
 - Estatísticas: custo por dia, semana e mês (médias só sobre os dias com cobertura suficiente, com "média sobre N dias"), maior gasto e €/1000 kcal e €/100g proteína por alimento. Vistas: `v_cost_day`, `v_cost_week`, `v_cost_month`, `v_food_cost_efficiency`, RPC `cost_top_foods`.
+
+## Histórico
+
+Mais → Histórico: uma linha por dia, do mais recente para o mais antigo, do primeiro dia com diário até hoje (nunca dias futuros), em blocos de 30 linhas com "Carregar mais". Tocar numa linha abre o diário desse dia. Fonte: vista `v_day_totals` (`security_invoker`), que reutiliza `v_cost_day`; a PWA só formata (`historyRowModel` em `nutrition.js`).
+
+- Linha 1: dia, kcal, delta vs baseline de manutenção (`daily_targets`), custo e cobertura. Linha 2: P / C / F / fibra e etiquetas.
+- Dia sem entradas: tudo "—". Delta antes de `maintenance_baseline_start` e custo antes de `cost_tracking_start`: célula vazia.
+- Hoje: etiqueta "em curso", kcal e delta esbatidos (um dia a meio não é défice). Custo com cobertura abaixo de `cost_min_coverage`: esbatido, com a etiqueta "cobertura baixa".
+- Sequências de 3 ou mais dias sem entradas vêm colapsadas na vista numa só linha ("12/07 a 18/07 · sem registo"), por isso um bloco são 30 linhas, não 30 dias. Hoje nunca entra numa sequência.
 
 ## Integrações (view Forma)
 

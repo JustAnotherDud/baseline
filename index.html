@@ -19,7 +19,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
           integrity="sha384-bs/nf9FbdNouRbMiFcrcZfLXYPKiPaGVGplVbv7dLGECccEXDW+S3zjqSKR5ZEaD"
           crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="css/styles.css?v=20261005">
+  <link rel="stylesheet" href="css/styles.css?v=20261005b">
 </head>
 <body>
 
@@ -243,6 +243,10 @@
         <div class="mais-item-label">Manutenção</div>
         <div class="mais-item-arrow">→</div>
       </div>
+      <div class="mais-item" onclick="go('history')">
+        <div class="mais-item-label">Histórico</div>
+        <div class="mais-item-arrow">→</div>
+      </div>
       <div class="mais-item" onclick="go('stats')">
         <div class="mais-item-label">Estatísticas</div>
         <div class="mais-item-arrow">→</div>
@@ -252,6 +256,20 @@
         <div class="mais-item-arrow">→</div>
       </div>
     </div>
+  </div>
+
+  <!-- ─── VIEW: HISTORY ─── -->
+  <div id="view-history" class="view">
+    <div class="view-header">
+      <button onclick="go('mais')" style="background:none;border:none;color:var(--text2);font-size:15px;cursor:pointer;padding:0;font-family:var(--sans)">←</button>
+      <div>
+        <div class="view-title">Histórico</div>
+        <div class="view-sub">kcal · delta vs manutenção · custo</div>
+      </div>
+    </div>
+    <div class="hist-head"><span>dia</span><span>kcal</span><span>delta</span><span>custo</span></div>
+    <div id="history-list"></div>
+    <div id="history-foot"></div>
   </div>
 
   <!-- ─── VIEW: STATS ─── -->
@@ -514,18 +532,19 @@
 
 <div id="toast" aria-live="polite"></div>
 
-<script src="js/config.js?v=20261005"></script>
-<script src="js/nutrition.js?v=20261005"></script>
-<script src="js/db.js?v=20261005"></script>
-<script src="js/ui.js?v=20261005"></script>
-<script src="js/views/diary.js?v=20261005"></script>
-<script src="js/views/log.js?v=20261005"></script>
-<script src="js/views/foods.js?v=20261005"></script>
-<script src="js/views/meals.js?v=20261005"></script>
-<script src="js/views/targets.js?v=20261005"></script>
-<script src="js/views/stats.js?v=20261005"></script>
-<script src="js/views/cost.js?v=20261005"></script>
-<script src="js/views/body.js?v=20261005"></script>
-<script src="js/app.js?v=20261005"></script>
+<script src="js/config.js?v=20261005b"></script>
+<script src="js/nutrition.js?v=20261005b"></script>
+<script src="js/db.js?v=20261005b"></script>
+<script src="js/ui.js?v=20261005b"></script>
+<script src="js/views/diary.js?v=20261005b"></script>
+<script src="js/views/log.js?v=20261005b"></script>
+<script src="js/views/foods.js?v=20261005b"></script>
+<script src="js/views/meals.js?v=20261005b"></script>
+<script src="js/views/targets.js?v=20261005b"></script>
+<script src="js/views/stats.js?v=20261005b"></script>
+<script src="js/views/cost.js?v=20261005b"></script>
+<script src="js/views/history.js?v=20261005b"></script>
+<script src="js/views/body.js?v=20261005b"></script>
+<script src="js/app.js?v=20261005b"></script>
 </body>
 </html>

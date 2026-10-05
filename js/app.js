@@ -121,6 +121,7 @@ function loadView(view) {
   else if (view === 'foods') { if (currentFoodsTab === 'foods') loadFoods(); else loadMeals(); }
   else if (view === 'forma') loadBody();
   else if (view === 'stats') loadStats();
+  else if (view === 'history') loadHistory();
 }
 
 function go(view, _pushState = true) {

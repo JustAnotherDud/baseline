@@ -61,6 +61,26 @@ test('entryCostHtml: só override leva pill ↓; manual e default sem marca vis�
   assert.equal(c.entryCostHtml({ cost_eur: null, cost_source: null }), '—');
 });
 
+test('foodCostMetric: €/100g, kcal/€ e g proteína/€; sem preço = null', () => {
+  const f = { price_eur: 2, price_qty_g: 400, calories_per_100g: 250, protein_per_100g: 20 }; // 0,50 €/100g
+  assert.equal(c.foodCostMetric(f, 'eur_100g'), 0.5);
+  assert.equal(c.foodCostMetric(f, 'kcal_eur'), 500);
+  assert.equal(c.foodCostMetric(f, 'prot_eur'), 40);
+  assert.equal(c.foodCostMetric({ calories_per_100g: 100 }, 'kcal_eur'), null);
+  assert.equal(c.foodCostMetric({ price_eur: 1, price_qty_g: 0 }, 'eur_100g'), null);
+});
+
+test('sortFoodsBy: chips de custo; sem preço sempre no fim', () => {
+  const s = loadScript(['js/nutrition.js', 'js/views/foods.js']);
+  const mk = (name, price, qty, kcal, prot) => ({ name, price_eur: price, price_qty_g: qty, calories_per_100g: kcal, protein_per_100g: prot });
+  const foods = [mk('Sem', null, null, 900, 90), mk('Caro', 4, 100, 100, 10), mk('Barato', 1, 100, 100, 10), mk('Denso', 1, 200, 500, 5)];
+  const names = (sort, dir) => plain(s.sortFoodsBy(foods, sort, dir).map(f => f.name));
+  assert.deepEqual(names('eur_100g', 'asc'), ['Denso', 'Barato', 'Caro', 'Sem']);
+  assert.deepEqual(names('eur_100g', 'desc'), ['Caro', 'Barato', 'Denso', 'Sem']);
+  assert.deepEqual(names('kcal_eur', 'desc'), ['Denso', 'Barato', 'Caro', 'Sem']);
+  assert.deepEqual(names('prot_eur', 'desc'), ['Barato', 'Denso', 'Caro', 'Sem']);
+});
+
 test('costSourceTag', () => {
   assert.equal(c.costSourceTag('override'), 'Promo');
   assert.equal(c.costSourceTag('manual'), 'manual');

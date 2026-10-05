@@ -52,6 +52,17 @@ function eurPer100g(priceEur, qtyG) {
   return p > 0 && q > 0 ? p / q * 100 : null;
 }
 
+// Métricas de custo de um alimento (ordenar/mostrar na lista); null sem preço.
+//   eur_100g: €/100g · kcal_eur: kcal por € · prot_eur: g de proteína por €
+function foodCostMetric(food, key) {
+  const e = eurPer100g(food.price_eur, food.price_qty_g);
+  if (e === null) return null;
+  if (key === 'eur_100g') return e;
+  if (key === 'kcal_eur') return (+food.calories_per_100g || 0) / e;
+  if (key === 'prot_eur') return (+food.protein_per_100g || 0) / e;
+  return null;
+}
+
 // " · 0,53 €/100g" para listas de alimentos; '' sem preço.
 function foodPriceLabel(food) {
   const v = eurPer100g(food.price_eur, food.price_qty_g);

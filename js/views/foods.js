@@ -6,6 +6,16 @@ const SORT_CONFIG = {
   p_kcal:   { asc: 'P/Kcal ↓', desc: 'P/Kcal ↑', default: 'desc' },
   c_kcal:   { asc: 'C/Kcal ↓', desc: 'C/Kcal ↑', default: 'desc' },
   f_kcal:   { asc: 'F/Kcal ↓', desc: 'F/Kcal ↑', default: 'desc' },
+  eur_100g: { asc: '€/100g ↓', desc: '€/100g ↑', default: 'asc'  },
+  kcal_eur: { asc: 'Kcal/€ ↓', desc: 'Kcal/€ ↑', default: 'desc' },
+  prot_eur: { asc: 'P/€ ↓',    desc: 'P/€ ↑',    default: 'desc' },
+};
+
+// Chips de custo: valor mostrado na coluna direita. Sem preço: '—' e fim da lista.
+const COST_SORT_META = {
+  eur_100g: { label: '€/100g',  dec: 2 },
+  kcal_eur: { label: 'kcal/€',  dec: 0 },
+  prot_eur: { label: 'g P/€',   dec: 1 },
 };
 
 // Chips de rácio macro/kcal.
@@ -47,10 +57,21 @@ async function loadFoods() {
 }
 
 function sortFoods(foods) {
-  const { sort, dir } = currentSortState;
+  return sortFoodsBy(foods, currentSortState.sort, currentSortState.dir);
+}
+
+function sortFoodsBy(foods, sort, dir) {
   const arr = [...foods];
   const mul = dir === 'asc' ? 1 : -1;
   const ratio = (val, kcal) => kcal ? (val || 0) / kcal : 0;
+  if (COST_SORT_META[sort]) {
+    // Sem preço vai sempre para o fim, qualquer que seja a direcção.
+    return arr.sort((a, b) => {
+      const x = foodCostMetric(a, sort), y = foodCostMetric(b, sort);
+      if (x === null || y === null) return x === y ? a.name.localeCompare(b.name, 'pt') : x === null ? 1 : -1;
+      return mul * (x - y);
+    });
+  }
   switch (sort) {
     case 'calories': return arr.sort((a,b) => mul * (a.calories_per_100g - b.calories_per_100g));
     case 'p_kcal':
@@ -115,7 +136,11 @@ function renderFoods(foods) {
 
     // Coluna direita: rácio no sort por rácio, senão kcal/100g (só números).
     let rightCol;
-    if (RATIO_META[sort]) {
+    if (COST_SORT_META[sort]) {
+      const meta = COST_SORT_META[sort], v = foodCostMetric(f, sort);
+      const val = v === null ? '—' : (meta.dec ? v.toFixed(meta.dec).replace('.', ',') : Math.round(v));
+      rightCol = `<div class="fi-kcal" style="${v === null ? '' : HL}">${val}<br><span style="font-size:9px;color:var(--text3)">${meta.label}</span></div>`;
+    } else if (RATIO_META[sort]) {
       const meta  = RATIO_META[sort];
       const kcal  = f.calories_per_100g || 0;
       const ratio = kcal ? (f[meta.field] / kcal).toFixed(2) : '—';

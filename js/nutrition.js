@@ -87,6 +87,15 @@ function costSourceTag(src) {
   return src === 'override' ? PROMO_LABEL : src === 'manual' ? 'manual' : '';
 }
 
+// Custo de uma entrada no diário. Só o preço Promo (override) leva marca: fundo
+// suave + ↓ (não depende só da cor). manual não tem marca; fica no title.
+function entryCostHtml(entry) {
+  const eur = formatEur(entry.cost_eur);
+  if (entry.cost_source === 'override') return `<span class="price-promo" title="${PROMO_LABEL}">↓ ${eur}</span>`;
+  const tag = costSourceTag(entry.cost_source);
+  return tag ? `<span title="${tag}">${eur}</span>` : eur;
+}
+
 // Preço em dourado (--price-gold): entradas, refeição, total do dia, Histórico, Estatísticas.
 function priceHtml(n) {
   return `<span class="price">${formatEur(n)}</span>`;

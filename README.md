@@ -52,7 +52,7 @@ A conta `round(gramas × price_eur / price_qty_g, 2)` vive só na BD (`food_cost
 
 - Alimento: preço da embalagem + gramas, com o €/100g calculado.
 - Registo e edição de entrada: preço pontual (*Promo*) pré-preenchido; "Usar preço do alimento" limpa o override. Entrada rápida: campo de custo.
-- Diário: custo por entrada (— sem custo; etiqueta *Promo*/*manual*; `PROMO_LABEL` em `nutrition.js`), subtotal por refeição, total do dia e badge de cobertura (kcal com custo / kcal). Preços a dourado (`--price-gold`) no diário, Histórico e Estatísticas.
+- Diário: custo por entrada (— sem custo; só o preço Promo leva marca: fundo suave + ↓, texto em `PROMO_LABEL` no `nutrition.js`; *manual* sem marca, só `title`), subtotal por refeição, total do dia e badge de cobertura (kcal com custo / kcal). Preços a dourado (`--price-gold`) no diário, Histórico e Estatísticas.
 - Estatísticas: custo por dia, semana e mês (médias só sobre os dias com cobertura suficiente, com "média sobre N dias"), maior gasto e €/1000 kcal e €/100g proteína por alimento. Vistas: `v_cost_day`, `v_cost_week`, `v_cost_month`, `v_food_cost_efficiency`, RPC `cost_top_foods`.
 
 ## Histórico

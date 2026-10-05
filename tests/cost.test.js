@@ -54,6 +54,13 @@ test('priceHtml: formata em € dentro de .price', () => {
   assert.equal(c.priceHtml(null), '<span class="price">— €</span>'.replace('— €', '—'));
 });
 
+test('entryCostHtml: só override leva pill ↓; manual e default sem marca visível', () => {
+  assert.equal(c.entryCostHtml({ cost_eur: 0.45, cost_source: 'override' }), '<span class="price-promo" title="Promo">↓ 0,45 €</span>');
+  assert.equal(c.entryCostHtml({ cost_eur: 12.5, cost_source: 'manual' }), '<span title="manual">12,50 €</span>');
+  assert.equal(c.entryCostHtml({ cost_eur: 0.9, cost_source: 'default' }), '0,90 €');
+  assert.equal(c.entryCostHtml({ cost_eur: null, cost_source: null }), '—');
+});
+
 test('costSourceTag', () => {
   assert.equal(c.costSourceTag('override'), 'Promo');
   assert.equal(c.costSourceTag('manual'), 'manual');

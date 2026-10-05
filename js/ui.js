@@ -135,6 +135,15 @@ async function openEditEntry(id) {
   card.querySelector('.food-card-sub').textContent = isQuick
     ? 'Entrada rápida'
     : 'Peso original: ' + data.grams + 'g';
+  // Atalho para o alimento (só entradas ligadas a um alimento).
+  if (data.food_id && !isQuick) {
+    const link = document.createElement('button');
+    link.type = 'button';
+    link.className = 'food-card-link';
+    link.textContent = 'Ver em Alimentos →';
+    link.onclick = openFoodFromEntry;
+    card.appendChild(link);
+  }
 
   const gramsLabel = document.getElementById('edit-grams').closest('label');
   const previewEl  = document.getElementById('edit-preview');
@@ -236,6 +245,17 @@ function resetEditPrice() {
   document.getElementById('edit-price-eur').value = fp.price_eur;
   document.getElementById('edit-price-qty').value = fp.price_qty_g;
   document.getElementById('edit-price-hint').textContent = 'Ao guardar: usa o preço actual do alimento';
+}
+
+// Fecha o sheet da entrada e abre o editor do alimento em Comida → Alimentos.
+// As alterações por guardar na entrada perdem-se, como em qualquer fecho do sheet.
+function openFoodFromEntry() {
+  const id = editingEntry && editingEntry.food_id;
+  if (!id) return;
+  closeEditEntry();
+  pendingFoodEdit = id;
+  switchFoodsTab('foods');
+  go('foods');
 }
 
 function closeEditEntry() {

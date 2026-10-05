@@ -490,6 +490,7 @@ input[type="number"] { font-family: var(--mono); }
 /* ── SELECTED FOOD CARD ── */
 .food-card { background: var(--surface2); border-radius: 12px; padding: 14px; }
 .food-card-name { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+.food-card-link { display: block; margin-top: 6px; padding: 8px 0; background: none; border: 0; color: var(--accent); font-family: var(--mono); font-size: 12px; cursor: pointer; }
 .food-card-sub { font-family: var(--mono); font-size: 11px; color: var(--text3); }
 .macro-preview { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
 .mp-chip { flex: 1; text-align: center; }

@@ -17,6 +17,9 @@ const RATIO_META = {
 
 let currentSortState = { sort: 'name', dir: 'asc' };
 
+// Alimento a abrir no editor assim que a lista carregar (vindo do sheet de uma entrada).
+let pendingFoodEdit = null;
+
 async function loadFoods() {
   if (!db) return;
   const { data, error } = await db.from('foods').select('*').order('name');
@@ -35,6 +38,12 @@ async function loadFoods() {
   allFoods = data || [];
   document.getElementById('foods-count').textContent = `${allFoods.length} alimentos`;
   filterFoods();
+  if (pendingFoodEdit != null) {
+    const id = pendingFoodEdit;
+    pendingFoodEdit = null;
+    if (allFoods.some(f => f.id === id)) editFood(id);
+    else toast('O alimento já não existe');
+  }
 }
 
 function sortFoods(foods) {

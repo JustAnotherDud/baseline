@@ -70,6 +70,22 @@ test('foodCostMetric: €/100g, kcal/€ e g proteína/€; sem preço = null', 
   assert.equal(c.foodCostMetric({ price_eur: 1, price_qty_g: 0 }, 'eur_100g'), null);
 });
 
+test('foodMatchesQuery: , = ou, & = e, ! = nega, price = tem preço', () => {
+  const A = { name: 'Atum Natural', brand: 'Continente', price_eur: 2, price_qty_g: 100 };
+  const B = { name: 'Aveia', brand: 'Continente' };
+  const C = { name: 'Arroz', brand: 'Pingo Doce' };
+  const m = (f, q) => c.foodMatchesQuery(f, q);
+  assert.ok(m(A, '') && m(B, '  ') && m(C, ' , '));
+  assert.ok(m(A, 'atum') && !m(B, 'atum') && m(B, 'continente'));
+  assert.ok(m(A, 'atum, arroz') && m(C, 'atum, arroz'));
+  assert.ok(!m(A, 'continente&!price') && m(B, 'continente&!price') && !m(C, 'continente&!price'));
+  assert.ok(m(A, 'continente&price') && !m(B, 'continente&price'));
+  assert.ok(m(B, '!price') && m(C, '!preço') && !m(A, '!preco'));
+  assert.ok(m(B, 'continente&!atum') && !m(A, 'continente&!atum'));
+  assert.ok(m(A, 'continente & !light'));
+  assert.ok(m(C, 'continente&!price, arroz'));
+});
+
 test('sortFoodsBy: chips de custo; sem preço sempre no fim', () => {
   const s = loadScript(['js/nutrition.js', 'js/views/foods.js']);
   const mk = (name, price, qty, kcal, prot) => ({ name, price_eur: price, price_qty_g: qty, calories_per_100g: kcal, protein_per_100g: prot });

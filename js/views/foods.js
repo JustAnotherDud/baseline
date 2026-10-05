@@ -101,17 +101,9 @@ function setSortFoods(sort) {
 
 function filterFoods() {
   const raw = document.getElementById('foods-search').value;
-  const terms = raw.split(',')
-    .map(t => t.trim().toLowerCase())
-    .filter(t => t.length > 0);
-  const filtered = terms.length === 0
-    ? allFoods
-    : allFoods.filter(f =>
-        terms.some(t =>
-          f.name.toLowerCase().includes(t) ||
-          (f.brand || '').toLowerCase().includes(t)
-        )
-      );
+  const filtered = allFoods.filter(f => foodMatchesQuery(f, raw));
+  document.getElementById('foods-count').textContent = filtered.length === allFoods.length
+    ? `${allFoods.length} alimentos` : `${filtered.length} de ${allFoods.length} alimentos`;
   renderFoods(sortFoods(filtered));
 }
 

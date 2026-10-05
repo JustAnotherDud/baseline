@@ -52,6 +52,28 @@ function eurPer100g(priceEur, qtyG) {
   return p > 0 && q > 0 ? p / q * 100 : null;
 }
 
+// Pesquisa de alimentos. "," separa alternativas (ou); dentro de cada uma, "&" junta
+// condições (e) e "!" nega. Texto procura em nome e marca; `price` (ou preco/preço)
+// é "tem preço". Ex.: "continente&!price" = Continente sem preço.
+const PRICE_KEYS = ['price', 'preco', 'preço'];
+function foodMatchesQuery(food, raw) {
+  const groups = String(raw || '').split(',')
+    .map(g => g.split('&').map(t => t.trim().toLowerCase()).filter(Boolean))
+    .filter(g => g.length);
+  if (!groups.length) return true;
+  const hasPrice = eurPer100g(food.price_eur, food.price_qty_g) !== null;
+  const text = `${food.name || ''} ${food.brand || ''}`.toLowerCase();
+  const test = t => {
+    const neg = t.startsWith('!');
+    const k = neg ? t.slice(1).trim() : t;
+    if (!k) return true;
+    const hit = PRICE_KEYS.includes(k) ? hasPrice
+      : (food.name || '').toLowerCase().includes(k) || (food.brand || '').toLowerCase().includes(k);
+    return neg ? !hit : hit;
+  };
+  return groups.some(g => g.every(test));
+}
+
 // Métricas de custo de um alimento (ordenar/mostrar na lista); null sem preço.
 //   eur_100g: €/100g · kcal_eur: kcal por € · prot_eur: g de proteína por €
 function foodCostMetric(food, key) {

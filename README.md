@@ -51,6 +51,7 @@ Views: Diário, Comida, Forma e Mais (Manutenção, Histórico, Estatísticas, S
 A conta `round(gramas × price_eur / price_qty_g, 2)` vive só na BD (`food_cost_eur` e o trigger `diary_cost`); a PWA nunca a grava, só envia preços e mostra o resultado. O trigger copia o preço do food no registo, aceita override (`price_eur`, gramas opcionais) e custo manual (`cost_eur`), e recalcula ao mudar gramas ou preço. Alterar um food não muda entradas antigas. Para preencher o custo de um dia depois de pôr preço num food: tool MCP `sync_hub_diary_resnapshot_cost`.
 
 - Alimento: preço da embalagem + gramas, com o €/100g calculado.
+- Alimentos, pesquisa: `,` = ou, `&` = e, `!` nega, `price` = tem preço (nome e marca para o resto). Ex.: `continente&!price` = Continente sem preço (`foodMatchesQuery` em `nutrition.js`). O contador mostra "N de M" com filtro activo.
 - Alimentos: chips de ordenação €/100g, Kcal/€ e P/€ (g de proteína por €); alimentos sem preço ficam sempre no fim (`foodCostMetric` em `nutrition.js`).
 - Registo e edição de entrada: preço pontual (*Promo*) pré-preenchido; "Ver em Alimentos →" no sheet de edição (só entradas com alimento) abre o editor desse alimento; "Usar preço do alimento" limpa o override. Entrada rápida: campo de custo.
 - Diário: custo por entrada (— sem custo; só o preço Promo leva marca: fundo suave + ↓, texto em `PROMO_LABEL` no `nutrition.js`; *manual* sem marca, só `title`), subtotal por refeição, total do dia e badge de cobertura (kcal com custo / kcal). Preços a dourado (`--price-gold`) no diário, Histórico e Estatísticas.

@@ -343,6 +343,14 @@ input[type="number"] { font-family: var(--mono); }
 .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
 .btn-danger { background: transparent; color: var(--red); border: 1px solid var(--red); }
 
+/* Comida: título, separadores, pesquisa e chips ficam pinados juntos (mesmo padrão do Diário). */
+#foods-head-sticky { position: sticky; top: 0; z-index: 20; background: var(--bg); box-shadow: 0 1px 0 var(--border), 0 4px 16px -4px rgba(0,0,0,.18); }
+#foods-head-sticky .view-header { position: static; padding: 10px 20px 8px; }
+#foods-head-sticky .foods-subtab { padding: 7px 0; }
+#foods-head-sticky .search-wrap { position: static; padding: 8px 20px 2px; }
+#foods-head-sticky .sort-chips { position: static; padding: 6px 20px 2px; }
+.foods-help { padding: 2px 20px 6px; font-family: var(--mono); font-size: 11px; line-height: 1.4; color: var(--text3); }
+
 /* ── SEARCH ── */
 .search-wrap { padding: 12px 20px; position: sticky; top: 53px; background: var(--bg); z-index: 5; }
 .search-results { max-height: 320px; overflow-y: auto; -webkit-overflow-scrolling: touch; }

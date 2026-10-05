@@ -149,6 +149,7 @@ function switchFoodsTab(tab) {
   // Panels
   document.getElementById('foods-panel').style.display = tab === 'foods' ? 'block' : 'none';
   document.getElementById('meals-panel').style.display = tab === 'meals' ? 'block' : 'none';
+  document.getElementById('foods-tools').style.display = tab === 'foods' ? '' : 'none';
   // FAB — only on Alimentos
   const fab = document.getElementById('foods-fab');
   if (fab) fab.style.display = tab === 'foods' ? 'flex' : 'none';

@@ -56,22 +56,33 @@ function eurPer100g(priceEur, qtyG) {
 // condições (e) e "!" nega. Texto procura em nome e marca; `price` (ou preco/preço)
 // é "tem preço". Ex.: "continente&!price" = Continente sem preço.
 const PRICE_KEYS = ['price', 'preco', 'preço'];
-function foodMatchesQuery(food, raw) {
-  const groups = String(raw || '').split(',')
-    .map(g => g.split('&').map(t => t.trim().toLowerCase()).filter(Boolean))
+
+// "a&!b, c" -> [[{k:'a',neg:false},{k:'b',neg:true}],[{k:'c',neg:false}]]
+function parseFoodQuery(raw) {
+  return String(raw || '').split(',')
+    .map(g => g.split('&').map(t => t.trim().toLowerCase()).filter(Boolean)
+      .map(t => { const neg = t.startsWith('!'); return { k: (neg ? t.slice(1) : t).trim(), neg }; })
+      .filter(t => t.k))
     .filter(g => g.length);
+}
+
+function foodMatchesQuery(food, raw) {
+  const groups = parseFoodQuery(raw);
   if (!groups.length) return true;
   const hasPrice = eurPer100g(food.price_eur, food.price_qty_g) !== null;
-  const text = `${food.name || ''} ${food.brand || ''}`.toLowerCase();
-  const test = t => {
-    const neg = t.startsWith('!');
-    const k = neg ? t.slice(1).trim() : t;
-    if (!k) return true;
-    const hit = PRICE_KEYS.includes(k) ? hasPrice
-      : (food.name || '').toLowerCase().includes(k) || (food.brand || '').toLowerCase().includes(k);
+  const name = (food.name || '').toLowerCase(), brand = (food.brand || '').toLowerCase();
+  const test = ({ k, neg }) => {
+    const hit = PRICE_KEYS.includes(k) ? hasPrice : name.includes(k) || brand.includes(k);
     return neg ? !hit : hit;
   };
   return groups.some(g => g.every(test));
+}
+
+// Frase para a linha de ajuda: "continente e sem preço" / "atum ou arroz". '' sem filtro.
+function describeFoodQuery(raw) {
+  const term = ({ k, neg }) => PRICE_KEYS.includes(k) ? (neg ? 'sem preço' : 'com preço')
+    : neg ? `sem “${k}”` : `“${k}”`;
+  return parseFoodQuery(raw).map(g => g.map(term).join(' e ')).join(' ou ');
 }
 
 // Métricas de custo de um alimento (ordenar/mostrar na lista); null sem preço.

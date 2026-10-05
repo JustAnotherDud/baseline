@@ -11,6 +11,24 @@ const SORT_CONFIG = {
   prot_eur: { asc: 'P/€ ↓',    desc: 'P/€ ↑',    default: 'desc' },
 };
 
+// Linha de ajuda por baixo dos chips: ordem activa (+ filtro de pesquisa, se houver).
+const SORT_HELP = {
+  name:     { asc: 'nome A→Z', desc: 'nome Z→A' },
+  calories: { asc: 'menos kcal primeiro', desc: 'mais kcal primeiro' },
+  p_kcal:   { asc: 'menos proteína por kcal primeiro', desc: 'mais proteína por kcal primeiro' },
+  c_kcal:   { asc: 'menos hidratos por kcal primeiro', desc: 'mais hidratos por kcal primeiro' },
+  f_kcal:   { asc: 'menos gordura por kcal primeiro', desc: 'mais gordura por kcal primeiro' },
+  eur_100g: { asc: 'mais barato primeiro', desc: 'mais caro primeiro' },
+  kcal_eur: { asc: 'menos kcal por € primeiro', desc: 'mais kcal por € primeiro' },
+  prot_eur: { asc: 'menos proteína por € primeiro', desc: 'mais proteína por € primeiro' },
+};
+
+function foodsHelpLines(sort, dir, rawQuery) {
+  const sortTxt = 'Ordem: ' + SORT_HELP[sort][dir] + (COST_SORT_META[sort] ? ' · sem preço no fim' : '');
+  const q = describeFoodQuery(rawQuery);
+  return { sort: sortTxt, filter: q ? 'Filtro: ' + q : '' };
+}
+
 // Chips de custo: valor mostrado na coluna direita. Sem preço: '—' e fim da lista.
 const COST_SORT_META = {
   eur_100g: { label: '€/100g',  dec: 2 },
@@ -104,6 +122,11 @@ function filterFoods() {
   const filtered = allFoods.filter(f => foodMatchesQuery(f, raw));
   document.getElementById('foods-count').textContent = filtered.length === allFoods.length
     ? `${allFoods.length} alimentos` : `${filtered.length} de ${allFoods.length} alimentos`;
+  const help = foodsHelpLines(currentSortState.sort, currentSortState.dir, raw);
+  document.getElementById('foods-help-sort').textContent = help.sort;
+  const fEl = document.getElementById('foods-help-filter');
+  fEl.textContent = help.filter;
+  fEl.style.display = help.filter ? '' : 'none';
   renderFoods(sortFoods(filtered));
 }
 

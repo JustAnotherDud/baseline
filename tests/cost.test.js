@@ -86,6 +86,21 @@ test('foodMatchesQuery: , = ou, & = e, ! = nega, price = tem preço', () => {
   assert.ok(m(C, 'continente&!price, arroz'));
 });
 
+test('describeFoodQuery: frase legível do filtro', () => {
+  assert.equal(c.describeFoodQuery(''), '');
+  assert.equal(c.describeFoodQuery('continente&!price'), '“continente” e sem preço');
+  assert.equal(c.describeFoodQuery('!preço'), 'sem preço');
+  assert.equal(c.describeFoodQuery('price, atum&!light'), 'com preço ou “atum” e sem “light”');
+});
+
+test('foodsHelpLines: ordem activa, sem preço no fim nos chips de custo, filtro só se houver', () => {
+  const s = loadScript(['js/nutrition.js', 'js/views/foods.js']);
+  assert.deepEqual(plain(s.foodsHelpLines('name', 'asc', '')), { sort: 'Ordem: nome A→Z', filter: '' });
+  assert.deepEqual(plain(s.foodsHelpLines('eur_100g', 'asc', 'continente&!price')),
+    { sort: 'Ordem: mais barato primeiro · sem preço no fim', filter: 'Filtro: “continente” e sem preço' });
+  for (const k of ['name', 'calories', 'p_kcal', 'c_kcal', 'f_kcal', 'eur_100g', 'kcal_eur', 'prot_eur']) for (const d of ['asc', 'desc']) assert.ok(s.foodsHelpLines(k, d, '').sort, `${k}/${d}`);
+});
+
 test('sortFoodsBy: chips de custo; sem preço sempre no fim', () => {
   const s = loadScript(['js/nutrition.js', 'js/views/foods.js']);
   const mk = (name, price, qty, kcal, prot) => ({ name, price_eur: price, price_qty_g: qty, calories_per_100g: kcal, protein_per_100g: prot });

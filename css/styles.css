@@ -773,6 +773,11 @@ input[type="range"]::-moz-range-thumb {
 .price-override { display: flex; flex-direction: column; gap: 6px; }
 .cost-hint { font-family: var(--mono); font-size: 11px; color: var(--text3); min-height: 14px; }
 .cost-dim { opacity: .55; }
+.cost-eff-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cost-eff-row > .msc { min-width: 0; }
+.cost-eff-label { font-family: var(--mono); font-size: 10px; color: var(--text3); letter-spacing: .02em; }
+.cost-eff-val { font-family: var(--mono); font-size: 22px; font-weight: 600; white-space: nowrap; }
+.cost-eff-note { margin-top: 8px; font-family: var(--mono); font-size: 11px; color: var(--text3); }
 
 /* ── Histórico: 2 linhas por dia, sem scroll horizontal ── */
 .hist-head, .hist-l1 { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, .8fr) minmax(0, .9fr) minmax(0, 1.3fr); gap: 6px; align-items: baseline; }

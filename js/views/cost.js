@@ -1,13 +1,7 @@
-// Estatísticas de custo (€): secção do ecrã Estatísticas.
+// Estatísticas de custo (€): secção do ecrã Estatísticas. Só consumo; atributos dos
+// alimentos (€/100g, kcal/€, ...) ficam nos chips de Alimentos.
 // Dados das vistas SQL v_cost_day/week/month (só dias >= cost_tracking_start),
-// v_food_cost_efficiency e cost_top_foods. Cobertura = kcal com custo / kcal.
-
-let costEffRows = [];
-let costEffSort = 'eur_per_1000kcal';
-const COST_EFF_SORTS = {
-  eur_per_1000kcal:     '€/1000 kcal',
-  eur_per_100g_protein: '€/100g prot.',
-};
+// cost_top_foods e as entradas com custo do período (custo efectivo). Cobertura = kcal com custo / kcal.
 
 const covPct = c => c == null ? '—' : Math.round(c * 100) + '%';
 const ddmm = iso => { const p = iso.split('-'); return `${p[2]}/${p[1]}`; };
@@ -26,11 +20,12 @@ async function renderCostStats(container, from, to, gen) {
   container.appendChild(wrap);
 
   await loadCostConfig();
-  const [days, weeks, months, eff, top] = await Promise.all([
+  const [days, weeks, months, effRows, top] = await Promise.all([
     db.from('v_cost_day').select('date,cost_eur,coverage,counts_in_avg').gte('date', from).lte('date', to).order('date'),
     db.from('v_cost_week').select('*').order('period_start', { ascending: false }).limit(4),
     db.from('v_cost_month').select('*').order('period_start', { ascending: false }).limit(3),
-    db.from('v_food_cost_efficiency').select('*'),
+    db.from('diary').select('date,calories,protein,cost_eur').gte('date', from).lte('date', to)
+      .not('cost_eur', 'is', null).limit(5000),
     db.rpc('cost_top_foods', { p_from: from, p_to: to, p_limit: 5 }),
   ]);
   if (gen !== loadStatsGen) return;
@@ -71,36 +66,21 @@ async function renderCostStats(container, from, to, gen) {
       <div class="stats-top-meta">${t.n}× · ${priceHtml(t.cost_eur)}</div>
     </div>`).join('');
 
-  costEffRows = eff.data || [];
+  // ── Custo efectivo do período (mesma janela e mesmos dias que contam nas médias) ──
+  const counted = new Set(dayRows.filter(d => d.counts_in_avg && d.cost_eur != null).map(d => d.date));
+  const ef = costEfficiency(effRows.data || [], counted);
+  const effHtml = effRows.error || ef.n_days === 0
+    ? '<div class="stats-empty">Sem dias com cobertura suficiente neste período.</div>'
+    : `<div class="cost-eff-row">
+         <div class="msc"><div class="cost-eff-label">€ por 1000 kcal</div><div class="cost-eff-val price">${formatEur(ef.per1000kcal)}</div></div>
+         <div class="msc"><div class="cost-eff-label">€ por 100 g de proteína</div><div class="cost-eff-val price">${formatEur(ef.per100gProtein)}</div></div>
+       </div>
+       <div class="cost-eff-note">sobre ${ef.n_days} dia${ef.n_days !== 1 ? 's' : ''} que contam · só entradas com custo</div>`;
+
   wrap.innerHTML = `
     <div class="stats-section"><div class="stats-section-title">Custo diário · ${statsPeriod} dias</div>${dailyHtml}</div>
     <div class="stats-section"><div class="stats-section-title">Custo por semana</div>${weekHtml}</div>
     <div class="stats-section"><div class="stats-section-title">Custo por mês</div>${monthHtml}</div>
     <div class="stats-section"><div class="stats-section-title">Maior gasto · ${statsPeriod} dias</div>${topRows || '<div class="stats-empty">Sem dados.</div>'}</div>
-    <div class="stats-section">
-      <div class="stats-section-title">Alimentos por custo</div>
-      <div id="cost-eff-chips" style="display:flex;gap:8px;margin-bottom:8px"></div>
-      <div id="cost-eff-list"></div>
-    </div>`;
-  renderCostEff();
-}
-
-function setCostEffSort(k) {
-  costEffSort = k;
-  renderCostEff();
-}
-
-// Só alimentos com preço (a vista já filtra); mais barato primeiro.
-function renderCostEff() {
-  const chips = document.getElementById('cost-eff-chips');
-  const list  = document.getElementById('cost-eff-list');
-  if (!chips || !list) return;
-  chips.innerHTML = Object.entries(COST_EFF_SORTS).map(([k, label]) =>
-    `<button class="sort-chip${k === costEffSort ? ' active' : ''}" onclick="setCostEffSort('${k}')">${label}</button>`).join('');
-  const rows = costEffRows.filter(f => f[costEffSort] != null)
-    .sort((a, b) => a[costEffSort] - b[costEffSort]);
-  list.innerHTML = rows.length
-    ? rows.map(f => costRowHtml(escHtml(f.name) + (f.brand ? ` · ${escHtml(f.brand)}` : ''),
-        `${priceHtml(f[costEffSort])} · ${formatEur(f.eur_per_100g)}/100g`)).join('')
-    : '<div class="stats-empty">Nenhum alimento com preço.</div>';
+    <div class="stats-section"><div class="stats-section-title">Custo efetivo · ${statsPeriod} dias</div>${effHtml}</div>`;
 }

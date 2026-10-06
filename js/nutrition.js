@@ -128,6 +128,24 @@ function costSummary(entries) {
   };
 }
 
+// Custo efectivo do período: € por 1000 kcal e € por 100 g de proteína, só sobre entradas com
+// custo (cobertura coerente) e só nos dias que contam nas médias (countedDates: Set de datas).
+// kcal e proteína são das mesmas entradas que somam o custo. null sem denominador.
+function costEfficiency(entries, countedDates) {
+  let cost = 0, kcal = 0, protein = 0;
+  const days = new Set();
+  for (const e of entries) {
+    if (e.cost_eur == null || !countedDates.has(e.date)) continue;
+    cost += +e.cost_eur; kcal += +(e.calories || 0); protein += +(e.protein || 0);
+    days.add(e.date);
+  }
+  return {
+    n_days: days.size, cost, kcal, protein,
+    per1000kcal: kcal > 0 ? cost / kcal * 1000 : null,
+    per100gProtein: protein > 0 ? cost / protein * 100 : null,
+  };
+}
+
 // Média diária só sobre os dias de v_cost_day que contam (cobertura >= limiar).
 function costAverage(days) {
   const c = days.filter(d => d.counts_in_avg && d.cost_eur != null);

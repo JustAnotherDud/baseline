@@ -138,6 +138,30 @@ test('tipLeft: centra no ponto e fica dentro do ecrã com margem', () => {
   assert.equal(c.tipLeft(50, 500, 375, 8), 8); // tooltip maior que o ecrã: nunca negativo
 });
 
+test('costEfficiency: só entradas com custo e só dias que contam; kcal/proteína das mesmas entradas', () => {
+  const days = new Set(['2026-10-05', '2026-10-06']);
+  const E = [
+    { date: '2026-10-05', calories: 500, protein: 40, cost_eur: 2 },
+    { date: '2026-10-05', calories: '300', protein: '10', cost_eur: '1' },
+    { date: '2026-10-05', calories: 900, protein: 50, cost_eur: null },      // sem custo: fora
+    { date: '2026-10-06', calories: 200, protein: 50, cost_eur: 1 },
+    { date: '2026-10-04', calories: 5000, protein: 500, cost_eur: 99 },      // dia que não conta: fora
+  ];
+  const r = plain(c.costEfficiency(E, days));
+  assert.equal(r.n_days, 2); assert.equal(r.cost, 4); assert.equal(r.kcal, 1000); assert.equal(r.protein, 100);
+  assert.equal(r.per1000kcal, 4);        // 4 € / 1000 kcal
+  assert.equal(r.per100gProtein, 4);     // 4 € / 100 g
+});
+
+test('costEfficiency: sem entradas elegíveis ou sem proteína = null (nunca 0 nem NaN)', () => {
+  const none = plain(c.costEfficiency([], new Set(['2026-10-05'])));
+  assert.deepEqual([none.n_days, none.per1000kcal, none.per100gProtein], [0, null, null]);
+  const noProt = plain(c.costEfficiency([{ date: 'd', calories: 100, protein: 0, cost_eur: 1 }], new Set(['d'])));
+  assert.equal(noProt.per1000kcal, 10); assert.equal(noProt.per100gProtein, null);
+  const notCounted = plain(c.costEfficiency([{ date: 'x', calories: 100, protein: 5, cost_eur: 1 }], new Set(['d'])));
+  assert.equal(notCounted.n_days, 0);
+});
+
 test('costSourceTag', () => {
   assert.equal(c.costSourceTag('override'), 'Promo');
   assert.equal(c.costSourceTag('manual'), 'manual');

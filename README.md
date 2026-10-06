@@ -55,6 +55,7 @@ A conta `round(gramas × price_eur / price_qty_g, 2)` vive só na BD (`food_cost
 - Alimentos: chips de ordenação €/100g, Kcal/€ e P/€ (g de proteína por €); alimentos sem preço ficam sempre no fim (`foodCostMetric` em `nutrition.js`).
 - Registo e edição de entrada: preço pontual (*Promo*) pré-preenchido; "Ver em Alimentos →" no sheet de edição (só entradas com alimento) abre o editor desse alimento; "Usar preço do alimento" limpa o override. Entrada rápida: campo de custo.
 - Diário: custo por entrada (— sem custo; só o preço Promo leva marca: fundo suave + ↓, texto em `PROMO_LABEL` no `nutrition.js`; *manual* com glifo ✎ antes do valor), subtotal por refeição, total do dia no cabeçalho, ao lado do dia da semana (abaixo de `cost_min_coverage` mostra o mínimo e a cobertura: "≥ 8,40 € · 72%"; acima, só o valor). Preços a dourado (`--price-gold`) no diário, Histórico e Estatísticas.
+- Estatísticas, aderência calórica: tocar num ponto abre um tooltip "dd/mm · N%" (toque noutro ponto troca; tocar fora, no mesmo ponto, Esc ou scroll fecha); o `title` fica para desktop. `adherenceDotText` e `tipLeft` em `nutrition.js`.
 - Estatísticas: custo por dia, semana e mês (médias só sobre os dias com cobertura suficiente, com "média sobre N dias"), maior gasto e €/1000 kcal e €/100g proteína por alimento. Vistas: `v_cost_day`, `v_cost_week`, `v_cost_month`, `v_food_cost_efficiency`, RPC `cost_top_foods`.
 
 ## Histórico

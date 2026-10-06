@@ -148,6 +148,8 @@ async function loadStats() {
     </div>`;
   container.appendChild(secStreak);
 
+  closeDotTip();
+
   // Aderência calórica
   const sec2 = document.createElement('div');
   sec2.className = 'stats-section';
@@ -168,18 +170,20 @@ async function loadStats() {
       pct   = diary.calories / target.calories * 100;
       color = getNutrientColor('calories', pct);
     }
-    const titleAttr = pct !== null ? `${label} · ${Math.round(pct)}%` : `${label} · sem dados`;
+    const titleAttr = adherenceDotText(label, pct);
+    // title para desktop (hover); data-tip + tabindex para o tooltip por toque.
+    const tipAttrs = `title="${titleAttr}" data-tip="${titleAttr}" role="button" tabindex="0" aria-label="${titleAttr}"`;
 
     if (statsPeriod === 7) {
       dots.push(`
         <div class="stats-dot-col">
-          <div class="stats-dot" style="background:${color}" title="${titleAttr}"></div>
+          <div class="stats-dot" style="background:${color}" ${tipAttrs}></div>
           <div class="stats-dot-label">${label}</div>
         </div>`);
     } else if (statsPeriod === 14) {
-      dots.push(`<div class="stats-dot" style="background:${color};width:calc(100%/7 - 4px);aspect-ratio:1;max-width:32px;flex-shrink:0" title="${titleAttr}"></div>`);
+      dots.push(`<div class="stats-dot" style="background:${color};width:calc(100%/7 - 4px);aspect-ratio:1;max-width:32px;flex-shrink:0" ${tipAttrs}></div>`);
     } else {
-      dots.push(`<div class="stats-dot" style="background:${color};aspect-ratio:1" title="${titleAttr}"></div>`);
+      dots.push(`<div class="stats-dot" style="background:${color};aspect-ratio:1" ${tipAttrs}></div>`);
     }
     iterDate.setDate(iterDate.getDate() + 1);
   }
@@ -241,3 +245,41 @@ function setStatsPeriod(n) {
     .forEach(c => c.classList.toggle('active', +c.dataset.p === n));
   loadStats();
 }
+
+// ── Tooltip por toque nos pontos de aderência ─────────────────────────────────
+// Um toque abre; outro ponto troca; mesmo ponto ou tocar fora fecha. Um só elemento,
+// com delegação no document (os pontos são recriados a cada render).
+let dotTipEl = null, dotTipFor = null;
+
+function closeDotTip() {
+  if (dotTipEl) { dotTipEl.remove(); dotTipEl = null; }
+  if (dotTipFor) { dotTipFor.classList.remove('tip-open'); dotTipFor = null; }
+}
+
+function openDotTip(dot) {
+  closeDotTip();
+  const tip = document.createElement('div');
+  tip.className = 'dot-tip';
+  tip.setAttribute('role', 'tooltip');
+  tip.textContent = dot.dataset.tip;
+  document.body.appendChild(tip);
+  const r = dot.getBoundingClientRect();
+  tip.style.left = tipLeft(r.left + r.width / 2, tip.offsetWidth, window.innerWidth, 8) + 'px';
+  // Por cima do ponto; se não houver espaço (cabeçalho fixo), por baixo.
+  const above = r.top - tip.offsetHeight - 8;
+  tip.style.top = (above >= 8 ? above : r.bottom + 8) + 'px';
+  dot.classList.add('tip-open');
+  dotTipEl = tip; dotTipFor = dot;
+}
+
+document.addEventListener('click', e => {
+  const dot = e.target.closest && e.target.closest('.stats-dot[data-tip]');
+  if (!dot || dot === dotTipFor) { closeDotTip(); return; }
+  openDotTip(dot);
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeDotTip(); return; }
+  const dot = e.target.closest && e.target.closest('.stats-dot[data-tip]');
+  if (dot && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); dot.click(); }
+});
+document.addEventListener('scroll', closeDotTip, true);

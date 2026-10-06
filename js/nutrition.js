@@ -52,6 +52,17 @@ function eurPer100g(priceEur, qtyG) {
   return p > 0 && q > 0 ? p / q * 100 : null;
 }
 
+// Aderência calórica (Estatísticas): texto do ponto de um dia ("05/10 · 94%").
+function adherenceDotText(label, pct) {
+  return pct !== null && pct !== undefined ? `${label} · ${Math.round(pct)}%` : `${label} · sem dados`;
+}
+
+// Tooltip centrado em centerX, encostado ao ecrã com margem; devolve o `left` em px.
+function tipLeft(centerX, tipWidth, viewportWidth, margin) {
+  const max = Math.max(margin, viewportWidth - tipWidth - margin);
+  return Math.min(Math.max(centerX - tipWidth / 2, margin), max);
+}
+
 // Pesquisa de alimentos. "," separa alternativas (ou); dentro de cada uma, "&" junta
 // condições (e) e "!" nega. Texto procura em nome e marca; `price` (ou preco/preço)
 // é "tem preço". Ex.: "continente&!price" = Continente sem preço.

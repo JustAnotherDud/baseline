@@ -124,6 +124,20 @@ test('dayCostHtml: só o valor acima do limiar; "≥ valor · N%" abaixo', () =>
   assert.ok(!/title=/.test(c.dayCostHtml({ total: 8.4, coverage: 0.72 }, 0.9)));
 });
 
+test('adherenceDotText: "dd/mm · N%" ou "sem dados"', () => {
+  assert.equal(c.adherenceDotText('05/10', 94.4), '05/10 · 94%');
+  assert.equal(c.adherenceDotText('05/10', 0), '05/10 · 0%');
+  assert.equal(c.adherenceDotText('05/10', null), '05/10 · sem dados');
+  assert.equal(c.adherenceDotText('05/10', undefined), '05/10 · sem dados');
+});
+
+test('tipLeft: centra no ponto e fica dentro do ecrã com margem', () => {
+  assert.equal(c.tipLeft(100, 80, 375, 8), 60);
+  assert.equal(c.tipLeft(10, 80, 375, 8), 8);
+  assert.equal(c.tipLeft(370, 80, 375, 8), 287);
+  assert.equal(c.tipLeft(50, 500, 375, 8), 8); // tooltip maior que o ecrã: nunca negativo
+});
+
 test('costSourceTag', () => {
   assert.equal(c.costSourceTag('override'), 'Promo');
   assert.equal(c.costSourceTag('manual'), 'manual');

@@ -82,13 +82,12 @@ function renderToday(entries, t) {
   // Custo: só a partir de cost_tracking_start (antes não há custo registado).
   const showCost = !!costConfig && currentDate >= costConfig.start;
   // Total do dia no cabeçalho, ao lado do dia da semana. Sem badge de cobertura:
-  // só se marca "≥" (total mínimo) quando abaixo de cost_min_coverage (o total está incompleto).
+  // só se marca "≥ … · N%" (total mínimo) quando abaixo de cost_min_coverage (o total está incompleto).
   const costEl = document.getElementById('tot-cost');
   if (costEl) {
     if (showCost && hasData) {
       const cs = costSummary(entries);
-      const ok = cs.coverage !== null && cs.coverage >= costConfig.minCoverage;
-      costEl.innerHTML = (ok ? '' : `<span class="cost-partial" title="Total incompleto: só ${Math.round((cs.coverage || 0) * 100)}% das kcal do dia têm custo">≥</span> `) + formatEur(cs.total);
+      costEl.innerHTML = dayCostHtml(cs, costConfig.minCoverage);
       costEl.style.display = '';
     } else {
       costEl.style.display = 'none';

@@ -54,9 +54,9 @@ test('priceHtml: formata em € dentro de .price', () => {
   assert.equal(c.priceHtml(null), '<span class="price">— €</span>'.replace('— €', '—'));
 });
 
-test('entryCostHtml: só override leva pill ↓; manual e default sem marca visível', () => {
-  assert.equal(c.entryCostHtml({ cost_eur: 0.45, cost_source: 'override' }), '<span class="price-promo" title="Promo">↓ 0,45 €</span>');
-  assert.equal(c.entryCostHtml({ cost_eur: 12.5, cost_source: 'manual' }), '<span title="manual">12,50 €</span>');
+test('entryCostHtml: override = pill ↓; manual = glifo ✎; default sem marca; nada em title', () => {
+  assert.equal(c.entryCostHtml({ cost_eur: 0.45, cost_source: 'override' }), '<span class="price-promo">↓ 0,45 €</span>');
+  assert.equal(c.entryCostHtml({ cost_eur: 0.45, cost_source: 'manual' }), '<span class="cost-glyph">✎</span>0,45 €');
   assert.equal(c.entryCostHtml({ cost_eur: 0.9, cost_source: 'default' }), '0,90 €');
   assert.equal(c.entryCostHtml({ cost_eur: null, cost_source: null }), '—');
 });
@@ -110,6 +110,18 @@ test('sortFoodsBy: chips de custo; sem preço sempre no fim', () => {
   assert.deepEqual(names('eur_100g', 'desc'), ['Caro', 'Barato', 'Denso', 'Sem']);
   assert.deepEqual(names('kcal_eur', 'desc'), ['Denso', 'Barato', 'Caro', 'Sem']);
   assert.deepEqual(names('prot_eur', 'desc'), ['Barato', 'Denso', 'Caro', 'Sem']);
+});
+
+test('dayCostHtml: só o valor acima do limiar; "≥ valor · N%" abaixo', () => {
+  assert.equal(c.dayCostHtml({ total: 11.97, coverage: 1 }, 0.9), '11,97 €');
+  assert.equal(c.dayCostHtml({ total: 11.97, coverage: 0.9 }, 0.9), '11,97 €'); // no limiar conta como ok
+  assert.equal(c.dayCostHtml({ total: 8.4, coverage: 0.72 }, 0.9),
+    '<span class="cost-glyph">≥</span>8,40 €<span class="cost-pct"> · 72%</span>');
+  assert.equal(c.dayCostHtml({ total: null, coverage: 0 }, 0.9),
+    '<span class="cost-glyph">≥</span>—<span class="cost-pct"> · 0%</span>');
+  assert.equal(c.dayCostHtml({ total: 5, coverage: null }, 0.9),
+    '<span class="cost-glyph">≥</span>5,00 €<span class="cost-pct"> · 0%</span>');
+  assert.ok(!/title=/.test(c.dayCostHtml({ total: 8.4, coverage: 0.72 }, 0.9)));
 });
 
 test('costSourceTag', () => {

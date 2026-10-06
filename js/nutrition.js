@@ -131,13 +131,22 @@ function costSourceTag(src) {
   return src === 'override' ? PROMO_LABEL : src === 'manual' ? 'manual' : '';
 }
 
-// Custo de uma entrada no diário. Só o preço Promo (override) leva marca: fundo
-// suave + ↓ (não depende só da cor). manual não tem marca; fica no title.
+// Custo de uma entrada no diário. Promo (override): pill suave + ↓. manual: glifo ✎ discreto
+// antes do valor. Nenhuma marca depende de title (não existe em mobile).
 function entryCostHtml(entry) {
   const eur = formatEur(entry.cost_eur);
-  if (entry.cost_source === 'override') return `<span class="price-promo" title="${PROMO_LABEL}">↓ ${eur}</span>`;
-  const tag = costSourceTag(entry.cost_source);
-  return tag ? `<span title="${tag}">${eur}</span>` : eur;
+  if (entry.cost_source === 'override') return `<span class="price-promo">↓ ${eur}</span>`;
+  if (entry.cost_source === 'manual') return `<span class="cost-glyph">✎</span>${eur}`;
+  return eur;
+}
+
+// Total do dia (cabeçalho do diário). Cobertura >= minCoverage: só o valor. Abaixo, o total é
+// um mínimo: "≥ 8,40 € · 72%" (% = kcal do dia com custo / kcal do dia).
+function dayCostHtml(summary, minCoverage) {
+  const eur = formatEur(summary.total);
+  const ok = summary.coverage !== null && summary.coverage >= minCoverage;
+  if (ok) return eur;
+  return `<span class="cost-glyph">≥</span>${eur}<span class="cost-pct"> · ${Math.round((summary.coverage || 0) * 100)}%</span>`;
 }
 
 // Preço em dourado (--price-gold): entradas, refeição, total do dia, Histórico, Estatísticas.

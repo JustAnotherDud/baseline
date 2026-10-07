@@ -85,3 +85,31 @@ test('db.js: populateMealSelect e moveEntryToMeal usam ids, não chaves de slot'
   s.populateMealSelect(sel, 'new', true);
   assert.match(opts[1], /^<option value="new">/);                  // aplicar modelo: "Nova" primeiro
 });
+
+test('mealHeaderHtml: sem seta nem lápis; só o "+"; nome escapado; hora e macros na 2.ª linha', () => {
+  const s = loadScript(['js/nutrition.js', 'js/ui.js', 'js/views/diary.js'], {
+    document: { documentElement: {}, getElementById: () => null, querySelectorAll: () => [] },
+    history: { pushState: () => {} },
+  });
+  const ts = s.hmToTimestamp('2026-10-08', '07:30');
+  const meal = { id: 1, name: '<b>Pós-treino</b>', no: 2, sort_at: ts };
+  const mes = [{ calories: 190, protein: 6.5, carbs: 30, fat: 3.5, cost_eur: 0.3 }, { calories: 90, protein: 4, carbs: 10, fat: 1, cost_eur: 0.2 }];
+  const h = s.mealHeaderHtml(meal, mes, true);
+  assert.ok(!/meal-collapse-btn|meal-edit-btn|\+ LOG|<svg/.test(h));
+  assert.equal((h.match(/<button/g) || []).length, 1);
+  assert.match(h, /<button type="button" class="meal-add" aria-label="Registar nesta refeição">\+<\/button>/);
+  assert.ok(!h.includes('<b>Pós') && h.includes('&lt;b&gt;'));                         // escHtml
+  assert.match(h, /meal-head-line">.*meal-name.*meal-figs.*meal-kcal-val">280<.*meal-cost-val[^>]*>0,50 €/s);   // nome, kcal e custo na linha 1
+  assert.match(h, /<div class="meal-macros">07:30 · F 5 · C 40 · P 11<\/div>/);          // hora e macros na linha 2
+  assert.ok(!/meal-cost-val/.test(s.mealHeaderHtml(meal, mes, false)));                // sem custo: sem preço
+});
+
+test('mealHeaderHtml: refeição vazia só tem nome, hora e "+"', () => {
+  const s = loadScript(['js/nutrition.js', 'js/ui.js', 'js/views/diary.js'], {
+    document: { documentElement: {}, getElementById: () => null, querySelectorAll: () => [] },
+    history: { pushState: () => {} },
+  });
+  const h = s.mealHeaderHtml({ id: 4, name: null, no: 5, sort_at: s.hmToTimestamp('2026-10-08', '21:10') }, [], true);
+  assert.ok(h.includes('Refeição 5') && !h.includes('meal-figs'));
+  assert.match(h, /<div class="meal-macros">21:10<\/div>/);
+});

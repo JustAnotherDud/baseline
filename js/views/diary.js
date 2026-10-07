@@ -9,6 +9,30 @@ const NUTRIENT_MAP = {
   fiber:    { key: 'fiber',    label: 'Fibra',     unit: 'g',    color: 'var(--accent)' },
 };
 
+// Cabeçalho de uma refeição. Linha 1: nome (quebra em vez de reticências), kcal e custo; linha 2: hora e
+// macros sem quebrar. Nenhum botão além do "+" (≥ 44 px): o resto do cabeçalho expande/encolhe.
+function mealHeaderHtml(meal, mes, showCost) {
+  const r = n => Math.round(n);
+  const sum = k => mes.reduce((s, e) => s + +e[k], 0);
+  const hm = fmtHM(meal.sort_at);
+  const figs = mes.length > 0
+    ? `<span class="meal-figs"><span class="meal-kcal-val">${r(sum('calories'))}</span>`
+      + (showCost ? `<span class="meal-cost-val price" title="Custo da refeição">${formatEur(costSummary(mes).total)}</span>` : '')
+      + '</span>'
+    : '';
+  const macros = mes.length > 0
+    ? `<div class="meal-macros">${hm ? hm + ' · ' : ''}F ${r(sum('fat'))} · C ${r(sum('carbs'))} · P ${r(sum('protein'))}</div>`
+    : (hm ? `<div class="meal-macros">${hm}</div>` : '');
+  return `
+      <div class="meal-header" role="button" tabindex="0">
+        <div class="meal-header-left">
+          <div class="meal-head-line"><span class="meal-name">${escHtml(mealLabel(meal))}</span>${figs}</div>
+          ${macros}
+        </div>
+        <button type="button" class="meal-add" aria-label="Registar nesta refeição">+</button>
+      </div>`;
+}
+
 function renderToday(entries, t) {
   diaryEntries = entries;
   const tot = {kcal:0, fat:0, carb:0, prot:0};
@@ -121,77 +145,53 @@ function renderToday(entries, t) {
   const openId = mealOpenDefault(visible, entries);
   visible.forEach(meal => {
     const mes = entries.filter(e => e.meal_id === meal.id);
-    const mkcal = mes.reduce((s,e)=>s+ +e.calories,0);
-    const mprot = mes.reduce((s,e)=>s+ +e.protein,0);
-    const mcarb = mes.reduce((s,e)=>s+ +e.carbs,0);
-    const mfat  = mes.reduce((s,e)=>s+ +e.fat,0);
     const div = document.createElement('div');
     div.className = 'meal-section';
-    const kcalInline = mes.length > 0
-      ? `<span class="meal-kcal-val">${r(mkcal)}</span>`
-        + (showCost ? `<span class="meal-cost-val price" title="Custo da refeição">${formatEur(costSummary(mes).total)}</span>` : '')
-      : '';
-    // A hora vai na 2.ª linha (com os macros) para não apertar o nome no cabeçalho.
-    const hm = fmtHM(meal.sort_at);
-    const macroStr = mes.length > 0
-      ? `<div class="meal-macros">${hm ? hm + ' · ' : ''}F ${r(mfat)} · C ${r(mcarb)} · P ${r(mprot)}</div>`
-      : (hm ? `<div class="meal-macros">${hm}</div>` : '');
     // Encolhida por defeito, menos a mais recente com entradas; os toques ficam em mealToggles (sessão).
     const hasEntries = mes.length > 0;
     const collapsed = hasEntries && isMealCollapsed(meal.id, openId, mealToggles);
-    // Chevron único (▼); roda para ▲ via CSS quando a refeição está aberta.
-    const chevronBtn = hasEntries
-      ? `<button class="meal-collapse-btn" aria-label="${collapsed ? 'Expandir' : 'Recolher'} refeição"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>`
-      : '';
     if (collapsed) div.classList.add('collapsed');
-    div.innerHTML = `
-      <div class="meal-header">
-        <div class="meal-header-left">
-          <div class="meal-head-line"><span class="meal-name">${escHtml(mealLabel(meal))}</span>${kcalInline}</div>
-          ${macroStr}
-        </div>
-        ${chevronBtn}
-        <button class="meal-edit-btn" aria-label="Editar refeição">✎</button>
-        <div class="meal-header-right">
-          <span class="meal-log-label">+ LOG</span>
-        </div>
-      </div>`;
-    const leftEl  = div.querySelector('.meal-header-left');
-    const rightEl = div.querySelector('.meal-header-right');
-    const collapseBtn = div.querySelector('.meal-collapse-btn');
+    div.innerHTML = mealHeaderHtml(meal, mes, showCost);
+    const headerEl = div.querySelector('.meal-header');
+    headerEl.setAttribute('aria-expanded', String(hasEntries && !collapsed));
     // Toggle anima via CSS (classe .collapsed) — sem re-render, sem perder o estado.
     const toggle = () => {
+      if (!hasEntries) return;
       const nc = !div.classList.contains('collapsed');
       mealToggles.set(meal.id, nc);
       div.classList.toggle('collapsed', nc);
-      if (collapseBtn) collapseBtn.setAttribute('aria-label', (nc ? 'Expandir' : 'Recolher') + ' refeição');
+      headerEl.setAttribute('aria-expanded', String(!nc));
     };
-    if (collapseBtn) collapseBtn.addEventListener('click', e => { e.stopPropagation(); toggle(); });
-    leftEl.addEventListener('click', e => {
-      e.stopPropagation();
-      if (hasEntries) toggle();
-      else openMealSheet(meal.id);
+    // Tocar em qualquer parte do cabeçalho (menos no "+") expande/encolhe.
+    headerEl.addEventListener('click', toggle);
+    headerEl.addEventListener('keydown', e => {
+      if (e.target === headerEl && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); toggle(); }
     });
-    div.querySelector('.meal-edit-btn').addEventListener('click', e => {
-      e.stopPropagation();
-      openMealSheet(meal.id);
-    });
-    rightEl.addEventListener('click', e => {
+    div.querySelector('.meal-add').addEventListener('click', e => {
       e.stopPropagation();
       openLogForMeal(meal.id);
     });
+
+    // Editar nome/hora: linha discreta dentro da refeição (no topo do bloco expandido).
+    const editRow = document.createElement('button');
+    editRow.type = 'button';
+    editRow.className = 'meal-edit-row';
+    editRow.textContent = '✎ nome e hora';
+    editRow.addEventListener('click', () => openMealSheet(meal.id));
 
     if (!hasEntries) {
       const noEntry = document.createElement('div');
       noEntry.className = 'no-entries';
       noEntry.textContent = 'Sem registos';
       div.appendChild(noEntry);
+      div.appendChild(editRow);
     } else {
       // Entradas sempre no DOM, dentro de um wrapper colapsável (grid-rows).
       const wrap = document.createElement('div');
       wrap.className = 'meal-entries';
       const inner = document.createElement('div');
       inner.className = 'meal-entries-inner';
+      inner.appendChild(editRow);
       mes.forEach(entry => {
         const entryEl = document.createElement('div');
         entryEl.className = 'diary-entry';
@@ -218,8 +218,8 @@ function renderToday(entries, t) {
   });
 
   const addBtn = document.createElement('button');
-  addBtn.className = 'btn btn-secondary meal-add-btn';
-  addBtn.textContent = '+ refeição';
+  addBtn.className = 'meal-add-btn';
+  addBtn.textContent = '+ Refeição';
   addBtn.addEventListener('click', () => openMealSheet(null));
   container.appendChild(addBtn);
 }

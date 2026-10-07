@@ -1,0 +1,225 @@
+{
+ "_doc": "Casos partilhados da pesquisa de alimentos. Fonte: baseline/tests/food-search-cases.json (copia em sync_hub/supabase/tests). JS (foodMatchesQuery) testa o conjunto; SQL (food_query_ok/foods_search) testa conjunto e ordem: nome antes de so-marca, entradas de diario nos ultimos 60 dias (uses = dias atras), nome. Nomes ASCII e sem empates ambiguos.",
+ "foods": [
+  {
+   "name": "Atum Natural",
+   "brand": "Continente",
+   "price_eur": 2,
+   "price_qty_g": 100,
+   "uses": [
+    1,
+    2,
+    3
+   ]
+  },
+  {
+   "name": "Aveia",
+   "brand": "Continente",
+   "price_eur": null,
+   "price_qty_g": null,
+   "uses": [
+    5
+   ]
+  },
+  {
+   "name": "Arroz",
+   "brand": "Pingo Doce",
+   "price_eur": 1,
+   "price_qty_g": 100,
+   "uses": []
+  },
+  {
+   "name": "Continente Light Iogurte",
+   "brand": null,
+   "price_eur": null,
+   "price_qty_g": null,
+   "uses": [
+    70
+   ]
+  },
+  {
+   "name": "Pao de Forma",
+   "brand": "Continente",
+   "price_eur": null,
+   "price_qty_g": null,
+   "uses": []
+  },
+  {
+   "name": "Gratis Maca",
+   "brand": null,
+   "price_eur": 0,
+   "price_qty_g": 100,
+   "uses": [
+    1
+   ]
+  },
+  {
+   "name": "Atum Light",
+   "brand": "Bom Petisco",
+   "price_eur": 3,
+   "price_qty_g": 100,
+   "uses": []
+  }
+ ],
+ "cases": [
+  {
+   "q": "",
+   "order": [
+    "Atum Natural",
+    "Aveia",
+    "Gratis Maca",
+    "Arroz",
+    "Atum Light",
+    "Continente Light Iogurte",
+    "Pao de Forma"
+   ]
+  },
+  {
+   "q": "  ,  ",
+   "order": [
+    "Atum Natural",
+    "Aveia",
+    "Gratis Maca",
+    "Arroz",
+    "Atum Light",
+    "Continente Light Iogurte",
+    "Pao de Forma"
+   ]
+  },
+  {
+   "q": "atum",
+   "order": [
+    "Atum Natural",
+    "Atum Light"
+   ]
+  },
+  {
+   "q": "ATUM",
+   "order": [
+    "Atum Natural",
+    "Atum Light"
+   ]
+  },
+  {
+   "q": "continente",
+   "order": [
+    "Continente Light Iogurte",
+    "Atum Natural",
+    "Aveia",
+    "Pao de Forma"
+   ]
+  },
+  {
+   "q": "continente&!price",
+   "order": [
+    "Continente Light Iogurte",
+    "Aveia",
+    "Pao de Forma"
+   ]
+  },
+  {
+   "q": "continente&price",
+   "order": [
+    "Atum Natural"
+   ]
+  },
+  {
+   "q": "!price",
+   "order": [
+    "Aveia",
+    "Continente Light Iogurte",
+    "Pao de Forma"
+   ]
+  },
+  {
+   "q": "price",
+   "order": [
+    "Atum Natural",
+    "Gratis Maca",
+    "Arroz",
+    "Atum Light"
+   ]
+  },
+  {
+   "q": "preco",
+   "order": [
+    "Atum Natural",
+    "Gratis Maca",
+    "Arroz",
+    "Atum Light"
+   ]
+  },
+  {
+   "q": "PREÇO",
+   "order": [
+    "Atum Natural",
+    "Gratis Maca",
+    "Arroz",
+    "Atum Light"
+   ]
+  },
+  {
+   "q": "atum, arroz",
+   "order": [
+    "Atum Natural",
+    "Arroz",
+    "Atum Light"
+   ]
+  },
+  {
+   "q": "continente&!atum",
+   "order": [
+    "Continente Light Iogurte",
+    "Aveia",
+    "Pao de Forma"
+   ]
+  },
+  {
+   "q": "continente & !light",
+   "order": [
+    "Atum Natural",
+    "Aveia",
+    "Pao de Forma"
+   ]
+  },
+  {
+   "q": "continente&!price, arroz",
+   "order": [
+    "Arroz",
+    "Continente Light Iogurte",
+    "Aveia",
+    "Pao de Forma"
+   ]
+  },
+  {
+   "q": "bom petisco",
+   "order": [
+    "Atum Light"
+   ]
+  },
+  {
+   "q": "!atum",
+   "order": [
+    "Aveia",
+    "Gratis Maca",
+    "Arroz",
+    "Continente Light Iogurte",
+    "Pao de Forma"
+   ]
+  },
+  {
+   "q": "gratis",
+   "order": [
+    "Gratis Maca"
+   ]
+  },
+  {
+   "q": "100%",
+   "order": []
+  },
+  {
+   "q": "_",
+   "order": []
+  }
+ ]
+}

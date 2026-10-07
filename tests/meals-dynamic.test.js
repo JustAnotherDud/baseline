@@ -99,9 +99,11 @@ test('mealHeaderHtml: sem seta nem lápis; só o "+"; nome escapado; hora e macr
   assert.equal((h.match(/<button/g) || []).length, 1);
   assert.match(h, /<button type="button" class="meal-add" aria-label="Registar nesta refeição">\+<\/button>/);
   assert.ok(!h.includes('<b>Pós') && h.includes('&lt;b&gt;'));                         // escHtml
-  assert.match(h, /meal-head-line">.*meal-name.*meal-figs.*meal-kcal-val">280<.*meal-cost-val[^>]*>0,50 €/s);   // nome, kcal e custo na linha 1
+  // nome e (por baixo) hora+macros à esquerda; coluna kcal/custo à direita, antes do "+"
+  assert.match(h, /meal-header-left">\s*<div class="meal-name">[^]*<div class="meal-macros">[^]*<\/div>\s*<\/div>\s*<div class="meal-figs"><span class="meal-kcal-val">280<\/span><span class="meal-cost-val[^>]*>0,50 €<\/span><\/div>\s*<button/);
   assert.match(h, /<div class="meal-macros">07:30 · F 5 · C 40 · P 11<\/div>/);          // hora e macros na linha 2
-  assert.ok(!/meal-cost-val/.test(s.mealHeaderHtml(meal, mes, false)));                // sem custo: sem preço
+  const noCost = s.mealHeaderHtml(meal, mes, false);
+  assert.ok(!/meal-cost-val/.test(noCost) && /meal-kcal-val">280</.test(noCost));      // sem custo: só kcal na coluna
 });
 
 test('mealHeaderHtml: refeição vazia só tem nome, hora e "+"', () => {
@@ -110,6 +112,6 @@ test('mealHeaderHtml: refeição vazia só tem nome, hora e "+"', () => {
     history: { pushState: () => {} },
   });
   const h = s.mealHeaderHtml({ id: 4, name: null, no: 5, sort_at: s.hmToTimestamp('2026-10-08', '21:10') }, [], true);
-  assert.ok(h.includes('Refeição 5') && !h.includes('meal-figs'));
+  assert.ok(h.includes('Refeição 5') && !h.includes('meal-figs') && !h.includes('meal-kcal-val'));   // coluna vazia, sem placeholders
   assert.match(h, /<div class="meal-macros">21:10<\/div>/);
 });

@@ -9,16 +9,18 @@ const NUTRIENT_MAP = {
   fiber:    { key: 'fiber',    label: 'Fibra',     unit: 'g',    color: 'var(--accent)' },
 };
 
-// Cabeçalho de uma refeição. Linha 1: nome (quebra em vez de reticências), kcal e custo; linha 2: hora e
-// macros sem quebrar. Nenhum botão além do "+" (≥ 44 px): o resto do cabeçalho expande/encolhe.
+// Cabeçalho de uma refeição. À esquerda: nome (quebra em vez de reticências) e, por baixo, hora e macros
+// sem quebrar. À direita, junto ao "+": coluna kcal (em cima) e custo (em baixo), alinhada à direita, com
+// algarismos tabulares; vazia numa refeição sem entradas. Nenhum botão além do "+" (≥ 44 px): o resto
+// do cabeçalho expande/encolhe.
 function mealHeaderHtml(meal, mes, showCost) {
   const r = n => Math.round(n);
   const sum = k => mes.reduce((s, e) => s + +e[k], 0);
   const hm = fmtHM(meal.sort_at);
   const figs = mes.length > 0
-    ? `<span class="meal-figs"><span class="meal-kcal-val">${r(sum('calories'))}</span>`
+    ? `<div class="meal-figs"><span class="meal-kcal-val">${r(sum('calories'))}</span>`
       + (showCost ? `<span class="meal-cost-val price" title="Custo da refeição">${formatEur(costSummary(mes).total)}</span>` : '')
-      + '</span>'
+      + '</div>'
     : '';
   const macros = mes.length > 0
     ? `<div class="meal-macros">${hm ? hm + ' · ' : ''}F ${r(sum('fat'))} · C ${r(sum('carbs'))} · P ${r(sum('protein'))}</div>`
@@ -26,9 +28,10 @@ function mealHeaderHtml(meal, mes, showCost) {
   return `
       <div class="meal-header" role="button" tabindex="0">
         <div class="meal-header-left">
-          <div class="meal-head-line"><span class="meal-name">${escHtml(mealLabel(meal))}</span>${figs}</div>
+          <div class="meal-name">${escHtml(mealLabel(meal))}</div>
           ${macros}
         </div>
+        ${figs}
         <button type="button" class="meal-add" aria-label="Registar nesta refeição">+</button>
       </div>`;
 }

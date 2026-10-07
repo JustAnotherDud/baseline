@@ -194,7 +194,7 @@ function renderToday(entries, t) {
           </div>
           <div class="entry-right">
             <div class="entry-kcal">${r(entry.calories)}</div>
-            ${showCost ? `<div class="entry-cost price">${entryCostHtml(entry)}</div>` : ''}
+            ${showCost ? `<div class="entry-cost price${entry.cost_eur != null && +entry.cost_eur === 0 ? ' free' : ''}">${entryCostHtml(entry)}</div>` : ''}
           </div>`;
         entryEl.querySelector('.entry-name').innerHTML = highlightFoodKeywords(entry.food_name);
         entryEl.addEventListener('click', () => openEditEntry(entry.id));

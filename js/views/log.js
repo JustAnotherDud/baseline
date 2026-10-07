@@ -30,7 +30,7 @@ async function searchDB() {
   const q = document.getElementById('log-q').value.trim().toLowerCase();
   const res = document.getElementById('log-results');
   if (q.length<1) { res.innerHTML='<div class="loading">Começa a escrever para pesquisar</div>'; return; }
-  const { data, error } = await db.from('foods').select('id,name,brand,calories_per_100g,protein_per_100g,carbs_per_100g,fat_per_100g,price_eur,price_qty_g').ilike('name',`%${q}%`).limit(25);
+  const { data, error } = await db.rpc('foods_search', { p_query: q, p_limit: 25 });
   if (error) {
     console.error('searchDB error:', error.message);
     res.innerHTML = '';
@@ -165,7 +165,7 @@ async function pickFood(id) {
   // Preço pontual pré-preenchido com o do alimento; só se grava se o mudares.
   document.getElementById('log-price-eur').value = data.price_eur ?? '';
   document.getElementById('log-price-qty').value = data.price_qty_g ?? '';
-  document.getElementById('log-price-hint').textContent = data.price_eur
+  document.getElementById('log-price-hint').textContent = data.price_eur != null
     ? `Preço do alimento${foodPriceLabel(data)}` : 'Alimento sem preço';
 
   const gi = document.getElementById('log-grams');

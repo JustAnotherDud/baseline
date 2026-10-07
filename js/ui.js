@@ -100,6 +100,18 @@ function closeLog() {
   if (infoEl) infoEl.textContent = '';
 }
 
+// Botão "Grátis": preço 0 (custo conhecido, não "sem preço"). O input dispara os
+// handlers de hint; gramas por defeito só se o campo estiver vazio.
+function setFree(priceId, qtyId) {
+  const p = document.getElementById(priceId);
+  p.value = 0;
+  if (qtyId) {
+    const q = document.getElementById(qtyId);
+    if (!(parseFloat(q.value) > 0)) q.value = 100;
+  }
+  p.dispatchEvent(new Event('input'));
+}
+
 function openAddFood() {
   pushSheetState();
   editingFoodId=null;
@@ -163,6 +175,7 @@ async function openEditEntry(id) {
         <label><span class="lt">Hidratos (g)</span><input type="number" id="eq-carbs" inputmode="decimal" placeholder="0"></label>
         <label><span class="lt">Gordura (g)</span><input type="number" id="eq-fat" inputmode="decimal" placeholder="0"></label>
         <label><span class="lt">Custo (€, opcional)</span><input type="number" id="eq-cost" inputmode="decimal" step="0.01" placeholder="—"></label>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="setFree('eq-cost')">Grátis (0 €)</button>
         <input type="hidden" id="eq-saturated_fat">
         <input type="hidden" id="eq-sugar">
         <input type="hidden" id="eq-fiber">`;
@@ -240,7 +253,7 @@ function onEditPriceInput() {
 // Volta ao default: ao guardar, limpa o override e recopia o preço actual do alimento.
 function resetEditPrice() {
   const fp = editingEntry && editingEntry._food_price;
-  if (!fp || !fp.price_eur) { toast('O alimento não tem preço'); return; }
+  if (!fp || fp.price_eur == null) { toast('O alimento não tem preço'); return; }
   editingEntry._resetPrice = true;
   document.getElementById('edit-price-eur').value = fp.price_eur;
   document.getElementById('edit-price-qty').value = fp.price_qty_g;

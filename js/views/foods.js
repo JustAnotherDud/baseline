@@ -87,7 +87,7 @@ function sortFoodsBy(foods, sort, dir) {
     return arr.sort((a, b) => {
       const x = foodCostMetric(a, sort), y = foodCostMetric(b, sort);
       if (x === null || y === null) return x === y ? a.name.localeCompare(b.name, 'pt') : x === null ? 1 : -1;
-      return mul * (x - y);
+      return x === y ? 0 : mul * (x - y);   // grátis: kcal/€ e P/€ são Infinity
     });
   }
   switch (sort) {
@@ -153,7 +153,7 @@ function renderFoods(foods) {
     let rightCol;
     if (COST_SORT_META[sort]) {
       const meta = COST_SORT_META[sort], v = foodCostMetric(f, sort);
-      const val = v === null ? '—' : (meta.dec ? v.toFixed(meta.dec).replace('.', ',') : Math.round(v));
+      const val = v === null ? '—' : foodCostMetric(f, 'eur_100g') === 0 ? 'grátis' : (meta.dec ? v.toFixed(meta.dec).replace('.', ',') : Math.round(v));
       rightCol = `<div class="fi-kcal" style="${v === null ? '' : HL}">${val}<br><span style="font-size:9px;color:var(--text3)">${meta.label}</span></div>`;
     } else if (RATIO_META[sort]) {
       const meta  = RATIO_META[sort];
@@ -221,7 +221,7 @@ function editFood(id) {
 // €/100g calculado do preço da embalagem (só para mostrar).
 function updateFoodPriceCalc() {
   const v = eurPer100g(document.getElementById('f-price-eur').value, document.getElementById('f-price-qty').value);
-  document.getElementById('f-price-calc').textContent = v === null ? '' : `= ${formatEur(v)} / 100g`;
+  document.getElementById('f-price-calc').textContent = v === null ? '' : `= ${formatEur(v, ' / 100g')}`;
 }
 
 let _savingFood = false;
@@ -235,9 +235,8 @@ async function saveFood() {
     const carb=parseFloat(document.getElementById('f-carb').value);
     const fat=parseFloat(document.getElementById('f-fat').value);
     if (!name||isNaN(kcal)||isNaN(prot)||isNaN(carb)||isNaN(fat)) { toast('Preenche os campos obrigatórios (*)'); return; }
-    const priceEur = parseFloat(document.getElementById('f-price-eur').value);
-    const priceQty = parseFloat(document.getElementById('f-price-qty').value);
-    if ((priceEur > 0) !== (priceQty > 0)) { toast('Preço e gramas da embalagem vêm juntos'); return; }
+    const price = foodPricePayload(document.getElementById('f-price-eur').value, document.getElementById('f-price-qty').value);
+    if (price.error) { toast(price.error); return; }
     const food={
       name, brand:document.getElementById('f-brand').value.trim()||null,
       serving_size_g:parseFloat(document.getElementById('f-serving').value)||null,
@@ -245,8 +244,7 @@ async function saveFood() {
       saturated_fat_per_100g:parseFloat(document.getElementById('f-satfat').value)||0,
       sugar_per_100g:parseFloat(document.getElementById('f-sugar').value)||0,
       fiber_per_100g:parseFloat(document.getElementById('f-fiber').value)||0,
-      price_eur: priceEur > 0 ? priceEur : null,
-      price_qty_g: priceQty > 0 ? priceQty : null
+      ...price
     };
     let error, data2;
     if (editingFoodId) {

@@ -40,11 +40,19 @@ Views: Diário, Comida, Forma e Mais (Manutenção, Histórico, Estatísticas, S
 ## Schema Supabase
 
 - `foods`: `name`, `brand`, `serving_size_g`, `calories_per_100g`, `protein_per_100g`, `carbs_per_100g`, `fat_per_100g`, `saturated_fat_per_100g`, `sugar_per_100g`, `fiber_per_100g`, `price_eur` e `price_qty_g` (preço da embalagem e gramas que cobre; os dois ou nenhum).
-- `diary`: uma linha por item. `date`, `meal` (chave de `MEALS`), `food_id` (null em entrada rápida), `food_name`, `grams` (null em entrada rápida), `calories`, `protein`, `carbs`, `fat`, `saturated_fat`, `sugar`, `fiber`, `has_tara`, `logged_at`. Os nutrientes são um snapshot do momento do registo. Custo: `price_eur`, `price_qty_g` (snapshot do preço usado), `cost_eur` e `cost_source` (`default` do food, `override` = preço pontual, etiqueta *Promo*, `manual`). Food sem preço: `cost_eur` NULL, nunca 0.
+- `diary`: uma linha por item. `date`, `meal` (chave de `MEALS`), `food_id` (null em entrada rápida), `food_name`, `grams` (null em entrada rápida), `calories`, `protein`, `carbs`, `fat`, `saturated_fat`, `sugar`, `fiber`, `has_tara`, `logged_at`. Os nutrientes são um snapshot do momento do registo. Custo: `price_eur`, `price_qty_g` (snapshot do preço usado), `cost_eur` e `cost_source` (`default` do food, `override` = preço pontual, etiqueta *Promo*, `manual`). Food sem preço: `cost_eur` NULL, nunca 0. Grátis é 0 explícito (`price_eur = 0` com gramas > 0, ou `cost_eur = 0` manual) e conta como custo conhecido. Entrada sem `food_id` é sempre `manual`: o trigger converte `default`/`override` em custo manual.
 - `daily_targets`: uma linha por `date`, escrita só pelo DCB (sync_hub). Nutrientes como em `diary`, mais `blocks_active` (jsonb: chaves `*_kcal` — `core_kcal`, `work_kcal`, `gym_kcal` — `activity_kcal_by_id`, `energy_diag`) e `updated_at`.
 - `meal_templates` (`name`) e `meal_template_items` (`template_id`, `food_id`, `food_name`, `grams` e nutrientes).
 - `app_config`: `cost_tracking_start` (dias antes não têm custo nem entram em agregados), `cost_min_coverage` (cobertura mínima para um dia entrar nas médias) e `maintenance_baseline_start` (2026-09-16: desde aí o target é manutenção pura e o delta é comparável).
 - `body_comp`: `date`, `weight_kg`, `body_fat_pct`, `muscle_mass_kg`, `bone_mass_kg`, `water_pct`. Preenchida pela sincronização do Garmin.
+
+## Pesquisa de alimentos
+
+Registo (PWA) e MCP `sync_hub_foods_search` chamam o RPC `foods_search(p_query, p_limit)`. Vírgula separa termos (OU); casa no nome ou na marca. Ordem: match no nome, depois só na marca; em cada grupo, entradas do diário com esse `food_id` nos últimos 60 dias (Europe/Lisbon), depois nome. Nunca consumidos ficam no fim do grupo. A página Alimentos filtra no cliente (nome ou marca, vírgula = OU) e ordena pelos chips.
+
+## Pesquisa de alimentos no registo
+
+O registo (PWA) e o MCP `sync_hub_foods_search` chamam o RPC `foods_search(p_query, p_limit)`, com a mesma gramática da página Alimentos (`,` ou, `&` e, `!` nega, `price`; nome e marca). Ordem: match no nome, depois só na marca; em cada grupo, entradas do diário com esse `food_id` nos últimos 60 dias (Europe/Lisbon), depois nome. Nunca consumidos ficam no fim do grupo. A gramática existe duas vezes (`foodMatchesQuery` em JS e `food_query_ok` em SQL): mexer num, mexer no outro. A página Alimentos filtra no cliente e ordena pelos chips.
 
 ## Custo (€)
 
@@ -53,7 +61,7 @@ A conta `round(gramas × price_eur / price_qty_g, 2)` vive só na BD (`food_cost
 - Alimento: preço da embalagem + gramas, com o €/100g calculado.
 - Alimentos, pesquisa: `,` = ou, `&` = e, `!` nega, `price` = tem preço (nome e marca para o resto). Ex.: `continente&!price` = Continente sem preço (`foodMatchesQuery` em `nutrition.js`). O contador mostra "N de M" com filtro activo. Título, separadores, pesquisa, chips e uma linha de ajuda (ordem activa + filtro em palavras) ficam pinados no topo; `describeFoodQuery` e `foodsHelpLines`.
 - Alimentos: chips de ordenação €/100g, Kcal/€ e P/€ (g de proteína por €); alimentos sem preço ficam sempre no fim (`foodCostMetric` em `nutrition.js`).
-- Registo e edição de entrada: preço pontual (*Promo*) pré-preenchido; "Ver em Alimentos →" no sheet de edição (só entradas com alimento) abre o editor desse alimento; "Usar preço do alimento" limpa o override. Entrada rápida: campo de custo.
+- Registo e edição de entrada: preço pontual (*Promo*) pré-preenchido; "Ver em Alimentos →" no sheet de edição (só entradas com alimento) abre o editor desse alimento; "Preço do alimento" limpa o override; "Grátis (0 €)" põe preço 0. Entrada rápida: campo de custo e "Grátis (0 €)". Formulário de alimento: "Grátis — vem sempre de casa" (preço 0, 100 g por defeito). Grátis mostra-se "grátis" (a verde no diário), nunca "0,00 €".
 - Diário: custo por entrada (— sem custo; só o preço Promo leva marca: fundo suave + ↓, texto em `PROMO_LABEL` no `nutrition.js`; *manual* com glifo ✎ antes do valor), subtotal por refeição, total do dia no cabeçalho, ao lado do dia da semana (abaixo de `cost_min_coverage` mostra o mínimo e a cobertura: "≥ 8,40 € · 72%"; acima, só o valor). Preços a dourado (`--price-gold`) no diário, Histórico e Estatísticas.
 - Estatísticas, aderência calórica: tocar num ponto abre um tooltip "dd/mm · N%" (toque noutro ponto troca; tocar fora, no mesmo ponto, Esc ou scroll fecha); o `title` fica para desktop. `adherenceDotText` e `tipLeft` em `nutrition.js`.
 - Estatísticas: custo por dia, semana e mês (médias só sobre os dias com cobertura suficiente, com "média sobre N dias"), maior gasto e custo efetivo do período (€ por 1000 kcal e € por 100 g de proteína, só sobre entradas com custo e só nos dias que contam nas médias; `costEfficiency` em `nutrition.js`, calculado no cliente). As Estatísticas são só de consumo: atributos dos alimentos (€/100g, kcal/€, P/€) ficam nos chips de Alimentos. Vistas: `v_cost_day`, `v_cost_week`, `v_cost_month`, RPC `cost_top_foods`.

@@ -14,7 +14,10 @@ test('formatEur: vírgula decimal, 2 casas; NULL é "—", nunca 0', () => {
   assert.equal(c.formatEur('2'), '2,00 €');
   assert.equal(c.formatEur(null), '—');
   assert.equal(c.formatEur(undefined), '—');
-  assert.equal(c.formatEur(0), '0,00 €');
+  assert.equal(c.formatEur(0), 'grátis');          // 0 = grátis, distinto de NULL
+  assert.equal(c.formatEur('0'), 'grátis');
+  assert.equal(c.formatEur(0.53, '/100g'), '0,53 €/100g');
+  assert.equal(c.formatEur(0, '/100g'), 'grátis');
 });
 
 test('eurPer100g: pack 3x125g a 2€ = 0,53 €/100g; sem preço válido é null', () => {
@@ -205,4 +208,56 @@ test('manualCostPatch: define, mantém, limpa, rejeita negativo', () => {
   assert.deepEqual(plain(c.manualCostPatch({}, '')), {});
   assert.deepEqual(plain(c.manualCostPatch({}, '0')), { cost_source: 'manual', cost_eur: 0 });
   assert.ok(c.manualCostPatch({}, '-1').error);
+});
+
+test('grátis: preço 0 é custo conhecido em €/100g, rótulo, soma e média', () => {
+  assert.equal(c.eurPer100g(0, 100), 0);
+  assert.equal(c.eurPer100g('', 100), null);
+  assert.equal(c.foodPriceLabel({ price_eur: 0, price_qty_g: 100 }), ' · grátis');
+  const s = c.costSummary([{ calories: 100, cost_eur: 0 }, { calories: 100, cost_eur: null }]);
+  assert.equal(s.total, 0);          // não null: há custo conhecido
+  assert.equal(s.coverage, 0.5);
+  assert.equal(c.costSummary([{ calories: 100, cost_eur: 0 }]).coverage, 1);
+  const a = c.costAverage([{ counts_in_avg: true, cost_eur: 0 }, { counts_in_avg: true, cost_eur: 4 }]);
+  assert.deepEqual(plain(a), { n: 2, avg: 2 });
+});
+
+test('grátis: payloads aceitam preço 0 (override), distinto de campo vazio', () => {
+  const food = { price_eur: 2, price_qty_g: 375 };
+  assert.deepEqual(plain(c.priceOverridePayload(food, '0', '375')), { price_eur: 0, price_qty_g: 375, cost_source: 'override' });
+  assert.deepEqual(plain(c.priceOverridePayload(food, '0', '')), { price_eur: 0, cost_source: 'override' });
+  assert.deepEqual(plain(c.priceOverridePayload({}, '', '')), {});
+  assert.ok(c.priceOverridePayload({}, '0', '').error);          // food sem gramas de preço
+  assert.deepEqual(plain(c.priceOverridePayload({ price_eur: 0, price_qty_g: 100 }, '0', '100')), {});   // igual ao default
+  const entry = { price_eur: 2, price_qty_g: 375 };
+  assert.deepEqual(plain(c.editPricePatch(entry, '0', '375', false)), { price_eur: 0, price_qty_g: 375, cost_source: 'override' });
+  assert.deepEqual(plain(c.editPricePatch({ price_eur: null, price_qty_g: null }, '', '', false)), {});
+});
+
+test('grátis: custo manual 0 grava-se; vazio limpa', () => {
+  assert.deepEqual(plain(c.manualCostPatch({}, '0')), { cost_source: 'manual', cost_eur: 0 });
+  assert.deepEqual(plain(c.manualCostPatch({ cost_eur: 0, cost_source: 'manual' }, '0')), {});
+  assert.deepEqual(plain(c.manualCostPatch({ cost_eur: 0, cost_source: 'manual' }, '')), { cost_source: null, cost_eur: null });
+  assert.deepEqual(plain(c.manualCostPatch({}, '')), {});
+});
+
+test('foodPricePayload: vazio = null, 0 = grátis (100 g por defeito), par obrigatório', () => {
+  assert.deepEqual(plain(c.foodPricePayload('', '')), { price_eur: null, price_qty_g: null });
+  assert.deepEqual(plain(c.foodPricePayload('0', '')), { price_eur: 0, price_qty_g: 100 });
+  assert.deepEqual(plain(c.foodPricePayload('0', '250')), { price_eur: 0, price_qty_g: 250 });
+  assert.deepEqual(plain(c.foodPricePayload('2', '375')), { price_eur: 2, price_qty_g: 375 });
+  assert.ok(c.foodPricePayload('2', '').error);
+  assert.ok(c.foodPricePayload('', '375').error);
+});
+
+test('grátis nos chips de custo: €/100g = 0, kcal/€ e P/€ = Infinity, ordenação estável', () => {
+  const s = loadScript(['js/nutrition.js', 'js/views/foods.js']);
+  const free = (name) => ({ name, price_eur: 0, price_qty_g: 100, calories_per_100g: 40, protein_per_100g: 2 });
+  const paid = { name: 'Pago', price_eur: 1, price_qty_g: 100, calories_per_100g: 100, protein_per_100g: 10 };
+  assert.equal(s.foodCostMetric(free('x'), 'eur_100g'), 0);
+  assert.equal(s.foodCostMetric(free('x'), 'kcal_eur'), Infinity);
+  const names = (sort, dir) => plain(s.sortFoodsBy([paid, free('B'), free('A')], sort, dir).map(f => f.name));
+  assert.deepEqual(names('eur_100g', 'asc'), ['B', 'A', 'Pago']);
+  assert.deepEqual(names('kcal_eur', 'desc'), ['B', 'A', 'Pago']);
+  assert.ok(c.foodMatchesQuery(free('x'), 'price'));          // grátis tem preço
 });

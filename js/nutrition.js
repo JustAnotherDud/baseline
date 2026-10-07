@@ -41,15 +41,17 @@ function macroFloorState(key, actual, floor) {
 // Aqui só se formata, se somam custos já calculados e se montam os payloads de
 // preço. A única conta feita aqui é o €/100g, para mostrar; nunca se grava.
 
-function formatEur(n) {
-  const v = parseFloat(n);
-  return isNaN(v) ? '—' : (Math.round(v * 100) / 100).toFixed(2).replace('.', ',') + ' €';
+// 0 é "grátis" (custo conhecido); NULL/vazio é "—" (sem preço). unit só se mostra com valor.
+function formatEur(n, unit = '') {
+  const v = Math.round(parseFloat(n) * 100) / 100;
+  if (isNaN(v)) return '—';
+  return v === 0 ? 'grátis' : v.toFixed(2).replace('.', ',') + ' €' + unit;
 }
 
-// €/100g de um preço de embalagem; null sem preço válido.
+// €/100g de um preço de embalagem; null sem preço válido. Preço 0 = grátis (0, não null).
 function eurPer100g(priceEur, qtyG) {
   const p = parseFloat(priceEur), q = parseFloat(qtyG);
-  return p > 0 && q > 0 ? p / q * 100 : null;
+  return p >= 0 && q > 0 ? p / q * 100 : null;
 }
 
 // Aderência calórica (Estatísticas): texto do ponto de um dia ("05/10 · 94%").
@@ -107,13 +109,13 @@ function foodCostMetric(food, key) {
   return null;
 }
 
-// " · 0,53 €/100g" para listas de alimentos; '' sem preço.
+// " · 0,53 €/100g" para listas de alimentos; " · grátis"; '' sem preço.
 function foodPriceLabel(food) {
   const v = eurPer100g(food.price_eur, food.price_qty_g);
-  return v === null ? '' : ` · ${formatEur(v)}/100g`;
+  return v === null ? '' : ` · ${formatEur(v, '/100g')}`;
 }
 
-// Custo de um conjunto de entradas: total (null se nenhuma tem custo, nunca 0)
+// Custo de um conjunto de entradas: total (null se nenhuma tem custo; 0 = tudo grátis)
 // e cobertura = kcal das entradas com custo / kcal totais (null sem kcal).
 function costSummary(entries) {
   let kcal = 0, kcalCosted = 0, total = 0, n = 0;
@@ -185,12 +187,13 @@ function priceHtml(n) {
 
 const PRICE_PAIR_ERROR = `Preço ${PROMO_LABEL}: indica o preço e as gramas que cobre`;
 
+// Preço 0 = grátis; só o campo vazio (NaN) é "sem preço". Gramas continuam > 0.
 // Preço pontual no registo (food = alimento escolhido). Igual ao default do
 // alimento não se envia: o trigger copia o preço actual do alimento.
 // Gramas omitidas com o alimento a ter preço: a BD usa as do alimento.
 function priceOverridePayload(food, priceStr, qtyStr) {
   const p = parseFloat(priceStr), q = parseFloat(qtyStr);
-  const hasP = p > 0, hasQ = q > 0;
+  const hasP = p >= 0, hasQ = q > 0;
   if (!hasP && !hasQ) return {};
   if (hasP && hasQ && p === +food.price_eur && q === +food.price_qty_g) return {};
   if (hasP && !hasQ && food.price_qty_g > 0) {
@@ -206,11 +209,22 @@ function priceOverridePayload(food, priceStr, qtyStr) {
 function editPricePatch(entry, priceStr, qtyStr, reset) {
   if (reset) return { cost_source: 'default', price_eur: null, price_qty_g: null };
   const p = parseFloat(priceStr), q = parseFloat(qtyStr);
-  const hasP = p > 0, hasQ = q > 0;
+  const hasP = p >= 0, hasQ = q > 0;
   if (!hasP && !hasQ) return {};
   if (hasP && hasQ && p === +entry.price_eur && q === +entry.price_qty_g) return {};
   if (hasP && hasQ) return { price_eur: p, price_qty_g: q, cost_source: 'override' };
   return { error: PRICE_PAIR_ERROR };
+}
+
+// Preço do alimento (formulário). Vazio = sem preço (null); 0 = grátis, com 100 g por
+// defeito se faltarem gramas; senão preço e gramas vêm juntos.
+function foodPricePayload(priceStr, qtyStr) {
+  const p = parseFloat(priceStr), q = parseFloat(qtyStr);
+  const hasP = p >= 0, hasQ = q > 0;
+  if (!hasP && !hasQ) return { price_eur: null, price_qty_g: null };
+  if (hasP && p === 0 && !hasQ) return { price_eur: 0, price_qty_g: 100 };
+  if (hasP !== hasQ) return { error: 'Preço e gramas da embalagem vêm juntos' };
+  return { price_eur: p, price_qty_g: q };
 }
 
 // Custo manual (entrada rápida). Campo vazio limpa um custo manual existente.

@@ -20,7 +20,6 @@ Tudo em `localStorage`, preenchido no ecrã de setup ou em Settings.
 | `icu_id`, `icu_key` | Athlete ID e API key do Intervals.icu (opcional) |
 | `hevy_key` | API key do Hevy (opcional) |
 | `icu_enabled`, `hevy_enabled` | `'false'` desliga a integração |
-| `meal_locks` | refeições recolhidas no diário |
 
 Login obrigatório (Supabase Auth, email e password, utilizador único, signups desligados). RLS restrito a `authenticated`: a publishable key sozinha não lê nada. A sessão fica em `localStorage` (supabase-js, refresh automático); sem sessão a app fica no ecrã de login. Logout em Settings.
 
@@ -28,10 +27,10 @@ Login obrigatório (Supabase Auth, email e password, utilizador único, signups 
 
 Ordem de carregamento em `index.html`: `config.js`, `nutrition.js`, `db.js`, `ui.js`, `views/*.js`, `app.js` (último, chama `init()`).
 
-- `js/config.js`: `localDate()`, `APP_VERSION` e `MEALS` (7 refeições).
+- `js/config.js`: `localDate()` e `APP_VERSION`.
 - `js/nutrition.js`: `getNutrientColor` (semáforo de aderência), `macroFloorState` e os helpers de custo (formatação, somas, payloads de preço).
 - `js/db.js`: queries do diário, scores do date picker e `loadCostConfig` (`app_config`).
-- `js/ui.js`: toast, sheets partilhados (edição, date picker, ranking, donut, mover refeição), `parseGramsExpr`.
+- `js/ui.js`: toast, sheets partilhados (edição, date picker, ranking, donut, mover entrada, sheet da refeição), `parseGramsExpr`.
 - `js/app.js`: `init` e login, router por hash (`go`), Settings, refresh automático.
 - `js/views/`: `diary`, `log` (sheet de registo), `foods`, `meals` (templates), `targets`, `stats`, `cost` (secção de custo das Estatísticas), `history` (Histórico), `body` (Forma).
 
@@ -40,8 +39,9 @@ Views: Diário, Comida, Forma e Mais (Manutenção, Histórico, Estatísticas, S
 ## Schema Supabase
 
 - `foods`: `name`, `brand`, `serving_size_g`, `calories_per_100g`, `protein_per_100g`, `carbs_per_100g`, `fat_per_100g`, `saturated_fat_per_100g`, `sugar_per_100g`, `fiber_per_100g`, `price_eur` e `price_qty_g` (preço da embalagem e gramas que cobre; os dois ou nenhum).
-- `diary`: uma linha por item. `date`, `meal` (chave de `MEALS`), `food_id` (null em entrada rápida), `food_name`, `grams` (null em entrada rápida), `calories`, `protein`, `carbs`, `fat`, `saturated_fat`, `sugar`, `fiber`, `has_tara`, `logged_at`. Os nutrientes são um snapshot do momento do registo. Custo: `price_eur`, `price_qty_g` (snapshot do preço usado), `cost_eur` e `cost_source` (`default` do food, `override` = preço pontual, etiqueta *Promo*, `manual`). Food sem preço: `cost_eur` NULL, nunca 0. Grátis é 0 explícito (`price_eur = 0` com gramas > 0, ou `cost_eur = 0` manual) e conta como custo conhecido. Entrada sem `food_id` é sempre `manual`: o trigger converte `default`/`override` em custo manual.
+- `diary`: uma linha por item. `date`, `meal_id` (refeição do dia, FK para `meals`; `meal` é o slot antigo, legado até à fase 4), `food_id` (null em entrada rápida), `food_name`, `grams` (null em entrada rápida), `calories`, `protein`, `carbs`, `fat`, `saturated_fat`, `sugar`, `fiber`, `has_tara`, `logged_at`. Os nutrientes são um snapshot do momento do registo. Custo: `price_eur`, `price_qty_g` (snapshot do preço usado), `cost_eur` e `cost_source` (`default` do food, `override` = preço pontual, etiqueta *Promo*, `manual`). Food sem preço: `cost_eur` NULL, nunca 0. Grátis é 0 explícito (`price_eur = 0` com gramas > 0, ou `cost_eur = 0` manual) e conta como custo conhecido. Entrada sem `food_id` é sempre `manual`: o trigger converte `default`/`override` em custo manual.
 - `daily_targets`: uma linha por `date`, escrita só pelo DCB (sync_hub). Nutrientes como em `diary`, mais `blocks_active` (jsonb: chaves `*_kcal` — `core_kcal`, `work_kcal`, `gym_kcal` — `activity_kcal_by_id`, `energy_diag`) e `updated_at`.
+- `meals`: uma linha por refeição e dia (`date`, `name` opcional, `started_at` editável, `legacy_key` do slot antigo). Sem limite de refeições por dia. Vista `v_meal_day`: `no` (número calculado pela hora, só para mostrar), `is_latest`, `sort_at` (`started_at`, senão 1.ª entrada, senão criação), totais. RPC `meal_new` (cria) e `meal_suggest` (regra das 2 h). Só se apaga uma refeição vazia (`ON DELETE RESTRICT`); o cron `meals-cleanup-empty` limpa vazias de dias anteriores.
 - `meal_templates` (`name`) e `meal_template_items` (`template_id`, `food_id`, `food_name`, `grams` e nutrientes).
 - `app_config`: `cost_tracking_start` (dias antes não têm custo nem entram em agregados), `cost_min_coverage` (cobertura mínima para um dia entrar nas médias) e `maintenance_baseline_start` (2026-09-16: desde aí o target é manutenção pura e o delta é comparável).
 - `body_comp`: `date`, `weight_kg`, `body_fat_pct`, `muscle_mass_kg`, `bone_mass_kg`, `water_pct`. Preenchida pela sincronização do Garmin.
@@ -49,6 +49,12 @@ Views: Diário, Comida, Forma e Mais (Manutenção, Histórico, Estatísticas, S
 ## Pesquisa de alimentos
 
 Registo (PWA) e MCP `sync_hub_foods_search` chamam o RPC `foods_search(p_query, p_limit)`. Vírgula separa termos (OU); casa no nome ou na marca. Ordem: match no nome, depois só na marca; em cada grupo, entradas do diário com esse `food_id` nos últimos 60 dias (Europe/Lisbon), depois nome. Nunca consumidos ficam no fim do grupo. A página Alimentos filtra no cliente (nome ou marca, vírgula = OU) e ordena pelos chips.
+
+## Refeições (diário)
+
+Refeições numeradas e dinâmicas: criadas a pedido ("+ refeição"), sem limite, ordenadas pela hora (`sort_at`), nome opcional (sem nome: "Refeição N"). O diário mostra só as que têm entradas, mais a vazia mais recente do dia (visível até haver outra mais recente ou o dia acabar). Encolhidas por defeito, menos a mais recente com entradas; tocar no cabeçalho expande ou encolhe (só da sessão, nada se guarda). ✎ abre o sheet da refeição: nome, hora (por defeito a da 1.ª entrada; corrige-se aqui, ex.: pré-registo à noite do que se bebe de manhã), "Ver detalhe" (donut) e "Remover" (só vazia).
+
+Registo sem escolha: o select do sheet vem pré-preenchido pelo RPC `meal_suggest` (a refeição mais recente se a última entrada foi há menos de `meal_join_window_minutes` = 120 min em `app_config`, senão "+ Nova refeição") e é editável. "Nova" cria a refeição ao gravar e os registos seguintes vão para ela. Aplicar um modelo cria por defeito uma refeição nova com o nome do modelo (dá para escolher uma existente). O separador Comida → Modelos são os `meal_templates`.
 
 ## Pesquisa de alimentos no registo
 

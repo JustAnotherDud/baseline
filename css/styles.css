@@ -233,6 +233,9 @@ body {
 .meal-head-line { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; overflow: hidden; }
 .meal-name { font-size: 12px; font-family: var(--mono); color: var(--text); font-weight: 500; text-transform: uppercase; letter-spacing: .04em; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .meal-kcal-val { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent); flex-shrink: 0; }
+.meal-edit-btn { position: relative; flex-shrink: 0; align-self: center; width: 28px; height: 28px; padding: 0; margin: 0 6px 0 0; background: none; border: none; color: var(--text3); font-size: 15px; cursor: pointer; }
+.meal-edit-btn::before { content: ''; position: absolute; inset: -8px; }
+.meal-add-btn { display: block; box-sizing: border-box; width: calc(100% - 24px); margin: 8px 12px 16px; min-height: 44px; }
 .meal-macros { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-top: 3px; }
 
 /* ── MEAL BREAKDOWN SHEET ── */

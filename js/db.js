@@ -1,4 +1,5 @@
 let loadTodayGen = 0;
+let currentMeals = [];   // v_meal_day do dia em vista (ordem do dia; `no` só para mostrar)
 
 // app_config: cost_tracking_start e cost_min_coverage. null até carregar: a UI
 // de custo fica escondida. 0.9 só se a chave faltar na BD.
@@ -25,13 +26,43 @@ async function getTargetsForDate(dateStr) {
 async function loadToday() {
   if (!db) return;
   const gen = ++loadTodayGen;
-  const { data, error } = await db.from('diary').select('*').eq('date', currentDate).order('logged_at');
+  const [{ data, error }, meals] = await Promise.all([
+    db.from('diary').select('*').eq('date', currentDate).order('logged_at'),
+    fetchMeals(currentDate),
+  ]);
   if (error) { toast('Erro ao carregar diário'); return; }
   await loadCostConfig();
   const targets = await getTargetsForDate(currentDate)
     || { calories: 0, fat: 0, saturated_fat: 0, carbs: 0, sugar: 0, fiber: 0, protein: 0 };
   if (gen !== loadTodayGen) return;
+  currentMeals = meals || [];
   renderToday(data || [], targets);
+}
+
+async function fetchMeals(dateStr) {
+  if (!db) return null;
+  const { data, error } = await db.from('v_meal_day').select('*').eq('date', dateStr).order('no');
+  return error ? null : data;
+}
+
+// Cria uma refeição vazia (RPC meal_new); devolve o id, ou null em erro.
+async function createMeal(dateStr, name = null, startedAt = null) {
+  const { data, error } = await db.rpc('meal_new', { p_date: dateStr, p_name: name, p_started_at: startedAt });
+  if (error || data == null) { toast('Erro ao criar refeição'); return null; }
+  return data;
+}
+
+// Refeição onde gravar: a escolhida, ou uma nova ('new'). Depois de criada fica escolhida:
+// os registos seguintes vão para ela.
+async function resolveMealId() {
+  if (selectedMealId !== 'new') return selectedMealId;
+  const id = await createMeal(currentDate);
+  if (id == null) return null;
+  selectedMealId = id;
+  mealManuallySelected = true;
+  currentMeals = (await fetchMeals(currentDate)) || currentMeals;
+  populateMealSelect(document.getElementById('sheet-meal-select'), id);
+  return id;
 }
 
 async function saveDiary(extra = {}) {
@@ -42,8 +73,10 @@ async function saveDiary(extra = {}) {
   const price = priceOverridePayload(selectedFood,
     document.getElementById('log-price-eur').value, document.getElementById('log-price-qty').value);
   if (price.error) { toast(price.error); return false; }
+  const mealId = await resolveMealId();
+  if (mealId == null) return false;
   const { error } = await db.from('diary').insert({
-    date:currentDate, meal:selectedMeal,
+    date:currentDate, meal_id:mealId,
     food_id:selectedFood.id, food_name:selectedFood.name,
     grams:g,
     ...mapNutrients(k => c(selectedFood[k + '_per_100g'])),
@@ -162,11 +195,11 @@ async function getDayScores(year, month) {
   }
 }
 
-async function moveEntryToMeal(entryId, newMeal) {
+async function moveEntryToMeal(entryId, newMealId) {
   if (!db) return false;
   const { error } = await db
     .from('diary')
-    .update({ meal: newMeal })
+    .update({ meal_id: newMealId })
     .eq('id', entryId);
   if (error) { toast('Erro ao mover entrada'); return false; }
   return true;

@@ -37,9 +37,13 @@ function fakeDocument() {
 }
 
 // Supabase falso: regista cada query; responses[table](q) dá a resposta.
-function fakeDb(responses = {}) {
+function fakeDb(responses = {}, rpcs = {}) {
   const calls = [];
   const db = {
+    rpc(name, args) {
+      calls.push({ rpc: name, args });
+      return Promise.resolve(rpcs[name]?.(args) ?? { data: null, error: null });
+    },
     from(table) {
       const q = { table, op: 'select', payload: null, eq: [] };
       calls.push(q);
@@ -63,11 +67,13 @@ function load(files, extra = {}) {
   const toasts = [];
   const ctx = loadScript(files, {
     document, setTimeout: () => {},
-    currentDate: '2026-09-25', selectedMeal: 'lunch', ...extra,
+    currentDate: '2026-09-25', selectedMealId: 42, ...extra,
   });
   // Recargas e navegação ficam fora do teste.
   ctx.toast = m => toasts.push(m);
   for (const f of ['loadToday', 'loadMeals', 'closeEditEntry', 'closeMealCreate', 'pushSheetState', 'go']) ctx[f] = () => {};
+  // refeição 42 existe: nenhum teste cria refeições (RPC meal_new) a não ser que o diga
+  try { vm.runInContext("currentMeals = [{ id: 42, name: 'Almoço', no: 1, sort_at: null, n_entries: 1, is_latest: true }]", ctx); } catch {}
   return { ctx, document, toasts };
 }
 
@@ -84,7 +90,7 @@ test('1. saveDiary: nutrientes por 100g × gramas, 1 decimal', async () => {
   assert.deepEqual(plain(calls[0]), {
     table: 'diary', op: 'insert', eq: [],
     payload: {
-      date: '2026-09-25', meal: 'lunch', food_id: 3, food_name: 'Arroz', grams: 150,
+      date: '2026-09-25', meal_id: 42, food_id: 3, food_name: 'Arroz', grams: 150,
       calories: 195, protein: 4.1, carbs: 42.3, fat: 0.5, saturated_fat: 0.2, sugar: 0, fiber: 0.6,
       has_tara: true,
     },
@@ -117,16 +123,16 @@ test('3. saveEditEntry (com gramas): escala o snapshot pelo factor, 1 decimal', 
   });
 });
 
-test('4. donut "Guardar como refeição": prefill com snapshot e por-100g reconstruído', () => {
+test('4. donut "Guardar como modelo": prefill com snapshot e por-100g reconstruído', () => {
   const created = [];
-  const { ctx, document, toasts } = load(['js/ui.js'], { openCreateMeal: (name, items) => created.push([name, items]) });
+  const { ctx, document, toasts } = load(['js/nutrition.js', 'js/ui.js'], { openCreateMeal: (name, items) => created.push([name, items]) });
   const entries = [
-    { id: 1, meal: 'lunch', food_id: 3, food_name: 'Arroz', grams: 200, calories: 260, protein: 5.4, carbs: 56.4, fat: 0.6, saturated_fat: null, sugar: 0, fiber: 0.8 },
-    { id: 2, meal: 'lunch', food_id: null, food_name: 'Molho', grams: 50, calories: 40, protein: 1, carbs: 2, fat: 3, saturated_fat: 1, sugar: 1, fiber: 0 },
-    { id: 3, meal: 'lunch', food_id: null, food_name: 'Rápida', grams: null, calories: 100, protein: 1, carbs: 1, fat: 1 },
-    { id: 4, meal: 'dinner', food_id: 5, food_name: 'Outra', grams: 100, calories: 1, protein: 1, carbs: 1, fat: 1 },
+    { id: 1, meal_id: 42, food_id: 3, food_name: 'Arroz', grams: 200, calories: 260, protein: 5.4, carbs: 56.4, fat: 0.6, saturated_fat: null, sugar: 0, fiber: 0.8 },
+    { id: 2, meal_id: 42, food_id: null, food_name: 'Molho', grams: 50, calories: 40, protein: 1, carbs: 2, fat: 3, saturated_fat: 1, sugar: 1, fiber: 0 },
+    { id: 3, meal_id: 42, food_id: null, food_name: 'Rápida', grams: null, calories: 100, protein: 1, carbs: 1, fat: 1 },
+    { id: 4, meal_id: 43, food_id: 5, food_name: 'Outra', grams: 100, calories: 1, protein: 1, carbs: 1, fat: 1 },
   ];
-  ctx.openMealBreakdown('lunch', entries);
+  ctx.openMealBreakdown(42, entries);
   document.getElementById('meal-bd-save-btn').onclick();
   assert.deepEqual(toasts, ['1 entrada rápida não incluída']);
   assert.equal(created[0][0], 'Almoço');
@@ -181,7 +187,7 @@ test('6. saveMeal: grava só itens com alimento e gramas, com os 7 nutrientes', 
 test('7. applyMealToDiary: copia os itens do template para o diário', async () => {
   const { db, calls } = fakeDb();
   const { ctx, document } = load(['js/views/meals.js'], { db });
-  document.getElementById('apply-meal-select').value = 'dinner';
+  document.getElementById('apply-meal-select').value = '43';
   vm.runInContext(`_applyMealItems = [
     { food_id: 3, food_name: 'Arroz', grams: '150', calories: '195', protein: 4.05, carbs: 42.3, fat: 0.45, saturated_fat: null, sugar: 0, fiber: 0.6 },
     { food_id: null, food_name: 'Molho', grams: 50, calories: 40, protein: 1, carbs: 2, fat: 3 },
@@ -190,13 +196,35 @@ test('7. applyMealToDiary: copia os itens do template para o diário', async () 
   assert.deepEqual(plain(calls[0]), {
     table: 'diary', op: 'insert', eq: [],
     payload: [
-      { date: '2026-09-25', meal: 'dinner', food_id: 3, food_name: 'Arroz', grams: 150,
+      { date: '2026-09-25', meal_id: 43, food_id: 3, food_name: 'Arroz', grams: 150,
         calories: 195, protein: 4.05, carbs: 42.3, fat: 0.45, saturated_fat: 0, sugar: 0, fiber: 0.6 },
-      { date: '2026-09-25', meal: 'dinner', food_id: null, food_name: 'Molho', grams: 50,
+      { date: '2026-09-25', meal_id: 43, food_id: null, food_name: 'Molho', grams: 50,
         calories: 40, protein: 1, carbs: 2, fat: 3, saturated_fat: 0, sugar: 0, fiber: 0 },
     ],
   });
-  assert.equal(ctx.selectedMeal, 'dinner');
+  assert.equal(ctx.selectedMealId, 43);
+});
+
+test('7b. applyMealToDiary: "Nova refeição" (por defeito) cria a refeição com o nome do modelo', async () => {
+  const { db, calls } = fakeDb();
+  const made = [];
+  const { ctx, document } = load(['js/views/meals.js'], { db, createMeal: async (date, name) => { made.push([date, name]); return 77; } });
+  document.getElementById('apply-meal-select').value = 'new';
+  vm.runInContext(`_applyMealName = 'Shake pós-treino'; _applyMealItems = [
+    { food_id: 3, food_name: 'Arroz', grams: 150, calories: 195, protein: 4, carbs: 42, fat: 0.5 }]`, ctx);
+  await ctx.applyMealToDiary();
+  assert.deepEqual(made, [['2026-09-25', 'Shake pós-treino']]);
+  assert.equal(plain(calls[0].payload)[0].meal_id, 77);
+  assert.equal(ctx.selectedMealId, 77);
+});
+
+test('7c. applyMealToDiary: falha a criar a refeição = nada se grava', async () => {
+  const { db, calls } = fakeDb();
+  const { ctx, document } = load(['js/views/meals.js'], { db, createMeal: async () => null });
+  document.getElementById('apply-meal-select').value = 'new';
+  vm.runInContext(`_applyMealItems = [{ food_id: 3, food_name: 'Arroz', grams: 150, calories: 195, protein: 4, carbs: 42, fat: 0.5 }]`, ctx);
+  await ctx.applyMealToDiary();
+  assert.equal(calls.length, 0);
 });
 
 test('8. mcAddItem: item novo com os 7 nutrientes a zero', () => {
@@ -320,7 +348,7 @@ test('13. saveEditEntry (entrada rápida): custo manual; campo vazio limpa', asy
 test('14. saveQuick: custo opcional vira manual; sem custo não envia nada', async () => {
   const run = async cost => {
     const { db, calls } = fakeDb();
-    const { ctx, document } = load(['js/nutrition.js', 'js/views/log.js'], { db });
+    const { ctx, document } = load(['js/nutrition.js', 'js/views/log.js'], { db, resolveMealId: async () => 42 });
     ctx.closeLog = () => {};
     document.getElementById('q-name').value = 'Jantar fora';
     document.getElementById('q-cost').value = cost;
@@ -366,4 +394,97 @@ test('17. loadCostConfig: sem config fica null (UI de custo escondida)', async (
   const { ctx } = load(NUTRI, { db });
   await ctx.loadCostConfig();
   assert.equal(vm.runInContext('costConfig', ctx), null);
+});
+
+
+// ── Refeições dinâmicas ──────────────────────────────────────────────────────
+const MEAL_FILES = ['js/nutrition.js', 'js/ui.js', 'js/db.js'];
+
+test('16. saveDiary em "Nova refeição": cria a refeição (meal_new) e grava nela; as seguintes vão para ela', async () => {
+  const { db, calls } = fakeDb({}, { meal_new: () => ({ data: 99, error: null }) });
+  const { ctx, document } = load(MEAL_FILES, { db, selectedFood: ARROZ, selectedMealId: 'new' });
+  document.getElementById('log-grams').value = '100';
+  assert.equal(await ctx.saveDiary({}), true);
+  const rpc = plain(calls.find(c => c.rpc));
+  assert.deepEqual(rpc, { rpc: 'meal_new', args: { p_date: '2026-09-25', p_name: null, p_started_at: null } });
+  assert.equal(plain(calls.find(c => c.op === 'insert').payload).meal_id, 99);
+  assert.equal(ctx.selectedMealId, 99);
+  assert.equal(await ctx.saveDiary({}), true);                       // 2.º registo: sem 2.ª refeição
+  assert.equal(calls.filter(c => c.rpc === 'meal_new').length, 1);
+  assert.equal(plain(calls.filter(c => c.op === 'insert')[1].payload).meal_id, 99);
+});
+
+test('17. saveDiary: refeição nova que falha = nada se grava', async () => {
+  const { db, calls } = fakeDb({}, { meal_new: () => ({ data: null, error: { message: 'x' } }) });
+  const { ctx, document, toasts } = load(MEAL_FILES, { db, selectedFood: ARROZ, selectedMealId: 'new' });
+  document.getElementById('log-grams').value = '100';
+  assert.equal(await ctx.saveDiary({}), false);
+  assert.equal(calls.filter(c => c.op === 'insert').length, 0);
+  assert.deepEqual(toasts, ['Erro ao criar refeição']);
+});
+
+test('18. saveDiary: validações antes de criar a refeição (gramas inválidas não deixam refeição vazia)', async () => {
+  const { db, calls } = fakeDb();
+  const { ctx, document } = load(MEAL_FILES, { db, selectedFood: ARROZ, selectedMealId: 'new' });
+  document.getElementById('log-grams').value = '';
+  assert.equal(await ctx.saveDiary({}), false);
+  assert.equal(calls.length, 0);
+});
+
+test('19. sheet da refeição: criar usa meal_new com nome e hora; fora de hoje a hora é obrigatória', async () => {
+  const { db, calls } = fakeDb({}, { meal_new: () => ({ data: 5, error: null }) });
+  const { ctx, document, toasts } = load(MEAL_FILES, { db });
+  document.getElementById('meal-edit-name').value = '  Pré-treino ';
+  document.getElementById('meal-edit-time').value = '';
+  await ctx.saveMealSheet(null);                                      // 2026-09-25 não é hoje, sem hora
+  assert.deepEqual(toasts, ['Indica a hora da refeição']);
+  assert.equal(calls.filter(c => c.rpc).length, 0);
+  document.getElementById('meal-edit-time').value = '07:30';
+  await ctx.saveMealSheet(null);
+  const rpc = plain(calls.find(c => c.rpc)).args;
+  assert.equal(rpc.p_date, '2026-09-25'); assert.equal(rpc.p_name, 'Pré-treino');
+  assert.equal(ctx.fmtHM(rpc.p_started_at), '07:30');
+  assert.equal(ctx.selectedMealId, 5);
+});
+
+test('20. sheet da refeição: editar só envia started_at se a hora mudou; nome vazio = null', async () => {
+  const { db, calls } = fakeDb();
+  const { ctx, document } = load(MEAL_FILES, { db });
+  const ts = new Date(2026, 8, 25, 12, 40).toISOString();
+  vm.runInContext(`currentMeals = [{ id: 42, name: 'Almoço', no: 1, date: '2026-09-25', sort_at: ${JSON.stringify(ts)}, started_at: null, n_entries: 2, is_latest: true }]`, ctx);
+  document.getElementById('meal-edit-name').value = '';
+  document.getElementById('meal-edit-time').value = '12:40';          // igual: não mexe na hora
+  await ctx.saveMealSheet(42);
+  assert.deepEqual(plain(calls[0]), { table: 'meals', op: 'update', payload: { name: null }, eq: [['id', 42]] });
+  document.getElementById('meal-edit-name').value = 'Almoço tardio';
+  document.getElementById('meal-edit-time').value = '14:15';
+  await ctx.saveMealSheet(42);
+  const p = plain(calls[1].payload);
+  assert.equal(p.name, 'Almoço tardio'); assert.equal(ctx.fmtHM(p.started_at), '14:15');
+});
+
+test('21. remover refeição: a BD recusa se tem entradas (ON DELETE RESTRICT) e a PWA avisa', async () => {
+  const { db, calls } = fakeDb({ meals: () => ({ data: null, error: { code: '23503' } }) });
+  const { ctx, toasts } = load(MEAL_FILES, { db });
+  await ctx.deleteEmptyMeal(42);
+  assert.deepEqual(plain(calls[0]), { table: 'meals', op: 'delete', payload: null, eq: [['id', 42]] });
+  assert.deepEqual(toasts, ['Só se remove uma refeição vazia']);
+});
+
+test('22. mover entrada: grava meal_id', async () => {
+  const { db, calls } = fakeDb({}, { meal_new: () => ({ data: 8, error: null }) });
+  const { ctx } = load(MEAL_FILES, { db });
+  assert.equal(await ctx.moveEntryToMeal(5, 43), true);
+  assert.deepEqual(plain(calls[0]), { table: 'diary', op: 'update', payload: { meal_id: 43 }, eq: [['id', 5]] });
+});
+
+test('23. presetMealSelection: sem refeições = "Nova"; a regra das 2 h (meal_suggest) decide o resto', async () => {
+  const { db } = fakeDb({}, { meal_suggest: () => ({ data: 42, error: null }) });
+  const { ctx } = load(['js/nutrition.js', 'js/ui.js', 'js/views/log.js'], { db, mealManuallySelected: false });
+  await ctx.presetMealSelection();
+  assert.equal(ctx.selectedMealId, 42);                               // sugestão da BD
+  const { db: db2 } = fakeDb({}, { meal_suggest: () => ({ data: null, error: null }) });
+  const b = load(['js/nutrition.js', 'js/ui.js', 'js/views/log.js'], { db: db2, mealManuallySelected: false });
+  await b.ctx.presetMealSelection();
+  assert.equal(b.ctx.selectedMealId, 'new');                          // última entrada há > 2 h: refeição nova
 });

@@ -7,9 +7,9 @@ async function loadMeals() {
   if (!db || !el) return;
 
   const { templates, countMap, error } = await fetchMealTemplates();
-  if (error) { el.innerHTML = '<div class="loading">Erro ao carregar refeições</div>'; return; }
+  if (error) { el.innerHTML = '<div class="loading">Erro ao carregar modelos</div>'; return; }
   if (!templates.length) {
-    el.innerHTML = '<div class="empty-meals">Sem refeições guardadas. Cria a primeira abaixo.</div>';
+    el.innerHTML = '<div class="empty-meals">Sem modelos guardados. Cria o primeiro abaixo.</div>';
     return;
   }
 
@@ -21,10 +21,10 @@ async function loadMeals() {
 }
 
 async function deleteMeal(id) {
-  if (!confirm('Eliminar esta refeição?')) return;
+  if (!confirm('Eliminar este modelo?')) return;
   const { error } = await db.from('meal_templates').delete().eq('id', id);
   if (error) { toast('Erro ao eliminar'); return; }
-  toast('Refeição eliminada');
+  toast('Modelo eliminado');
   loadMeals();
 }
 
@@ -35,11 +35,11 @@ function openCreateMeal(prefillName, prefillItems) {
   const overlay = ensureSheet('meal-create-overlay', {
     zIndex: 250,
     sheetStyle: 'max-height:90dvh;overflow-y:auto',
-    header: `<div class="sheet-title">Nova refeição</div>`,
+    header: `<div class="sheet-title">Novo modelo</div>`,
     body: `
     <div class="form-body">
       <label>
-        <span class="lt">Nome da refeição *</span>
+        <span class="lt">Nome do modelo *</span>
         <input type="text" id="mc-name" placeholder="ex: Pequeno-almoço habitual" autocomplete="off">
       </label>
       <div class="divider"></div>
@@ -47,11 +47,11 @@ function openCreateMeal(prefillName, prefillItems) {
       <div id="mc-items"></div>
       <button class="btn btn-secondary" style="margin-top:4px" onclick="mcAddItem()">+ Adicionar alimento</button>
       <div class="divider"></div>
-      <button class="btn btn-primary" onclick="saveMeal()">Guardar refeição</button>
+      <button class="btn btn-primary" onclick="saveMeal()">Guardar modelo</button>
     </div>`,
   });
 
-  // Prefill vem do "Guardar como refeição" do donut.
+  // Prefill vem do "Guardar como modelo" do donut.
   document.getElementById('mc-name').value = prefillName || '';
 
   if (prefillItems && prefillItems.length) {
@@ -182,7 +182,7 @@ async function saveMeal() {
   _savingMeal = true;
   try {
     const name = (document.getElementById('mc-name').value || '').trim();
-    if (!name) { toast('Dá um nome à refeição'); return; }
+    if (!name) { toast('Dá um nome ao modelo'); return; }
 
     // Filter to items with a food selected and valid grams
     const validItems = mealItems.filter(i => i.food_id && parseFloat(i.grams) > 0);
@@ -194,7 +194,7 @@ async function saveMeal() {
       .insert({ name })
       .select()
       .single();
-    if (e1 || !tpl) { toast('Erro ao guardar refeição'); return; }
+    if (e1 || !tpl) { toast('Erro ao guardar modelo'); return; }
 
     // Insert items
     const rows = validItems.map(i => ({
@@ -208,7 +208,7 @@ async function saveMeal() {
     const { error: e2 } = await db.from('meal_template_items').insert(rows);
     if (e2) { toast('Erro ao guardar itens'); return; }
 
-    toast('Refeição guardada ✓');
+    toast('Modelo guardado ✓');
     closeMealCreate();
     loadMeals();
   } finally {
@@ -219,6 +219,7 @@ async function saveMeal() {
 // ── APPLY MEAL TO DIARY ──────────────────────────────────────────────────────
 
 let _applyMealItems = null; // items loaded for the current apply sheet
+let _applyMealName = '';    // nome do modelo: nome da refeição nova
 let openApplyMealGen = 0;
 
 async function openApplyMeal(templateId, templateName) {
@@ -240,15 +241,14 @@ async function openApplyMeal(templateId, templateName) {
     </div>`,
     onCreate: () => {
       document.getElementById('apply-meal-btn').onclick = applyMealToDiary;
-      populateMealSelect(document.getElementById('apply-meal-select'));
     },
   });
 
   document.getElementById('apply-meal-title').textContent = templateName.toUpperCase();
 
-  // Default to current selectedMeal
-  const sel = document.getElementById('apply-meal-select');
-  sel.value = selectedMeal;
+  // Por defeito cria uma refeição nova (com o nome do modelo); dá para escolher uma existente.
+  _applyMealName = templateName;
+  populateMealSelect(document.getElementById('apply-meal-select'), 'new', true);
 
   // Show overlay immediately, load items async
   const itemsEl = document.getElementById('apply-meal-items');
@@ -263,7 +263,7 @@ async function openApplyMeal(templateId, templateName) {
     .order('id');
 
   if (error || !items || !items.length) {
-    itemsEl.innerHTML = '<div style="font-size:13px;color:var(--text3)">Sem alimentos nesta refeição.</div>';
+    itemsEl.innerHTML = '<div style="font-size:13px;color:var(--text3)">Sem alimentos neste modelo.</div>';
     return;
   }
 
@@ -286,10 +286,12 @@ async function applyMealToDiary() {
   _applyingMeal = true;
   try {
     if (!_applyMealItems || !_applyMealItems.length) return;
-    const meal = document.getElementById('apply-meal-select').value;
+    const choice = document.getElementById('apply-meal-select').value;
+    const mealId = choice === 'new' ? await createMeal(currentDate, _applyMealName) : +choice;
+    if (mealId == null) return;
     const rows = _applyMealItems.map(i => ({
       date:          currentDate,
-      meal,
+      meal_id:       mealId,
       food_id:       i.food_id || null,
       food_name:     i.food_name,
       grams:         +(i.grams),
@@ -303,7 +305,7 @@ async function applyMealToDiary() {
     toast(`${n} alimento${n !== 1 ? 's' : ''} adicionado${n !== 1 ? 's' : ''} ✓`);
     document.getElementById('apply-meal-overlay').classList.remove('open');
     _applyMealItems = null;
-    selectedMeal = meal;
+    selectedMealId = mealId;
     go('today');
   } finally {
     _applyingMeal = false;

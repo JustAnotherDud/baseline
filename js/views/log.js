@@ -207,8 +207,10 @@ async function saveQuick() {
     if (!name) { toast('Indica o nome'); return; }
     const cost = manualCostPatch({}, document.getElementById('q-cost').value);
     if (cost.error) { toast(cost.error); return; }
+    const mealId = await resolveMealId();
+    if (mealId == null) return;
     const {error} = await db.from('diary').insert({
-      date:currentDate, meal:selectedMeal, food_name:name, grams:null,
+      date:currentDate, meal_id:mealId, food_name:name, grams:null,
       calories: parseFloat(document.getElementById('q-kcal').value)||0,
       fat:      parseFloat(document.getElementById('q-fat').value)||0,
       carbs:    parseFloat(document.getElementById('q-carb').value)||0,
@@ -227,16 +229,9 @@ function clearQuick() {
   ['q-name','q-kcal','q-fat','q-carb','q-fiber','q-prot','q-cost'].forEach(id=>document.getElementById(id).value='');
 }
 
-// Popula o dropdown de refeição do sheet de log uma só vez.
-function initMealSelectors() {
-  const sel = document.getElementById('sheet-meal-select');
-  if (sel && sel.childElementCount === 0) populateMealSelect(sel);
-}
-
-function openLogForMeal(mealKey) {
-  selectedMeal = mealKey;
+function openLogForMeal(mealId) {
+  selectedMealId = mealId;
   mealManuallySelected = true;
-  updateSheetMealTabs();
   openLog('db');
 }
 
@@ -248,35 +243,35 @@ function openAddFoodFromLog(prefillName) {
   }
 }
 
-function updateSheetMealTabs() {
-  const sel = document.getElementById('sheet-meal-select');
-  if (sel) sel.value = selectedMeal;
-}
-
-function selectSheetMealFromDropdown(mealKey) {
-  selectedMeal = mealKey;
+function selectSheetMealFromDropdown(value) {
+  selectedMealId = value === 'new' ? 'new' : +value;
   mealManuallySelected = true;
 }
 
-function getMealByHour() {
-  const h = new Date().getHours();
-  if (h >= 6  && h < 10) return 'breakfast';
-  if (h >= 10 && h < 12) return 'morning';
-  if (h >= 12 && h < 15) return 'lunch';
-  if (h >= 15 && h < 18) return 'afternoon1';
-  if (h >= 18 && h < 20) return 'afternoon2';
-  if (h >= 20 && h < 23) return 'dinner';
-  return 'supper';
+// Selecção inicial no sheet de registo: a mais recente enquanto a regra das 2 h (RPC meal_suggest,
+// constante em app_config) responde; sem refeição sugerida, "+ Nova refeição". Editável.
+let presetMealGen = 0;
+async function presetMealSelection() {
+  const sel = document.getElementById('sheet-meal-select');
+  const latest = currentMeals.find(m => m.is_latest);
+  selectedMealId = latest ? latest.id : 'new';
+  populateMealSelect(sel, selectedMealId);
+  if (!db) return;
+  const gen = ++presetMealGen;
+  const { data, error } = await db.rpc('meal_suggest', { p_date: currentDate });
+  if (error || gen !== presetMealGen || mealManuallySelected) return;
+  selectedMealId = data == null ? 'new' : data;
+  populateMealSelect(sel, selectedMealId);
 }
 
-// ── LOG MEALS SHEET (Refeição chip) ─────────────────────────────────────────
+// ── LOG MEALS SHEET (chip Modelo) ─────────────────────────────────────────
 
 async function openLogMeals() {
   pushSheetState();
   const overlay = ensureSheet('log-meals-overlay', {
     zIndex: 210,
     sheetStyle: 'max-height:80dvh;overflow-y:auto',
-    header: `<div class="sheet-title">Aplicar refeição</div>`,
+    header: `<div class="sheet-title">Aplicar modelo</div>`,
     body: `
     <div id="log-meals-list"></div>`,
   });
@@ -289,7 +284,7 @@ async function openLogMeals() {
 
   const { templates, countMap } = await fetchMealTemplates();
   if (!templates.length) {
-    listEl.innerHTML = '<div style="padding:20px;font-size:13px;color:var(--text3)">Sem refeições guardadas.<br><br>Cria uma na tab <b style="color:var(--text2)">Comida → Refeições</b>.</div>';
+    listEl.innerHTML = '<div style="padding:20px;font-size:13px;color:var(--text3)">Sem modelos guardados.<br><br>Cria um na tab <b style="color:var(--text2)">Comida → Modelos</b>.</div>';
     return;
   }
 

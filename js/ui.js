@@ -49,13 +49,15 @@ function ensureSheet(id, { header = '', body = '', sheetStyle = '', zIndex, onCr
 
 function overlayClose(e, id) { if(e.target.id===id) document.getElementById(id).classList.remove('open'); }
 
-// ── MEAL SELECTORS (gerados a partir de MEALS — fonte canónica) ───────────────
-// Popula um <select> com as options de MEALS.
-function populateMealSelect(selectEl) {
+// ── MEAL SELECTORS (gerados a partir de currentMeals) ──────────────────────────
+// Popula um <select> com as refeições do dia (+ "Nova refeição"; no topo com newFirst).
+function populateMealSelect(selectEl, selectedId, newFirst = false) {
   if (!selectEl) return;
-  selectEl.innerHTML = Object.entries(MEALS)
-    .map(([k, v]) => `<option value="${k}">${escHtml(v)}</option>`)
-    .join('');
+  const opts = currentMeals.map(m => `<option value="${m.id}">${escHtml(mealOptionText(m))}</option>`);
+  const nw = '<option value="new">+ Nova refeição</option>';
+  selectEl.innerHTML = (newFirst ? [nw, ...opts] : [...opts, nw]).join('');
+  selectEl.value = String(selectedId);
+  if (selectEl.value !== String(selectedId)) selectEl.value = 'new';
 }
 
 // ── TARA no sheet de edição ───────────────────────────────────────────────────
@@ -73,9 +75,8 @@ function toggleEditTara() {
 function openLog(mode) {
   pushSheetState();
   resetLogTara();
-  initMealSelectors();
-  if (!mealManuallySelected) selectedMeal = getMealByHour();
-  updateSheetMealTabs();
+  if (mealManuallySelected) populateMealSelect(document.getElementById('sheet-meal-select'), selectedMealId);
+  else presetMealSelection();
   document.getElementById('log-sheet-title').textContent = mode==='db' ? 'Pesquisar alimento' : 'Entrada rápida';
   document.getElementById('log-db').style.display    = mode==='db'    ? 'block' : 'none';
   document.getElementById('log-quick').style.display = mode==='quick' ? 'block' : 'none';
@@ -415,9 +416,9 @@ function openNutrientSheet(entries, nutrient) {
       item.className = 'nutri-rank-item';
 
       const subsHTML = multi ? group.entries.map(e => {
-        const mealLabel = MEALS[e.meal] || e.meal || '—';
+        const meal = currentMeals.find(m => m.id === e.meal_id);
         return `<div class="nutri-rank-sub">
-          <span class="nutri-rank-sub-meal">${mealLabel}</span>
+          <span class="nutri-rank-sub-meal">${escHtml(meal ? mealLabel(meal) : '—')}</span>
           <span class="nutri-rank-sub-val">${fmt(+(e[n.key] || 0))}${n.unit}</span>
         </div>`;
       }).join('') : '';
@@ -461,10 +462,11 @@ function openNutrientSheet(entries, nutrient) {
   overlay.classList.add('open');
 }
 
-function openMealBreakdown(mealKey, allEntries) {
+function openMealBreakdown(mealId, allEntries) {
   pushSheetState();
-  const mealLabel = MEALS[mealKey] || mealKey;
-  const mes = allEntries.filter(e => e.meal === mealKey);
+  const meal = currentMeals.find(m => m.id === mealId);
+  const mealTitle = meal ? mealLabel(meal) : 'Refeição';
+  const mes = allEntries.filter(e => e.meal_id === mealId);
   let selectedMacro = null;
 
   // Macro totals
@@ -481,15 +483,15 @@ function openMealBreakdown(mealKey, allEntries) {
     <div id="meal-bd-content" class="meal-bd-content"></div>
     <div style="padding:0 14px 8px">
       <button id="meal-bd-save-btn" class="btn btn-secondary" style="font-size:13px;padding:10px">
-        Guardar como refeição
+        Guardar como modelo
       </button>
     </div>`,
   });
 
   document.getElementById('meal-bd-title').textContent =
-    `${mealLabel.toUpperCase()} · ${Math.round(totalKcal)} KCAL`;
+    `${mealTitle.toUpperCase()} · ${Math.round(totalKcal)} KCAL`;
 
-  // Wire "Guardar como refeição" — rebind every open so mes/mealLabel are fresh
+  // Wire "Guardar como modelo" — rebind every open so mes/mealTitle are fresh
   document.getElementById('meal-bd-save-btn').onclick = () => {
     overlay.classList.remove('open');
     const validEntries  = mes.filter(e => e.grams && +e.grams > 0);
@@ -509,7 +511,7 @@ function openMealBreakdown(mealKey, allEntries) {
     if (skippedCount > 0) {
       toast(`${skippedCount} entrada${skippedCount > 1 ? 's' : ''} rápida${skippedCount > 1 ? 's' : ''} não incluída${skippedCount > 1 ? 's' : ''}`);
     }
-    openCreateMeal(mealLabel, prefillItems);
+    openCreateMeal(mealTitle, prefillItems);
   };
 
   // ── Donut SVG (F/C/P in kcal space) ─────────────────────────────────────
@@ -665,7 +667,7 @@ function updateEditPreview() {
   }
 }
 
-function openMoveMealSheet(entryId, currentMeal) {
+function openMoveMealSheet(entryId, currentMealId) {
   pushSheetState();
   const overlay = ensureSheet('move-meal-overlay', {
     header: `<div class="sheet-title">Mover para refeição</div>`,
@@ -675,15 +677,17 @@ function openMoveMealSheet(entryId, currentMeal) {
 
   const list = document.getElementById('move-meal-list');
   list.innerHTML = '';
-  Object.entries(MEALS).forEach(([mealKey, mealLabel]) => {
-    const isCurrent = mealKey === currentMeal;
+  const rows = currentMeals.map(m => ({ id: m.id, text: mealOptionText(m) }))
+    .concat([{ id: 'new', text: '+ Nova refeição' }]);
+  rows.forEach(({ id, text }) => {
+    const isCurrent = id === currentMealId;
     const row = document.createElement('div');
     row.className = 'mais-item';
     row.style.cursor = isCurrent ? 'default' : 'pointer';
     if (isCurrent) row.style.color = 'var(--text3)';
     const labelEl = document.createElement('div');
     labelEl.className = 'mais-item-label';
-    labelEl.textContent = mealLabel;
+    labelEl.textContent = text;
     const arrowEl = document.createElement('div');
     arrowEl.className = 'mais-item-arrow';
     arrowEl.textContent = isCurrent ? '✓' : '→';
@@ -692,14 +696,88 @@ function openMoveMealSheet(entryId, currentMeal) {
     if (!isCurrent) {
       row.addEventListener('click', async () => {
         overlay.classList.remove('open');
-        const ok = await moveEntryToMeal(entryId, mealKey);
-        if (ok) { toast('Movido para ' + mealLabel); document.getElementById('sheet-edit').classList.remove('open'); loadToday(); }
+        const target = id === 'new' ? await createMeal(currentDate) : id;
+        if (target == null) return;
+        const ok = await moveEntryToMeal(entryId, target);
+        if (ok) { toast('Movido'); document.getElementById('sheet-edit').classList.remove('open'); loadToday(); }
       });
     }
     list.appendChild(row);
   });
 
   overlay.classList.add('open');
+}
+
+// ── SHEET DA REFEIÇÃO: nome, hora, remover se vazia ──────────────────────────
+// mealId null = criar (botão "+ refeição"). A hora ordena as refeições do dia: por defeito é a da
+// 1.ª entrada; muda-se aqui (ex.: registar à noite o que se vai beber de manhã).
+function openMealSheet(mealId) {
+  pushSheetState();
+  const overlay = ensureSheet('meal-edit-overlay', {
+    zIndex: 230,
+    header: `<div id="meal-edit-title" class="sheet-title"></div>`,
+    body: `
+    <div class="form-body">
+      <label><span class="lt">Nome (opcional)</span><input type="text" id="meal-edit-name" maxlength="40" autocomplete="off" placeholder="ex: Pós-treino"></label>
+      <label><span class="lt">Hora</span><input type="time" id="meal-edit-time"></label>
+      <div id="meal-edit-hint" class="cost-hint"></div>
+      <button class="btn btn-primary" id="meal-edit-save">Guardar</button>
+      <button class="btn btn-secondary" id="meal-edit-detail" style="display:none">Ver detalhe</button>
+      <button class="btn btn-danger" id="meal-edit-del" style="display:none">Remover refeição vazia</button>
+    </div>`,
+  });
+  const m = mealId == null ? null : currentMeals.find(x => x.id === mealId);
+  if (mealId != null && !m) return;
+  const isToday = currentDate === localDate();
+  document.getElementById('meal-edit-title').textContent = m ? mealLabel(m).toUpperCase() : 'NOVA REFEIÇÃO';
+  document.getElementById('meal-edit-name').value = m && m.name ? m.name : '';
+  document.getElementById('meal-edit-time').value = m ? fmtHM(m.sort_at) : (isToday ? fmtHM(new Date().toISOString()) : '');
+  document.getElementById('meal-edit-hint').textContent = m
+    ? (m.started_at ? 'Hora definida por ti' : 'Hora da 1.ª entrada: muda-a se registaste fora de horas')
+    : (isToday ? '' : 'Indica a hora: é ela que ordena as refeições do dia');
+  document.getElementById('meal-edit-save').onclick = () => saveMealSheet(mealId);
+  const detail = document.getElementById('meal-edit-detail');
+  detail.style.display = m && m.n_entries > 0 ? '' : 'none';
+  detail.onclick = () => { overlay.classList.remove('open'); openMealBreakdown(mealId, diaryEntries); };
+  const del = document.getElementById('meal-edit-del');
+  del.style.display = m && m.n_entries === 0 ? '' : 'none';   // só vazia (a BD recusa o resto: ON DELETE RESTRICT)
+  del.onclick = () => deleteEmptyMeal(mealId);
+  overlay.classList.add('open');
+}
+
+let _savingMealSheet = false;
+async function saveMealSheet(mealId) {
+  if (_savingMealSheet) return;
+  _savingMealSheet = true;
+  try {
+    const name = document.getElementById('meal-edit-name').value.trim() || null;
+    const hm = document.getElementById('meal-edit-time').value;
+    if (mealId == null) {
+      const startedAt = hm ? hmToTimestamp(currentDate, hm) : null;
+      if (currentDate !== localDate() && !startedAt) { toast('Indica a hora da refeição'); return; }
+      const id = await createMeal(currentDate, name, startedAt);
+      if (id == null) return;
+      selectedMealId = id;
+    } else {
+      const m = currentMeals.find(x => x.id === mealId);
+      const patch = { name };
+      if (m && hm !== fmtHM(m.sort_at)) patch.started_at = hm ? hmToTimestamp(m.date, hm) : null;
+      const { error } = await db.from('meals').update(patch).eq('id', mealId);
+      if (error) { toast('Erro ao guardar refeição'); return; }
+    }
+    document.getElementById('meal-edit-overlay').classList.remove('open');
+    loadToday();
+  } finally {
+    _savingMealSheet = false;
+  }
+}
+
+async function deleteEmptyMeal(mealId) {
+  const { error } = await db.from('meals').delete().eq('id', mealId);
+  if (error) { toast('Só se remove uma refeição vazia'); return; }
+  document.getElementById('meal-edit-overlay').classList.remove('open');
+  toast('Refeição removida');
+  loadToday();
 }
 
 function highlightFoodKeywords(name) {

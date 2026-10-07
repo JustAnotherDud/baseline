@@ -238,6 +238,62 @@ function manualCostPatch(entry, costStr) {
   return { cost_source: 'manual', cost_eur: c };
 }
 
+// ── REFEIÇÕES DINÂMICAS ──────────────────────────────────────────────────────
+// Uma refeição por linha de v_meal_day: id estável; `no` é só para mostrar (calculado pela hora);
+// `name` é opcional. `sort_at` = hora da refeição (started_at, ou a 1.ª entrada, ou a criação).
+
+function mealLabel(m) {
+  const n = m && typeof m.name === 'string' ? m.name.trim() : '';
+  return n || `Refeição ${m ? m.no : '?'}`;
+}
+
+// 'HH:MM' local de um timestamp ISO; '' sem valor.
+function fmtHM(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  if (isNaN(d)) return '';
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+
+// 'YYYY-MM-DD' + 'HH:MM' (hora local) -> timestamp ISO para meals.started_at; null se inválido.
+function hmToTimestamp(dateStr, hm) {
+  const t = /^(\d{1,2}):(\d{2})$/.exec(String(hm || '').trim());
+  const d = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dateStr || ''));
+  if (!t || !d || +t[1] > 23 || +t[2] > 59) return null;
+  return new Date(+d[1], +d[2] - 1, +d[3], +t[1], +t[2]).toISOString();
+}
+
+// Texto de uma opção de refeição nos selects: "Almoço · 12:40".
+function mealOptionText(m) {
+  const hm = fmtHM(m.sort_at);
+  return mealLabel(m) + (hm ? ' · ' + hm : '');
+}
+
+// Refeições a mostrar no diário: as que têm entradas e, vazia, só a mais recente do dia e enquanto
+// o dia não acabou (date >= hoje). Entradas de uma refeição que a vista não devolveu ganham uma
+// refeição provisória: nunca se escondem entradas.
+function diaryMeals(meals, entries, today) {
+  const known = new Set(meals.map(m => m.id));
+  const extra = [];
+  entries.forEach(e => {
+    if (known.has(e.meal_id)) return;
+    known.add(e.meal_id);
+    extra.push({ id: e.meal_id, name: null, no: '?', date: e.date, n_entries: 1, sort_at: e.logged_at, is_latest: false });
+  });
+  return meals.concat(extra).filter(m => m.n_entries > 0 || (m.is_latest && m.date >= today));
+}
+
+// Aberta por defeito: a mais recente com entradas; as outras abrem encolhidas.
+function mealOpenDefault(visible, entries) {
+  const withEntries = visible.filter(m => entries.some(e => e.meal_id === m.id));
+  return withEntries.length ? withEntries[withEntries.length - 1].id : null;
+}
+
+// overrides (Map id -> encolhida) guarda os toques da sessão; nada se persiste.
+function isMealCollapsed(id, openId, overrides) {
+  return overrides.has(id) ? overrides.get(id) : id !== openId;
+}
+
 // ── HISTÓRICO ────────────────────────────────────────────────────────────────
 // Uma linha de v_day_totals -> texto das células. Só formata: a agregação, o colapso de
 // dias vazios, o delta e a cobertura vêm prontos da vista (nada de contas em JS).

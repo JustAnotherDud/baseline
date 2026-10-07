@@ -111,7 +111,7 @@ Desktop (≥768px): uma media query escala tudo ~1.4×. Componente com tamanhos 
 ## 4. Interacção
 
 - Mudar de contexto (Diário, Comida, Forma) é `go(view)`. Acção sobre o ecrã actual é sheet.
-- Hot path de registo: `+ LOG` abre o sheet já na refeição; sem refeição, `getMealByHour()` escolhe. Depois de guardar, o sheet volta à pesquisa sem fechar. Gramas aceitam expressões (`120+85`). Auto-focus com `setTimeout(…, 300)`.
+- Hot path de registo: `+ LOG` do cabeçalho abre o sheet já nessa refeição; o botão geral pré-preenche pela regra das 2 h (`meal_suggest`: junta à mais recente ou cria nova), sempre editável. Depois de guardar, o sheet volta à pesquisa sem fechar. Gramas aceitam expressões (`120+85`). Auto-focus com `setTimeout(…, 300)`.
 - Voltar do Android: `go()` faz `pushState`; abrir sheet faz `pushSheetState()`; `popstate` fecha o sheet aberto ou navega.
 - Alvos de toque ≥44px, `:active` visível, `:focus-visible` com outline accent.
 - Movimento curto e funcional. `prefers-reduced-motion` desliga tudo (CSS e `chartAnim()`). Nada festeja.

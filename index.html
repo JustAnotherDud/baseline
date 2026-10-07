@@ -19,7 +19,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
           integrity="sha384-bs/nf9FbdNouRbMiFcrcZfLXYPKiPaGVGplVbv7dLGECccEXDW+S3zjqSKR5ZEaD"
           crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="css/styles.css?v=20261007">
+  <link rel="stylesheet" href="css/styles.css?v=20261007c">
 </head>
 <body>
 
@@ -92,7 +92,7 @@
     <!-- Sub-tabs -->
     <div class="foods-subtabs" id="foods-subtabs">
       <button class="foods-subtab active" id="subtab-foods" onclick="switchFoodsTab('foods')">Alimentos</button>
-      <button class="foods-subtab"        id="subtab-meals" onclick="switchFoodsTab('meals')">Refeições</button>
+      <button class="foods-subtab"        id="subtab-meals" onclick="switchFoodsTab('meals')">Modelos</button>
     </div>
 
     <!-- Pesquisa, ordenação e ajuda: só no separador Alimentos -->
@@ -122,11 +122,11 @@
       <div id="foods-list"></div>
     </div>
 
-    <!-- Sub-tab: Refeições -->
+    <!-- Sub-tab: Modelos (meal_templates) -->
     <div id="meals-panel" style="display:none">
       <div id="meals-list" style="padding:8px 0"></div>
       <div style="padding:0 20px 20px">
-        <button class="btn btn-primary" onclick="openCreateMeal()">+ Nova refeição</button>
+        <button class="btn btn-primary" onclick="openCreateMeal()">+ Novo modelo</button>
       </div>
     </div>
 
@@ -367,7 +367,7 @@
         </div>
         <div style="display:flex;gap:8px;padding:0 20px 12px">
           <button class="btn btn-secondary" style="flex:1;font-size:13px;padding:10px 6px;min-height:44px" onclick="openAddFoodFromLog('')" aria-label="Criar novo alimento">+ Alimento</button>
-          <button class="btn btn-secondary" style="flex:1;font-size:13px;padding:10px 6px;min-height:44px" onclick="openLogMeals()" aria-label="Aplicar refeição template">Refeição</button>
+          <button class="btn btn-secondary" style="flex:1;font-size:13px;padding:10px 6px;min-height:44px" onclick="openLogMeals()" aria-label="Aplicar modelo de refeição">Modelo</button>
           <button class="btn btn-secondary" style="flex:1;font-size:13px;padding:10px 6px;min-height:44px" onclick="openLog('quick')" aria-label="Entrada rápida">Rápida</button>
         </div>
         <div class="search-results" id="log-results">
@@ -539,7 +539,7 @@
         </div>
       </div>
       <button class="btn btn-secondary"
-              onclick="openMoveMealSheet(editingEntry.id, editingEntry.meal)"
+              onclick="openMoveMealSheet(editingEntry.id, editingEntry.meal_id)"
               style="margin-bottom:4px">
         Alterar Refeição
       </button>
@@ -554,19 +554,19 @@
 
 <div id="toast" aria-live="polite"></div>
 
-<script src="js/config.js?v=20261007"></script>
-<script src="js/nutrition.js?v=20261007"></script>
-<script src="js/db.js?v=20261007"></script>
-<script src="js/ui.js?v=20261007"></script>
-<script src="js/views/diary.js?v=20261007"></script>
-<script src="js/views/log.js?v=20261007"></script>
-<script src="js/views/foods.js?v=20261007"></script>
-<script src="js/views/meals.js?v=20261007"></script>
-<script src="js/views/targets.js?v=20261007"></script>
-<script src="js/views/stats.js?v=20261007"></script>
-<script src="js/views/cost.js?v=20261007"></script>
-<script src="js/views/history.js?v=20261007"></script>
-<script src="js/views/body.js?v=20261007"></script>
-<script src="js/app.js?v=20261007"></script>
+<script src="js/config.js?v=20261007c"></script>
+<script src="js/nutrition.js?v=20261007c"></script>
+<script src="js/db.js?v=20261007c"></script>
+<script src="js/ui.js?v=20261007c"></script>
+<script src="js/views/diary.js?v=20261007c"></script>
+<script src="js/views/log.js?v=20261007c"></script>
+<script src="js/views/foods.js?v=20261007c"></script>
+<script src="js/views/meals.js?v=20261007c"></script>
+<script src="js/views/targets.js?v=20261007c"></script>
+<script src="js/views/stats.js?v=20261007c"></script>
+<script src="js/views/cost.js?v=20261007c"></script>
+<script src="js/views/history.js?v=20261007c"></script>
+<script src="js/views/body.js?v=20261007c"></script>
+<script src="js/app.js?v=20261007c"></script>
 </body>
 </html>

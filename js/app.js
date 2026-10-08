@@ -280,12 +280,24 @@ async function clearCacheAndReload() {
 // para não pisar o que o utilizador está a fazer.
 let lastAutoRefresh = 0;
 
+// Dia civil (Lisboa) em que a app esteve "hoje" pela última vez. Se a app fica aberta de um dia para o outro,
+// quem estava em "hoje" avança para o novo hoje; quem estava de propósito noutro dia (passado ou futuro) fica.
+let appToday = lisbonDate();
+function advanceDayIfRolled(now = lisbonDate()) {
+  if (now === appToday) return;
+  const prev = appToday;
+  appToday = now;
+  if (currentDate === prev) { currentDate = now; setDateLabel(); }
+  if (currentTargetsDate === prev) { currentTargetsDate = now; updateTargetsDateLabel(); }
+}
+
 function refreshCurrentView() {
   if (!db || document.hidden || document.getElementById('app').style.display === 'none') return;
   if (document.querySelector('.sheet-overlay.open') || editingEntry || selectedFood) return;
   const now = Date.now();
   if (now - lastAutoRefresh < 15000) return;
   lastAutoRefresh = now;
+  advanceDayIfRolled();
   loadView(location.hash.replace('#', '') || 'today');
 }
 

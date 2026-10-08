@@ -31,7 +31,7 @@ Ordem de carregamento em `index.html`: `config.js`, `nutrition.js`, `db.js`, `ui
 - `js/nutrition.js`: `getNutrientColor` (semáforo de aderência), `macroFloorState` e os helpers de custo (formatação, somas, payloads de preço).
 - `js/db.js`: queries do diário, scores do date picker e `loadCostConfig` (`app_config`).
 - `js/ui.js`: toast, sheets partilhados (edição, date picker, ranking, donut, mover entrada, sheet da refeição), `parseGramsExpr`.
-- `js/app.js`: `init` e login, router por hash (`go`), Definições, refresh automático.
+- `js/app.js`: `init` e login, router por hash (`go`), Definições, refresh automático (ao voltar à app e a cada 60 s recarrega a vista atual, sem pisar um sheet aberto; se a app passou a meia-noite de Lisboa, o Diário e a Manutenção que estavam em "hoje" avançam para o novo hoje, e quem estava num dia passado ou futuro fica).
 - `js/views/`: `diary`, `log` (sheet de registo), `foods`, `meals` (templates), `targets`, `stats`, `promo` (Promoções), `cost` (secção de custo das Estatísticas), `history` (Histórico), `body` (Forma).
 
 Views: Diário, Comida, Forma e Mais (Manutenção, Histórico, Promoções, Estatísticas, Definições).

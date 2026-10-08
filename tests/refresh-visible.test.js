@@ -25,10 +25,11 @@ function boot({ hash = '', hidden = false } = {}) {
     setInterval: () => 0,
     history: { replaceState() {}, pushState() {} },
     location: { hash, reload() {} },
-    ...Object.fromEntries(['loadToday', 'loadFoods', 'loadMeals', 'loadBody', 'loadStats', 'loadHistory', 'loadPromo', 'refreshTargets']
-      .map(n => [n, spy(n)])),
+    setDateLabel: spy('setDateLabel'),
   };
-  const ctx = loadScript(['js/nutrition.js', 'js/app.js'], extra);
+  const ctx = loadScript(['js/nutrition.js', 'js/views/targets.js', 'js/app.js'], extra);
+  // os carregadores das vistas ficam espiões (as funções reais iam à BD)
+  for (const n of ['loadToday', 'loadFoods', 'loadMeals', 'loadBody', 'loadStats', 'loadHistory', 'loadPromo', 'refreshTargets']) ctx[n] = spy(n);
   vm.runInContext('db = {}', ctx);     // sessão aberta
   return { ctx, calls, listeners, document };
 }
@@ -72,4 +73,56 @@ test('não pisa uma edição em curso (sheet aberto)', () => {
   document.querySelector = sel => (sel === '.sheet-overlay.open' ? {} : null);
   listeners['document:visibilitychange']();
   assert.deepEqual(calls, []);
+});
+
+// ── mudança de dia (meia-noite, Europe/Lisbon) ───────────────────────────────
+
+test('lisbonDate: dia civil de Lisboa, com hora de verão e de inverno', () => {
+  const { ctx } = boot();
+  assert.equal(ctx.lisbonDate(new Date('2026-10-08T23:30:00Z')), '2026-10-09');   // verão: UTC+1, já é dia 9 em Lisboa
+  assert.equal(ctx.lisbonDate(new Date('2026-12-01T23:30:00Z')), '2026-12-01');   // inverno: UTC+0
+  assert.equal(ctx.lisbonDate(new Date('2026-12-01T00:00:00Z')), '2026-12-01');
+});
+
+test('meia-noite: quem estava em "hoje" avança para o novo hoje (Diário e Manutenção) e recarrega', () => {
+  const { ctx, calls, listeners } = boot({ hash: '#targets' });
+  vm.runInContext("appToday = '2026-10-08'; currentDate = '2026-10-08'; currentTargetsDate = '2026-10-08'", ctx);
+  ctx.lisbonDate = () => '2026-10-09';
+  listeners['document:visibilitychange']();
+  assert.equal(vm.runInContext('currentDate', ctx), '2026-10-09');
+  assert.equal(vm.runInContext('currentTargetsDate', ctx), '2026-10-09');
+  assert.equal(vm.runInContext('appToday', ctx), '2026-10-09');
+  assert.deepEqual(calls, ['setDateLabel', 'refreshTargets']);          // etiqueta do dia + recarga da vista actual
+});
+
+test('meia-noite: quem estava de propósito num dia passado (ou futuro) não é mexido', () => {
+  const { ctx, calls, listeners } = boot({ hash: '#today' });
+  vm.runInContext("appToday = '2026-10-08'; currentDate = '2026-10-05'; currentTargetsDate = '2026-10-12'", ctx);
+  ctx.lisbonDate = () => '2026-10-09';
+  listeners['document:visibilitychange']();
+  assert.equal(vm.runInContext('currentDate', ctx), '2026-10-05');
+  assert.equal(vm.runInContext('currentTargetsDate', ctx), '2026-10-12');
+  assert.equal(vm.runInContext('appToday', ctx), '2026-10-09');          // o "hoje" da app avança na mesma
+  assert.deepEqual(calls, ['loadToday']);                                // recarrega, sem mudar de dia
+});
+
+test('mesmo dia civil: não mexe em nada', () => {
+  const { ctx, listeners } = boot({ hash: '#today' });
+  vm.runInContext("appToday = '2026-10-08'; currentDate = '2026-10-08'", ctx);
+  ctx.lisbonDate = () => '2026-10-08';
+  listeners['document:visibilitychange']();
+  assert.equal(vm.runInContext('currentDate', ctx), '2026-10-08');
+});
+
+test('avançar o dia só acontece depois dos guardas (sheet aberto: espera pelo próximo refresh)', () => {
+  const { ctx, listeners, document } = boot({ hash: '#today' });
+  vm.runInContext("appToday = '2026-10-08'; currentDate = '2026-10-08'", ctx);
+  ctx.lisbonDate = () => '2026-10-09';
+  document.querySelector = sel => (sel === '.sheet-overlay.open' ? {} : null);
+  listeners['document:visibilitychange']();
+  assert.equal(vm.runInContext('currentDate', ctx), '2026-10-08');
+  document.querySelector = () => null;
+  vm.runInContext('lastAutoRefresh = 0', ctx);
+  listeners['document:visibilitychange']();
+  assert.equal(vm.runInContext('currentDate', ctx), '2026-10-09');
 });

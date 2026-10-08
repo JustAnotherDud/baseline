@@ -69,7 +69,7 @@ body {
 .view {
   flex: 1; overflow-y: auto; overflow-x: hidden;
   display: none; flex-direction: column;
-  padding-bottom: calc(var(--nav-h) + var(--safe-b) + 48px);
+  padding-bottom: calc(var(--nav-h) + var(--safe-b) + 84px);   /* 84 = 16 + FAB 52 + 16: o último item sai de trás do FAB */
   -webkit-overflow-scrolling: touch;
 }
 .view.active {
@@ -619,7 +619,7 @@ input[type="number"] { font-family: var(--mono); }
   .fi-name { font-size: 16px; }
   .fi-detail { font-size: 14px; }
   .fi-kcal { font-size: 14px; }
-  nav { height: calc(96px + var(--safe-b)); }
+  :root { --nav-h: 96px; }   /* nav, FAB, toast e padding das views seguem esta variável */
   .nav-btn svg { width: 33px; height: 33px; }
   .nav-label { font-size: 15px; }
   .lt { font-size: 13px; }

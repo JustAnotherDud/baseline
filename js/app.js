@@ -19,8 +19,6 @@ let appStarted = false;
 // `authenticated`; sem sessão a UI fica bloqueada no ecrã de login.
 // supabase-js persiste a sessão em localStorage e renova o token sozinho.
 async function init() {
-  try { localStorage.removeItem('meal_locks'); } catch {}   // estado recolhido antigo (por slot): já não se guarda
-  document.querySelectorAll('[data-promo-label]').forEach(el => { el.textContent = PROMO_LABEL; });
   const url = localStorage.getItem('nt_url');
   const key = localStorage.getItem('nt_key');
   icuId  = localStorage.getItem('icu_id')  || null;
@@ -91,7 +89,7 @@ async function saveSetup() {
     // URL/key só ficam guardados depois de um login válido.
     localStorage.setItem('nt_url', url);
     localStorage.setItem('nt_key', key);
-    // ICU configura-se em Settings → Intervals.icu, não no setup inicial.
+    // ICU configura-se em Definições → Intervals.icu, não no setup inicial.
     await init();
   } finally {
     btn.disabled = false;

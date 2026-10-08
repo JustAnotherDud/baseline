@@ -214,7 +214,7 @@ function renderToday(entries, t) {
         entryEl.innerHTML = `
           <div class="entry-info">
             <div class="entry-name"></div>
-            <div class="entry-detail">${entry.grams ? entry.grams + 'g · ' : ''}${macroPairs([['F', r(entry.fat) + 'g'], ['C', r(entry.carbs) + 'g'], ['P', r(entry.protein) + 'g']])}</div>
+            <div class="entry-detail">${entry.grams ? numPt(entry.grams) + ' g · ' : ''}${macroPairs([['F', r(entry.fat) + ' g'], ['C', r(entry.carbs) + ' g'], ['P', r(entry.protein) + ' g']])}</div>
             ${entry.has_tara ? '<div class="entry-tara-flag">⚖ tem tara</div>' : ''}
           </div>
           <div class="entry-right">

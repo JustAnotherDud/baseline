@@ -3,6 +3,13 @@ function localDate(d = new Date()) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+// Número em pt-PT: vírgula decimal. d = casas (omitido: as que o número tiver). Sem número: "—".
+function numPt(v, d) {
+  const n = Number(v);
+  if (v == null || v === '' || !isFinite(n)) return '—';
+  return (d === undefined ? String(n) : n.toFixed(d)).replace('.', ',');
+}
+
 // Os 7 nutrientes de diary e dos templates (em foods: `<nome>_per_100g`).
 // Os secundários podem vir a null em linhas antigas.
 const NUTRIENTS = ['calories', 'protein', 'carbs', 'fat', 'saturated_fat', 'sugar', 'fiber'];
@@ -11,5 +18,5 @@ const SECONDARY_NUTRIENTS = ['saturated_fat', 'sugar', 'fiber'];
 // { calories: fn('calories'), ... } pela ordem de NUTRIENTS.
 const mapNutrients = fn => Object.fromEntries(NUTRIENTS.map(k => [k, fn(k)]));
 
-const APP_VERSION = '20261008e';
+const APP_VERSION = '20261008g';
 

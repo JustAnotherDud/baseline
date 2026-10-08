@@ -254,7 +254,7 @@ function bodyFormaHtml(wSorted, hasIcu) {
   const latest = wSorted.length ? wSorted[wSorted.length - 1] : null;
 
   if (!latest) {
-    const msg = hasIcu ? 'Sem dados de forma.' : 'Configura o Intervals.icu nas Settings';
+    const msg = hasIcu ? 'Sem dados de forma.' : 'Configura o Intervals.icu nas Definições';
     return `<div style="padding:16px 20px 0">${header}${tEmpty(msg)}</div>`;
   }
 
@@ -272,7 +272,7 @@ function bodyFormaHtml(wSorted, hasIcu) {
   let rampVal;
   if (ramp != null) {
     const rampColor = ramp > 0 ? 'var(--accent)' : (ramp < 0 ? 'var(--red)' : 'var(--text2)');
-    rampVal = colVal(`${ramp > 0 ? '+' : ''}${ramp.toFixed(1)}`, rampColor)
+    rampVal = colVal(`${ramp > 0 ? '+' : ''}${numPt(ramp, 1)}`, rampColor)
       + `<span style="font-size:11px;color:var(--text3)">/sem</span>`;
   } else {
     rampVal = colVal('—', 'var(--text2)');
@@ -312,20 +312,20 @@ function bodyWeighInHtml(asc) {
     const delta = parseFloat((wNow - tNum(prev.weight_kg)).toFixed(1));
     // Delta de peso neutro: não há lado bom.
     const deltaColor = 'var(--text3)';
-    if (delta > 0)      deltaHtml = `<span style="font-family:var(--mono);font-size:10px;color:${deltaColor}">↑ ${delta.toFixed(1)} kg</span>`;
-    else if (delta < 0) deltaHtml = `<span style="font-family:var(--mono);font-size:10px;color:${deltaColor}">↓ ${Math.abs(delta).toFixed(1)} kg</span>`;
+    if (delta > 0)      deltaHtml = `<span style="font-family:var(--mono);font-size:10px;color:${deltaColor}">↑ ${numPt(delta, 1)} kg</span>`;
+    else if (delta < 0) deltaHtml = `<span style="font-family:var(--mono);font-size:10px;color:${deltaColor}">↓ ${numPt(Math.abs(delta), 1)} kg</span>`;
     else                deltaHtml = `<span style="font-family:var(--mono);font-size:10px;color:${deltaColor}">= 0.0 kg</span>`;
   }
 
   const val = (v, unit) => {
     const n = tNum(v);
-    return n != null ? `${n.toFixed(1)} <span style="font-size:11px;color:var(--text3)">${unit}</span>` : '—';
+    return n != null ? `${numPt(n, 1)} <span style="font-size:11px;color:var(--text3)">${unit}</span>` : '—';
   };
 
   // Massa gorda (kg) = peso × %gordura / 100. Sem delta — só valor.
   const bf = tNum(latest.body_fat_pct);
   const mgVal = (wNow != null && bf != null)
-    ? `${(wNow * bf / 100).toFixed(1)} <span style="font-size:11px;color:var(--text3)">kg</span>`
+    ? `${numPt(wNow * bf / 100, 1)} <span style="font-size:11px;color:var(--text3)">kg</span>`
     : '—';
 
   const dateStr = latest.date
@@ -378,7 +378,7 @@ function bodyFormChartSectionHtml(hasIcu) {
     body = `<div id="body-form-chips" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">${chips}</div>
       <div class="treino-chart"><div style="position:relative;height:160px"><canvas id="body-form-chart"></canvas></div></div>`;
   } else {
-    body = tEmpty(hasIcu ? 'Sem dados de forma.' : 'Configura o Intervals.icu nas Settings');
+    body = tEmpty(hasIcu ? 'Sem dados de forma.' : 'Configura o Intervals.icu nas Definições');
   }
 
   return `<div class="treino-chart-section" style="padding:18px 20px 0;margin-top:20px">
@@ -413,7 +413,7 @@ function buildBodyFormChart() {
       ],
     },
     options: baseChartOptions(
-      (name, v) => `${{ CTL: 'Fitness (CTL)', ATL: 'Fadiga (ATL)' }[name] || name}: ${v.toFixed(1)}`,
+      (name, v) => `${{ CTL: 'Fitness (CTL)', ATL: 'Fadiga (ATL)' }[name] || name}: ${numPt(v, 1)}`,
       { y: { position: 'left', suggestedMin: 0, suggestedMax: 60, grid: { color: chartTheme.grid }, ticks: chartTicks(), border: { color: '#2e2e2e' } } },
     ),
   });
@@ -486,7 +486,7 @@ function buildBodyCompChart() {
       ],
     },
     options: baseChartOptions(
-      (name, v) => ({ 'Peso': `Peso: ${v.toFixed(1)} kg`, 'BF%': `BF%: ${v.toFixed(1)}%`, 'LBM': `LBM: ${v.toFixed(1)} kg` }[name] || `${name}: ${v.toFixed(1)}`),
+      (name, v) => ({ 'Peso': `Peso: ${numPt(v, 1)} kg`, 'BF%': `BF%: ${numPt(v, 1)}%`, 'LBM': `LBM: ${numPt(v, 1)} kg` }[name] || `${name}: ${numPt(v, 1)}`),
       {
         yWeight: {
           type: 'linear', position: 'left',
@@ -555,7 +555,7 @@ function bodyWeekSectionHtml(activities, hasIcu) {
   const header = tSecLabel('Últimos 7 dias');
 
   if (!Array.isArray(activities)) {
-    const msg = hasIcu ? 'Sem dados de actividades.' : 'Configura o Intervals.icu nas Settings';
+    const msg = hasIcu ? 'Sem dados de actividades.' : 'Configura o Intervals.icu nas Definições';
     return `<div style="padding:18px 20px 0;margin-top:20px">${header}${tEmpty(msg)}</div>`;
   }
 
@@ -571,7 +571,7 @@ function bodyWeekSectionHtml(activities, hasIcu) {
 
   const km = tChip(
     'Distância',
-    `${(cur.meters / 1000).toFixed(1)} <span style="font-size:11px;color:var(--text3)">km</span>`,
+    `${numPt(cur.meters / 1000, 1)} <span style="font-size:11px;color:var(--text3)">km</span>`,
     tDeltaHtml(cur.meters, prev.meters),
     { onclick: "openActivityDetailSheet('distance')" },
   );
@@ -593,7 +593,7 @@ function bodyWeekSectionHtml(activities, hasIcu) {
     const gymDeltaPct = gymVolPrev > 0
       ? Math.round(((gymVolCurrent - gymVolPrev) / gymVolPrev) * 100)
       : null;
-    const gymVolT = (gymVolCurrent / 1000).toFixed(1);
+    const gymVolT = numPt(gymVolCurrent / 1000, 1);
 
     let gymSub;
     if (gymDeltaPct !== null) {
@@ -629,7 +629,7 @@ function openActivityDetailSheet(metric) {
 
   const METRIC_CONFIG = {
     distance: { label: 'Distância · 7 dias', unit: 'km',
-                getValue: a => a.distance ? (a.distance / 1000).toFixed(1) : null },
+                getValue: a => a.distance ? numPt(a.distance / 1000, 1) : null },
     time:     { label: 'Tempo · 7 dias',     unit: '',
                 getValue: a => a.moving_time ? formatActivityTime(a.moving_time) : null },
     load:     { label: 'Carga · 7 dias',     unit: '',
@@ -688,7 +688,7 @@ function openActivityDetailSheet(metric) {
 
   const rows = sortedBuckets.map(bucket => {
     const { acts, meters, secs, load } = bucketMap[bucket];
-    const subtotalStr = metric === 'distance' ? `${(meters / 1000).toFixed(1)} km`
+    const subtotalStr = metric === 'distance' ? `${numPt(meters / 1000, 1)} km`
                       : metric === 'time'     ? formatActivityTime(secs)
                       :                        `${Math.round(load)}`;
     const sep = `<div class="act-detail-sep">${BUCKET_LABEL[bucket]} · ${subtotalStr}</div>`;
@@ -770,7 +770,7 @@ function openGymDetailSheet() {
         </div>
         <div class="act-detail-gym-meta">
           <span class="act-detail-val act-detail-val--highlight">${formatActivityTime(durSecs)}</span>
-          <span class="act-detail-gym-vol">${(vol / 1000).toFixed(1)} t</span>
+          <span class="act-detail-gym-vol">${numPt(vol / 1000, 1)} t</span>
         </div>
       </div>`;
   }).join('') || '<p style="padding:16px;color:var(--text3)">Sem sessões neste período.</p>';

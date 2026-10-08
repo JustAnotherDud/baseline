@@ -165,13 +165,6 @@ test('costEfficiency: sem entradas elegíveis ou sem proteína = null (nunca 0 n
   assert.equal(notCounted.n_days, 0);
 });
 
-test('costSourceTag', () => {
-  assert.equal(c.costSourceTag('override'), 'Promo');
-  assert.equal(c.costSourceTag('manual'), 'manual');
-  assert.equal(c.costSourceTag('default'), '');
-  assert.equal(c.costSourceTag(null), '');
-});
-
 const FOOD = { price_eur: 2, price_qty_g: 375 };
 
 test('priceOverridePayload: vazio, igual ao default, override, só preço, erro', () => {
@@ -192,7 +185,9 @@ test('editPricePatch: só envia o que mudou face ao snapshot da entrada', () => 
   assert.deepEqual(plain(c.editPricePatch(ENTRY, '', '', false)), {});
   assert.deepEqual(plain(c.editPricePatch(ENTRY, '1', '375', false)), { price_eur: 1, price_qty_g: 375, cost_source: 'override' });
   assert.deepEqual(plain(c.editPricePatch(ENTRY, '2', '250', false)), { price_eur: 2, price_qty_g: 250, cost_source: 'override' });
-  assert.ok(c.editPricePatch(ENTRY, '1', '', false).error);
+  // só o preço: as gramas vêm do snapshot da entrada (a BD completa); sem snapshot de gramas, erro
+  assert.deepEqual(plain(c.editPricePatch(ENTRY, '1', '', false)), { price_eur: 1, cost_source: 'override' });
+  assert.ok(c.editPricePatch({ price_eur: null, price_qty_g: null }, '1', '', false).error);
 });
 
 test('editPricePatch: reset volta ao default (limpa o override)', () => {

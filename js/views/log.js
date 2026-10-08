@@ -143,13 +143,13 @@ async function pickFood(id) {
   const serving = data.serving_size_g;
   document.getElementById('log-food-card').innerHTML=`
     <div class="food-card-name">${escHtml(data.name)}</div>
-    <div class="food-card-sub">${data.brand?escHtml(data.brand)+' · ':''}${data.calories_per_100g} kcal/100g · P${data.protein_per_100g}g C${data.carbs_per_100g}g F${data.fat_per_100g}g</div>`;
+    <div class="food-card-sub">${data.brand?escHtml(data.brand)+' · ':''}${data.calories_per_100g} kcal/100g · P${data.protein_per_100g} g C${data.carbs_per_100g} g F${data.fat_per_100g} g</div>`;
 
   // "+ porção" agora é estático (lado a lado com "tem tara") — só texto/visibilidade/handler.
   const doseBtn = document.getElementById('dose-btn');
   if (doseBtn) {
     if (serving) {
-      doseBtn.textContent = `+ porção (${serving}g)`;
+      doseBtn.textContent = `+ porção (${numPt(serving)} g)`;
       doseBtn.style.display = '';
       doseBtn.onclick = () => {
         const current = parseFloat(document.getElementById('log-grams').value) || 0;
@@ -188,7 +188,7 @@ function updatePreview() {
     document.getElementById('log-price-eur').value, document.getElementById('log-price-qty').value);
   showPromoPreview('log-promo-preview', selectedFood.id, currentDate, g, null, ov.cost_source === 'override' || !!ov.error);
   if (selectedFood.serving_size_g) {
-    const doses = g > 0 ? (g / selectedFood.serving_size_g).toFixed(1) : '';
+    const doses = g > 0 ? numPt(g / selectedFood.serving_size_g, 1) : '';
     const infoEl = document.getElementById('dose-info');
     if (infoEl) infoEl.textContent = doses ? `${doses}×` : '';
   }

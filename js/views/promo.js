@@ -61,7 +61,9 @@ function promoLotEl(l) {
   if (m.warns.length) div.appendChild(line('promo-lot-warn', '⚠ ' + m.warns.join(' · ')));
   const actions = document.createElement('div');
   actions.className = 'promo-lot-actions';
-  [['Abater', 'writeoff', 'btn btn-secondary btn-sm'], ['Apagar', 'delete', 'btn btn-danger btn-sm']].forEach(([label, mode, cls]) => {
+  const buttons = [['Abater', 'writeoff', 'btn btn-secondary btn-sm'], ['Fechar lote', 'close', 'btn btn-secondary btn-sm']];
+  if (m.canDelete) buttons.push(['Eliminar', 'delete', 'btn btn-danger btn-sm']);
+  buttons.forEach(([label, mode, cls]) => {
     const b = document.createElement('button');
     b.className = cls;
     b.style.flex = '1';
@@ -73,7 +75,7 @@ function promoLotEl(l) {
   return div;
 }
 
-// ── Abater / apagar ─────────────────────────────────────────────────────────
+// ── Abater / fechar / eliminar ──────────────────────────────────────────────
 
 let promoActionLot = null;
 let promoActionMode = 'writeoff';
@@ -88,25 +90,28 @@ function openPromoAction(lot, mode) {
     body: `
     <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:14px">
       <div id="promo-action-info" class="cost-hint"></div>
-      <label id="promo-action-grams-wrap"><span class="lt">Gramas a abater (vazio = tudo o que resta)</span>
-        <input type="number" id="promo-action-grams" inputmode="decimal" placeholder="tudo"></label>
+      <label id="promo-action-grams-wrap"><span class="lt">Gramas a abater</span>
+        <input type="number" id="promo-action-grams" inputmode="decimal" placeholder="0"></label>
       <label><span class="lt">Motivo (opcional)</span>
         <input type="text" id="promo-action-reason" placeholder="ex.: o meu irmão comeu 2 de 4" autocomplete="off"></label>
       <button class="btn btn-primary" id="promo-action-go" onclick="submitPromoAction()"></button>
     </div>`,
   });
   const m = promoLotModel(lot);
-  const del = mode === 'delete';
-  document.getElementById('promo-action-title').textContent = (del ? 'Apagar lote · ' : 'Abater do lote · ') + m.title;
-  document.getElementById('promo-action-info').textContent = del
-    ? `Restam ${m.left}. Sem consumos o lote some; com consumos fecha (o custo das entradas fica).`
-    : `Restam ${m.left}. Não conta como poupança nem muda entradas já registadas.`;
-  document.getElementById('promo-action-grams-wrap').style.display = del ? 'none' : '';
+  const T = {
+    writeoff: ['Abater do lote', `Restam ${m.left}. Não conta como poupança nem muda entradas já registadas.`, 'Abater', 'btn btn-primary'],
+    close:    ['Fechar lote', `Restam ${m.left}. Abate o que resta; o custo das entradas já registadas fica.`, 'Fechar lote', 'btn btn-primary'],
+    delete:   ['Eliminar lote', 'O lote nunca foi consumido: desaparece por completo.', 'Eliminar lote', 'btn btn-danger'],
+  }[mode];
+  document.getElementById('promo-action-title').textContent = T[0] + ' · ' + m.title;
+  document.getElementById('promo-action-info').textContent = T[1];
+  document.getElementById('promo-action-grams-wrap').style.display = mode === 'writeoff' ? '' : 'none';
+  document.getElementById('promo-action-reason').closest('label').style.display = mode === 'delete' ? 'none' : '';
   document.getElementById('promo-action-grams').value = '';
   document.getElementById('promo-action-reason').value = '';
   const go = document.getElementById('promo-action-go');
-  go.textContent = del ? 'Apagar lote' : 'Abater';
-  go.className = del ? 'btn btn-danger' : 'btn btn-primary';
+  go.textContent = T[2];
+  go.className = T[3];
   overlay.classList.add('open');
 }
 
@@ -115,11 +120,13 @@ async function submitPromoAction() {
   const reason = document.getElementById('promo-action-reason').value.trim() || null;
   let call;
   if (promoActionMode === 'delete') {
-    call = () => db.rpc('promo_delete', { p_lot_id: promoActionLot.id, p_reason: reason });
+    call = () => db.rpc('promo_delete', { p_lot_id: promoActionLot.id, p_reason: null });
+  } else if (promoActionMode === 'close') {
+    call = () => db.rpc('promo_writeoff', { p_lot_id: promoActionLot.id, p_grams: null, p_reason: reason });
   } else {
     const raw = document.getElementById('promo-action-grams').value.trim();
-    const g = raw === '' ? null : parseFloat(raw);
-    if (g !== null && !(g > 0)) { toast('Gramas inválidas'); return; }
+    const g = parseFloat(raw);
+    if (!(g > 0)) { toast('Indica as gramas a abater'); return; }
     call = () => db.rpc('promo_writeoff', { p_lot_id: promoActionLot.id, p_grams: g, p_reason: reason });
   }
   _promoActing = true;
@@ -127,7 +134,7 @@ async function submitPromoAction() {
     const { error } = await call();
     if (error) { toast(error.message); return; }
     document.getElementById('promo-action-overlay').classList.remove('open');
-    toast(promoActionMode === 'delete' ? 'Lote apagado' : 'Abatido');
+    toast({ delete: 'Lote eliminado', close: 'Lote fechado', writeoff: 'Abatido' }[promoActionMode]);
     loadPromo();
   } finally {
     _promoActing = false;

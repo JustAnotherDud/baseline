@@ -111,7 +111,7 @@ test('2. saveEditEntry (entrada rápida): lê os 7 campos do sheet', async () =>
   });
 });
 
-test('3. saveEditEntry (com gramas): escala o snapshot pelo factor, 1 decimal', async () => {
+test('3. saveEditEntry (com gramas): escala o snapshot pelo factor, 3 casas (edições seguidas não acumulam arredondamento)', async () => {
   const { db, calls } = fakeDb();
   const entry = { id: 9, grams: 200, calories: 300, protein: 20.3, carbs: null, fat: 10, saturated_fat: 3, sugar: 1, fiber: 2 };
   const { ctx, document } = load(['js/nutrition.js', 'js/ui.js', 'js/db.js'], { db, editingEntry: entry });
@@ -119,7 +119,7 @@ test('3. saveEditEntry (com gramas): escala o snapshot pelo factor, 1 decimal', 
   await ctx.saveEditEntry();
   assert.deepEqual(plain(calls[0]), {
     table: 'diary', op: 'update', eq: [['id', 9]],
-    payload: { grams: 150, calories: 225, protein: 15.2, carbs: 0, fat: 7.5, saturated_fat: 2.3, sugar: 0.8, fiber: 1.5, has_tara: false },
+    payload: { grams: 150, calories: 225, protein: 15.225, carbs: 0, fat: 7.5, saturated_fat: 2.25, sugar: 0.75, fiber: 1.5, has_tara: false },
   });
 });
 
@@ -463,12 +463,12 @@ test('20. sheet da refeição: editar só envia started_at se a hora mudou; nome
   assert.equal(p.name, 'Almoço tardio'); assert.equal(ctx.fmtHM(p.started_at), '14:15');
 });
 
-test('21. remover refeição: a BD recusa se tem entradas (ON DELETE RESTRICT) e a PWA avisa', async () => {
+test('21. eliminar refeição: a BD recusa se tem entradas (ON DELETE RESTRICT) e a PWA avisa', async () => {
   const { db, calls } = fakeDb({ meals: () => ({ data: null, error: { code: '23503' } }) });
   const { ctx, toasts } = load(MEAL_FILES, { db });
   await ctx.deleteEmptyMeal(42);
   assert.deepEqual(plain(calls[0]), { table: 'meals', op: 'delete', payload: null, eq: [['id', 42]] });
-  assert.deepEqual(toasts, ['Só se remove uma refeição vazia']);
+  assert.deepEqual(toasts, ['Só se elimina uma refeição vazia']);
 });
 
 test('22. mover entrada: grava meal_id', async () => {
@@ -487,4 +487,65 @@ test('23. presetMealSelection: sem refeições = "Nova"; a regra das 2 h (meal_s
   const b = load(['js/nutrition.js', 'js/ui.js', 'js/views/log.js'], { db: db2, mealManuallySelected: false });
   await b.ctx.presetMealSelection();
   assert.equal(b.ctx.selectedMealId, 'new');                          // última entrada há > 2 h: refeição nova
+});
+
+// ── promoções na edição e na lista ──────────────────────────────────────────
+
+const PROMO_FILES = ['js/nutrition.js', 'js/ui.js', 'js/db.js', 'js/views/promo.js'];
+
+test('24. fillEditPrice: entrada promo mostra o campo "Preço pontual" vazio e a nota; as outras mantêm o snapshot', () => {
+  const { db } = fakeDb();
+  const { ctx, document } = load(PROMO_FILES, { db, editingEntry: { id: 3 } });
+  ctx.fillEditPrice({ id: 3, grams: 1000, cost_source: 'promo', price_eur: 0.99, price_qty_g: 1000, cost_eur: 0.71 });
+  assert.equal(document.getElementById('edit-price-eur').value, '');
+  assert.equal(document.getElementById('edit-price-qty').value, '');
+  assert.equal(document.getElementById('edit-price-note').style.display, '');
+  ctx.fillEditPrice({ id: 4, grams: 100, cost_source: 'default', price_eur: 2, price_qty_g: 375, cost_eur: 0.53 });
+  assert.equal(document.getElementById('edit-price-eur').value, 2);
+  assert.equal(document.getElementById('edit-price-note').style.display, 'none');
+});
+
+test('25. updateEditPreview: sem mudar as gramas não repete o split; ao mudar pede promo_preview à BD', async () => {
+  const { db, calls } = fakeDb({}, { promo_preview: () => ({ data: { promo_g: 500, rest_g: 0, total_eur: 0.3 }, error: null }) });
+  const entry = { id: 3, date: '2026-10-08', food_id: 118, grams: 1000, calories: 355, protein: 12, carbs: 71, fat: 1.8,
+                  cost_source: 'promo', price_eur: 0.99, price_qty_g: 1000 };
+  const { ctx, document } = load(PROMO_FILES, { db, editingEntry: entry, setTimeout: f => { f(); return 1; }, clearTimeout: () => {} });
+  document.getElementById('edit-grams').value = '1000';
+  ctx.updateEditPreview();
+  await new Promise(r => setImmediate(r));
+  assert.equal(calls.filter(c => c.rpc).length, 0);
+  assert.equal(document.getElementById('edit-promo-preview').textContent, '');
+  document.getElementById('edit-grams').value = '500';
+  ctx.updateEditPreview();
+  await new Promise(r => setImmediate(r));
+  assert.deepEqual(plain(calls.find(c => c.rpc)), { rpc: 'promo_preview',
+    args: { p_food_id: 118, p_date: '2026-10-08', p_grams: 500, p_exclude_diary_id: 3 } });
+  assert.equal(document.getElementById('edit-promo-preview').textContent, '500 g do stock promo, 0,30 €');
+});
+
+test('26. Promoções: Abater exige gramas; Fechar lote abate tudo com motivo; Eliminar só chama promo_delete', async () => {
+  const { db, calls } = fakeDb({}, {});
+  const { ctx, document, toasts } = load(PROMO_FILES, { db });
+  ctx.loadPromo = () => {};   // recarregar a lista fica fora do teste
+  const lot = { id: 9, food_name: 'Esparguete', brand: 'Lidl', grams_left: 700, grams_bought: 1000, paid_eur: 0.59, ref_eur: 0.99,
+                saving_total: 0.4, saving_realised: 0.12, bought_on: '2026-10-08', grams_eaten: 300 };
+  ctx.openPromoAction(lot, 'writeoff');
+  await ctx.submitPromoAction();
+  assert.deepEqual(toasts, ['Indica as gramas a abater']);
+  assert.equal(calls.filter(c => c.rpc).length, 0);
+  document.getElementById('promo-action-grams').value = '2,5';           // vírgula não é válida em type=number: parseFloat('2,5') = 2
+  document.getElementById('promo-action-grams').value = '100';
+  document.getElementById('promo-action-reason').value = 'irmão';
+  await ctx.submitPromoAction();
+  assert.deepEqual(plain(calls.find(c => c.rpc)), { rpc: 'promo_writeoff', args: { p_lot_id: 9, p_grams: 100, p_reason: 'irmão' } });
+  calls.length = 0;
+  ctx.openPromoAction(lot, 'close');
+  document.getElementById('promo-action-reason').value = 'acabou-se';
+  await ctx.submitPromoAction();
+  assert.deepEqual(plain(calls.find(c => c.rpc)), { rpc: 'promo_writeoff', args: { p_lot_id: 9, p_grams: null, p_reason: 'acabou-se' } });
+  calls.length = 0;
+  ctx.openPromoAction({ ...lot, grams_eaten: 0 }, 'delete');
+  await ctx.submitPromoAction();
+  assert.deepEqual(plain(calls.find(c => c.rpc)), { rpc: 'promo_delete', args: { p_lot_id: 9, p_reason: null } });
+  assert.deepEqual(toasts.slice(-3), ['Abatido', 'Lote fechado', 'Lote eliminado']);
 });

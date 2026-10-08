@@ -12,7 +12,7 @@ App: https://justanotherdud.github.io/baseline/
 
 ## Configuração
 
-Tudo em `localStorage`, preenchido no ecrã de setup ou em Settings.
+Tudo em `localStorage`, preenchido no ecrã de setup ou em Definições.
 
 | Chave | Conteúdo |
 |---|---|
@@ -21,7 +21,7 @@ Tudo em `localStorage`, preenchido no ecrã de setup ou em Settings.
 | `hevy_key` | API key do Hevy (opcional) |
 | `icu_enabled`, `hevy_enabled` | `'false'` desliga a integração |
 
-Login obrigatório (Supabase Auth, email e password, utilizador único, signups desligados). RLS restrito a `authenticated`: a publishable key sozinha não lê nada. A sessão fica em `localStorage` (supabase-js, refresh automático); sem sessão a app fica no ecrã de login. Logout em Settings.
+Login obrigatório (Supabase Auth, email e palavra-passe, utilizador único, signups desligados). RLS restrito a `authenticated`: a publishable key sozinha não lê nada. A sessão fica em `localStorage` (supabase-js, refresh automático); sem sessão a app fica no ecrã de login. Logout em Settings.
 
 ## Ficheiros
 
@@ -31,10 +31,10 @@ Ordem de carregamento em `index.html`: `config.js`, `nutrition.js`, `db.js`, `ui
 - `js/nutrition.js`: `getNutrientColor` (semáforo de aderência), `macroFloorState` e os helpers de custo (formatação, somas, payloads de preço).
 - `js/db.js`: queries do diário, scores do date picker e `loadCostConfig` (`app_config`).
 - `js/ui.js`: toast, sheets partilhados (edição, date picker, ranking, donut, mover entrada, sheet da refeição), `parseGramsExpr`.
-- `js/app.js`: `init` e login, router por hash (`go`), Settings, refresh automático.
+- `js/app.js`: `init` e login, router por hash (`go`), Definições, refresh automático.
 - `js/views/`: `diary`, `log` (sheet de registo), `foods`, `meals` (templates), `targets`, `stats`, `promo` (Promoções), `cost` (secção de custo das Estatísticas), `history` (Histórico), `body` (Forma).
 
-Views: Diário, Comida, Forma e Mais (Manutenção, Histórico, Promoções, Estatísticas, Settings).
+Views: Diário, Comida, Forma e Mais (Manutenção, Histórico, Promoções, Estatísticas, Definições).
 
 ## Schema Supabase
 
@@ -78,11 +78,11 @@ A conta `round(gramas × price_eur / price_qty_g, 2)` vive só na BD (`food_cost
 
 Inventário só de promoções (não é inventário completo: tolera desvios). Tabelas `promo_lots` (alimento, gramas, `paid_eur`, `ref_eur` = preço normal das mesmas gramas, data, loja, nota, `best_before` opcional) e `promo_alloc` (entrada ↔ lote ↔ gramas; com `diary_id` NULL é saída sem consumo, com motivo). Tudo na BD (`20261008_promo_lots.sql` no sync_hub): o restante, o fecho e a poupança calculam-se em `v_promo_lot`, nada se guarda.
 
-- Registo de entrada com `food_id`, sem preço pontual nem custo manual: consome os lotes abertos do alimento, o mais antigo primeiro, só com data de compra <= data da entrada; o que exceder sai ao preço do alimento. A entrada fica `cost_source = 'promo'` (↓ e custo efectivo no diário; o detalhe mostra o split). Preço pontual ou custo manual ganham e não consomem lote.
-- Editar gramas, data ou apagar a entrada devolve as gramas e replaneia só essa entrada. Criar ou editar um lote realoca as entradas do alimento desde a data de compra, por ordem.
+- Registo de entrada com `food_id`, sem preço pontual nem custo manual: consome os lotes abertos do alimento, o mais antigo primeiro, só com data de compra <= data da entrada; o que exceder sai ao preço do alimento. A entrada fica `cost_source = 'promo'` (↓ e custo efectivo no diário; o sheet de edição mostra só o split, com o campo "Preço pontual" vazio: preenchê-lo cria um override e solta o lote). Preço pontual ou custo manual ganham e não consomem lote.
+- Editar gramas ou data, ou eliminar a entrada, devolve as gramas e replaneia só essa entrada. Criar ou editar um lote realoca as entradas do alimento desde a data de compra, por ordem.
 - Lote aberto: restante >= `promo_close_pct` (5 %, `app_config`) das gramas compradas. Aviso (só visual): validade passada, ou, sem validade, aberto há mais de `promo_warn_days` (90).
-- Abater (`promo_writeoff`: parte do lote, motivo opcional; não conta como poupança) e apagar (`promo_delete`: sem consumos some; com consumos fecha e o custo das entradas fica).
-- Mais → Promoções: lotes abertos (restante, pago, poupança total e realizada), Abater, Apagar e "+" para criar. Alimentos mostra o stock promo restante. No registo e na edição, "X g do stock promo, Y €" (RPC `promo_preview`, o mesmo plano do trigger) antes de gravar. Helpers de formato em `nutrition.js` (`promoPreviewText`, `promoSplitText`, `promoLotModel`, `promoLotPayload`).
+- Abater (`promo_writeoff`: parte do lote, motivo opcional; não conta como poupança), Fechar lote (abate o que resta, com motivo; o custo das entradas fica) e Eliminar (`promo_delete`, só aparece num lote que nunca foi consumido).
+- Mais → Promoções: lotes abertos (restante, pago, poupança total e realizada), Abater, Fechar lote, Eliminar (só sem consumos) e "+" para criar. Alimentos mostra o stock promo restante. No registo (e na edição, se mudares as gramas), "X g do stock promo, Y €" (RPC `promo_preview`, o mesmo plano do trigger) antes de gravar. Helpers de formato em `nutrition.js` (`promoPreviewText`, `promoSplitText`, `promoLotModel`, `promoLotPayload`).
 
 ## Histórico
 
@@ -106,7 +106,7 @@ Cada fetch tem o seu `.catch(() => null)`: uma API em baixo só esvazia a sua se
 
 ```bash
 npm test                 # node:test, corre também no hook pre-push
-node bump.js             # actualiza ?v= e APP_VERSION
+node bump.js             # atualiza ?v= e APP_VERSION
 node contrast-check.js   # gate WCAG AA dos tokens de cor
 ```
 

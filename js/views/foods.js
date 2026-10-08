@@ -159,7 +159,7 @@ function renderFoods(foods) {
     } else if (RATIO_META[sort]) {
       const meta  = RATIO_META[sort];
       const kcal  = f.calories_per_100g || 0;
-      const ratio = kcal ? (f[meta.field] / kcal).toFixed(2) : '—';
+      const ratio = kcal ? numPt(f[meta.field] / kcal, 2) : '—';
       rightCol = `<div class="fi-kcal" style="${HL}">${ratio}<br><span style="font-size:9px;color:var(--text3)">${meta.label}</span></div>`;
     } else {
       const kcalStyle = sort === 'calories' ? HL : '';
@@ -180,7 +180,7 @@ function renderFoods(foods) {
 
     const detail = document.createElement('div');
     detail.className = 'fi-detail';
-    const servingStr = f.serving_size_g ? ` · porção ${f.serving_size_g}g` : '';
+    const servingStr = f.serving_size_g ? ` · porção ${numPt(f.serving_size_g)} g` : '';
     const stock = promoStock.get(f.id);
     const stockStr = stock > 0 ? ` · <span class="price-promo">↓ ${fmtG(stock)} g</span>` : '';
     detail.innerHTML = `${pStr} ${cStr} ${gStr}${servingStr}${foodPriceLabel(f)}${stockStr}`;
@@ -256,7 +256,7 @@ async function saveFood() {
       ({ error, data: data2 } = await db.from('foods').insert(food).select().single());
     }
     if (error) { toast('Erro ao guardar'); return; }
-    toast(editingFoodId?'Actualizado':'Alimento adicionado');
+    toast(editingFoodId?'Atualizado':'Alimento adicionado');
     closeAddFood();
     loadFoods();
     if (!editingFoodId && fromLogContext && data2) {

@@ -157,11 +157,6 @@ function costAverage(days) {
 // Etiqueta do preço pontual (cost_source = override). Único sítio a editar.
 const PROMO_LABEL = 'Promo';
 
-// Etiqueta do indicador de fonte do custo na lista do diário.
-function costSourceTag(src) {
-  return src === 'override' || src === 'promo' ? PROMO_LABEL : src === 'manual' ? 'manual' : '';
-}
-
 // Custo de uma entrada no diário. Promo (override ou lote): pill suave + ↓. manual: glifo ✎ discreto
 // antes do valor. Nenhuma marca depende de title (não existe em mobile).
 function entryCostHtml(entry) {
@@ -219,6 +214,7 @@ function promoLotModel(l) {
     meta: [l.store, 'comprado ' + dm(l.bought_on), l.best_before ? 'validade ' + dm(l.best_before) : '', l.note]
       .filter(Boolean).join(' · '),
     warns,
+    canDelete: !(+l.grams_eaten > 0),   // eliminar mesmo só num lote que nunca foi consumido
   };
 }
 
@@ -293,6 +289,8 @@ function editPricePatch(entry, priceStr, qtyStr, reset) {
   if (!hasP && !hasQ) return {};
   if (hasP && hasQ && p === +entry.price_eur && q === +entry.price_qty_g) return {};
   if (hasP && hasQ) return { price_eur: p, price_qty_g: q, cost_source: 'override' };
+  // só o preço: as gramas que ele cobre vêm do snapshot da entrada (a BD completa)
+  if (hasP && !hasQ && entry.price_qty_g > 0) return { price_eur: p, cost_source: 'override' };
   return { error: PRICE_PAIR_ERROR };
 }
 

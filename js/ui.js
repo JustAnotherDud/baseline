@@ -147,7 +147,7 @@ async function openEditEntry(id) {
   card.querySelector('.food-card-name').textContent = data.food_name;
   card.querySelector('.food-card-sub').textContent = isQuick
     ? 'Entrada rápida'
-    : 'Peso original: ' + data.grams + 'g';
+    : 'Peso original: ' + numPt(data.grams) + ' g';
   // Atalho para o alimento (só entradas ligadas a um alimento).
   if (data.food_id && !isQuick) {
     const link = document.createElement('button');
@@ -172,9 +172,9 @@ async function openEditEntry(id) {
       qf.id = 'edit-quick-fields';
       qf.innerHTML = `
         <label><span class="lt">Calorias (kcal)</span><input type="number" id="eq-calories" inputmode="decimal" placeholder="0"></label>
-        <label><span class="lt">Proteína (g)</span><input type="number" id="eq-protein" inputmode="decimal" placeholder="0"></label>
-        <label><span class="lt">Hidratos (g)</span><input type="number" id="eq-carbs" inputmode="decimal" placeholder="0"></label>
-        <label><span class="lt">Gordura (g)</span><input type="number" id="eq-fat" inputmode="decimal" placeholder="0"></label>
+        <label><span class="lt">PROT (g)</span><input type="number" id="eq-protein" inputmode="decimal" placeholder="0"></label>
+        <label><span class="lt">CARBS (g)</span><input type="number" id="eq-carbs" inputmode="decimal" placeholder="0"></label>
+        <label><span class="lt">FAT (g)</span><input type="number" id="eq-fat" inputmode="decimal" placeholder="0"></label>
         <label><span class="lt">Custo (€, opcional)</span><input type="number" id="eq-cost" inputmode="decimal" step="0.01" placeholder="—"></label>
         <button type="button" class="btn btn-secondary btn-sm" onclick="setFree('eq-cost')">Grátis (0 €)</button>
         <input type="hidden" id="eq-saturated_fat">
@@ -214,7 +214,7 @@ async function openEditEntry(id) {
       editingEntry._food_price = food ? { price_eur: food.price_eur, price_qty_g: food.price_qty_g } : null;
       if (food && food.serving_size_g) {
         editingEntry._serving_size_g = food.serving_size_g;
-        portionBtn.textContent = `+ porção (${food.serving_size_g}g)`;
+        portionBtn.textContent = `+ porção (${numPt(food.serving_size_g)} g)`;
         portionBtn.style.display = '';
         portionBtn.onclick = () => {
           const input = document.getElementById('edit-grams');
@@ -241,8 +241,12 @@ async function openEditEntry(id) {
 
 // Preço pontual da entrada: pré-preenchido com o snapshot actual.
 function fillEditPrice(data) {
-  document.getElementById('edit-price-eur').value = data.price_eur ?? '';
-  document.getElementById('edit-price-qty').value = data.price_qty_g ?? '';
+  // Entrada com lote: o snapshot do preço do alimento fica na BD, mas o campo é só de preço pontual
+  // (vazio por defeito: preenchê-lo cria um override e solta o lote).
+  const promo = data.cost_source === 'promo';
+  document.getElementById('edit-price-eur').value = promo ? '' : (data.price_eur ?? '');
+  document.getElementById('edit-price-qty').value = promo ? '' : (data.price_qty_g ?? '');
+  document.getElementById('edit-price-note').style.display = promo ? '' : 'none';
   const src = { default: 'preço do alimento', override: `preço ${PROMO_LABEL}`, manual: 'custo manual', promo: `stock ${PROMO_LABEL.toLowerCase()}` }[data.cost_source] || 'sem custo';
   document.getElementById('edit-price-hint').textContent = `${src} · ${formatEur(data.cost_eur)}`;
   if (data.cost_source === 'promo') loadPromoSplit(data);
@@ -379,7 +383,7 @@ function openNutrientSheet(entries, nutrient) {
 
   function showRanking(n) {
     const r   = v => Math.round(+(v || 0) * 10) / 10;
-    const fmt = v => n.key === 'calories' ? Math.round(v) : r(v);
+    const fmt = v => n.key === 'calories' ? Math.round(v) : numPt(r(v));
 
     // Group by food_name, sum the nutrient
     const groupMap = new Map();
@@ -396,7 +400,7 @@ function openNutrientSheet(entries, nutrient) {
     const maxVal = grouped.length > 0 ? grouped[0].sum : 1;
 
     document.getElementById('nutri-rank-title').textContent =
-      `${n.label} — ${fmt(total)}${n.unit} total`;
+      `${n.label} — ${fmt(total)} ${n.unit} total`;
 
     const list = document.getElementById('nutri-rank-list');
     list.innerHTML = '';
@@ -421,7 +425,7 @@ function openNutrientSheet(entries, nutrient) {
         const meal = currentMeals.find(m => m.id === e.meal_id);
         return `<div class="nutri-rank-sub">
           <span class="nutri-rank-sub-meal">${escHtml(meal ? mealLabel(meal) : '—')}</span>
-          <span class="nutri-rank-sub-val">${fmt(+(e[n.key] || 0))}${n.unit}</span>
+          <span class="nutri-rank-sub-val">${fmt(+(e[n.key] || 0))} ${n.unit}</span>
         </div>`;
       }).join('') : '';
 
@@ -432,7 +436,7 @@ function openNutrientSheet(entries, nutrient) {
             ${multi ? `<span style="font-family:var(--mono);font-size:10px;color:var(--text3);background:var(--surface3);padding:1px 5px;border-radius:10px;flex-shrink:0">×${count}</span>` : ''}
           </div>
           <div style="display:flex;align-items:center;gap:6px">
-            <div class="nutri-rank-val" style="color:${n.color}">${fmt(val)}${n.unit}</div>
+            <div class="nutri-rank-val" style="color:${n.color}">${fmt(val)} ${n.unit}</div>
             ${multi ? `<span class="nutri-rank-chevron">▸</span>` : ''}
           </div>
         </div>
@@ -581,15 +585,15 @@ function openMealBreakdown(mealId, allEntries) {
   const legendHTML = `<div class="meal-donut-legend">
     <div class="meal-donut-legend-item">
       <span class="meal-donut-dot" style="background:var(--orange)"></span>
-      <span>F ${Math.round(totalFat * 10) / 10}g ${pct(g_kcal)}%</span>
+      <span>F ${numPt(Math.round(totalFat * 10) / 10)} g ${pct(g_kcal)}%</span>
     </div>
     <div class="meal-donut-legend-item">
       <span class="meal-donut-dot" style="background:var(--yellow)"></span>
-      <span>C ${Math.round(totalCarbs * 10) / 10}g ${pct(h_kcal)}%</span>
+      <span>C ${numPt(Math.round(totalCarbs * 10) / 10)} g ${pct(h_kcal)}%</span>
     </div>
     <div class="meal-donut-legend-item">
       <span class="meal-donut-dot" style="background:var(--blue)"></span>
-      <span>P ${Math.round(totalProt * 10) / 10}g ${pct(p_kcal)}%</span>
+      <span>P ${numPt(Math.round(totalProt * 10) / 10)} g ${pct(p_kcal)}%</span>
     </div>
   </div>`;
 
@@ -618,11 +622,11 @@ function openMealBreakdown(mealId, allEntries) {
       metaEl.className = 'meal-bd-food-meta';
       if (selectedMacro) {
         const val = e[selectedMacro];
-        const valStr = val != null ? `${(Math.round(+val * 10) / 10).toFixed(1)}g` : '—';
+        const valStr = val != null ? `${numPt(Math.round(+val * 10) / 10, 1)} g` : '—';
         const kcal = Math.round(+(e.calories || 0));
         metaEl.innerHTML = `<span style="color:${MACRO_COLORS[selectedMacro]}">${valStr}</span><span style="color:var(--text3)"> · ${kcal} kcal</span>`;
       } else {
-        const gramsStr = (e.grams != null && +e.grams > 0) ? `${Math.round(+e.grams)}g` : '—';
+        const gramsStr = (e.grams != null && +e.grams > 0) ? `${Math.round(+e.grams)} g` : '—';
         metaEl.textContent = `${gramsStr}   ${Math.round(+(e.calories || 0))} kcal`;
       }
       row.appendChild(nameEl);
@@ -666,12 +670,13 @@ function updateEditPreview() {
   const ov = editPricePatch(editingEntry, document.getElementById('edit-price-eur').value,
     document.getElementById('edit-price-qty').value, !!editingEntry._resetPrice);
   const fixed = !editingEntry._resetPrice && ['override', 'manual'].includes(editingEntry.cost_source);
+  const unchanged = g === +editingEntry.grams;   // sem mudança o split já está na linha do preço: não repetir
   showPromoPreview('edit-promo-preview', editingEntry.food_id, editingEntry.date, g, editingEntry.id,
-    fixed || ov.cost_source === 'override' || !!ov.error);
+    unchanged || fixed || ov.cost_source === 'override' || !!ov.error);
   const serving = editingEntry._serving_size_g;
   if (serving) {
     const infoEl = document.getElementById('edit-dose-info');
-    if (infoEl) infoEl.textContent = g > 0 ? `${(g / serving).toFixed(1)}×` : '';
+    if (infoEl) infoEl.textContent = g > 0 ? `${numPt(g / serving, 1)}×` : '';
   }
 }
 
@@ -731,7 +736,7 @@ function openMealSheet(mealId) {
       <div id="meal-edit-hint" class="cost-hint"></div>
       <button class="btn btn-primary" id="meal-edit-save">Guardar</button>
       <button class="btn btn-secondary" id="meal-edit-detail" style="display:none">Ver detalhe</button>
-      <button class="btn btn-danger" id="meal-edit-del" style="display:none">Remover refeição vazia</button>
+      <button class="btn btn-danger" id="meal-edit-del" style="display:none">Eliminar refeição vazia</button>
     </div>`,
   });
   const m = mealId == null ? null : currentMeals.find(x => x.id === mealId);
@@ -782,9 +787,9 @@ async function saveMealSheet(mealId) {
 
 async function deleteEmptyMeal(mealId) {
   const { error } = await db.from('meals').delete().eq('id', mealId);
-  if (error) { toast('Só se remove uma refeição vazia'); return; }
+  if (error) { toast('Só se elimina uma refeição vazia'); return; }
   document.getElementById('meal-edit-overlay').classList.remove('open');
-  toast('Refeição removida');
+  toast('Refeição eliminada');
   loadToday();
 }
 

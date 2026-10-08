@@ -122,7 +122,7 @@ async function loadStats() {
           <div class="stats-label">${label}</div>
           <div class="stats-values">
             <span style="color:${color};font-weight:600">${actual}</span>
-            <span class="stats-of">/${target}${unit}</span>
+            <span class="stats-of">/${target} ${unit}</span>
             <span class="stats-pct" style="color:${color}">${pctStr}</span>
           </div>
           <div class="stats-bar-track">

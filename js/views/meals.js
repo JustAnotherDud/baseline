@@ -269,13 +269,13 @@ async function openApplyMeal(templateId, templateName) {
 
   if (gen !== openApplyMealGen) return;
   _applyMealItems = items;
-  const r = n => Math.round(+(n || 0) * 10) / 10;
+  const r = n => numPt(Math.round(+(n || 0) * 10) / 10);
   const totalKcal = items.reduce((s, i) => s + +(i.calories || 0), 0);
 
   itemsEl.innerHTML = items.map(i => `
     <div class="apply-meal-item">
       <div class="apply-meal-item-name">${escHtml(i.food_name)}</div>
-      <div class="apply-meal-item-detail">${i.grams}g · ${Math.round(+(i.calories||0))} kcal · P${r(i.protein)}g C${r(i.carbs)}g F${r(i.fat)}g</div>
+      <div class="apply-meal-item-detail">${numPt(i.grams)} g · ${Math.round(+(i.calories||0))} kcal · P${r(i.protein)} g C${r(i.carbs)} g F${r(i.fat)} g</div>
     </div>`).join('')
     + `<div class="apply-meal-total">${Math.round(totalKcal)} kcal total</div>`;
 }

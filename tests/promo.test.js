@@ -7,10 +7,9 @@ const { loadScript } = require('./_load.js');
 const c = loadScript('js/nutrition.js');
 const plain = x => JSON.parse(JSON.stringify(x));
 
-test('entryCostHtml / costSourceTag: promo (lote) marca como override', () => {
+test('entryCostHtml: promo (lote) marca como override', () => {
   assert.equal(c.entryCostHtml({ cost_eur: 0.71, cost_source: 'promo' }), '<span class="price-promo">↓ 0,71 €</span>');
   assert.equal(c.entryCostHtml({ cost_eur: 0, cost_source: 'promo' }), '<span class="price-promo">↓ grátis</span>');
-  assert.equal(c.costSourceTag('promo'), 'Promo');
 });
 
 test('fmtG: 1 casa no máximo, vírgula decimal', () => {
@@ -55,6 +54,23 @@ test('promoLotModel: linhas e avisos (só informação)', () => {
   assert.deepEqual(w.warns, ['validade passada', 'aberto há 91 dias']);
   assert.match(w.meta, /validade 01\/09/);
   assert.equal(plain(c.promoLotModel({ ...lot, brand: null, paid_eur: 0 })).paid, 'pago grátis · normal 0,99 €');
+});
+
+test('promoLotModel: eliminar mesmo só num lote que nunca foi consumido (abates não contam)', () => {
+  const lot = { food_name: 'X', grams_left: 100, grams_bought: 100, paid_eur: 1, ref_eur: 2, saving_total: 1, saving_realised: 0, bought_on: '2026-10-08' };
+  assert.equal(c.promoLotModel({ ...lot, grams_eaten: 0, grams_written_off: 40 }).canDelete, true);
+  assert.equal(c.promoLotModel({ ...lot, grams_eaten: 30 }).canDelete, false);
+});
+
+test('numPt: vírgula decimal; sem número é "—"', () => {
+  assert.equal(c.numPt(12.5), '12,5');
+  assert.equal(c.numPt(0.5, 2), '0,50');
+  assert.equal(c.numPt('3'), '3');
+  assert.equal(c.numPt(1000, 1), '1000,0');
+  assert.equal(c.numPt(null), '—');
+  assert.equal(c.numPt(''), '—');
+  assert.equal(c.numPt(NaN), '—');
+  assert.equal(c.numPt(0), '0');
 });
 
 test('promoStockMap: soma das gramas abertas por alimento', () => {

@@ -105,7 +105,7 @@ async function saveEditEntry() {
       ...cost,
     }).eq('id', editingEntry.id);
     if (error) { toast('Erro ao guardar'); return; }
-    toast('Actualizado');
+    toast('Atualizado');
     closeEditEntry();
     loadToday();
     return;
@@ -117,7 +117,7 @@ async function saveEditEntry() {
 
   const orig = editingEntry.grams || g;
   const factor = g / orig;
-  const r = v => Math.round((parseFloat(v) || 0) * factor * 10) / 10;
+  const r = v => Math.round((parseFloat(v) || 0) * factor * 1000) / 1000;   // 3 casas: edições seguidas não acumulam arredondamento
 
   // O custo recalcula-se na BD (trigger) a partir do snapshot da entrada.
   const price = editPricePatch(editingEntry,
@@ -133,7 +133,7 @@ async function saveEditEntry() {
   }).eq('id', editingEntry.id);
 
   if (error) { toast('Erro ao guardar'); return; }
-  toast('Actualizado');
+  toast('Atualizado');
   closeEditEntry();
   loadToday();
 }

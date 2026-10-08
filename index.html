@@ -19,7 +19,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
           integrity="sha384-bs/nf9FbdNouRbMiFcrcZfLXYPKiPaGVGplVbv7dLGECccEXDW+S3zjqSKR5ZEaD"
           crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="css/styles.css?v=20261008e">
+  <link rel="stylesheet" href="css/styles.css?v=20261008g">
 </head>
 <body>
 
@@ -46,8 +46,8 @@
       <input type="email" id="setup-email" autocomplete="username" aria-label="Email">
     </label>
     <label>
-      <span class="lt">Password</span>
-      <input type="password" id="setup-password" autocomplete="current-password" aria-label="Password">
+      <span class="lt">Palavra-passe</span>
+      <input type="password" id="setup-password" autocomplete="current-password" aria-label="Palavra-passe">
     </label>
     <button type="submit" class="btn btn-primary" id="setup-submit">Entrar</button>
   </form>
@@ -136,7 +136,7 @@
   <!-- ─── VIEW: TARGETS ─── -->
   <div id="view-targets" class="view">
     <div class="view-header">
-      <button onclick="go('mais')" style="background:none;border:none;color:var(--text2);font-size:15px;cursor:pointer;padding:0;font-family:var(--sans)">←</button>
+      <button class="back-btn" onclick="go('mais')" aria-label="Voltar">←</button>
       <div class="view-title">Manutenção</div>
     </div>
 
@@ -163,17 +163,17 @@
       <!-- Primários -->
       <div class="target-section">
         <div class="t-row">
-          <span class="t-row-label">Proteína</span>
+          <span class="t-row-label">PROT</span>
           <span class="t-row-value" id="t-prot">—</span>
           <span class="t-row-unit">g</span>
         </div>
         <div class="t-row">
-          <span class="t-row-label">Hidratos</span>
+          <span class="t-row-label">CARBS</span>
           <span class="t-row-value" id="t-carb">—</span>
           <span class="t-row-unit">g</span>
         </div>
         <div class="t-row">
-          <span class="t-row-label">Gordura</span>
+          <span class="t-row-label">FAT</span>
           <span class="t-row-value" id="t-fat">—</span>
           <span class="t-row-unit">g</span>
         </div>
@@ -211,8 +211,8 @@
   <!-- ─── VIEW: SETTINGS ─── -->
   <div id="view-settings" class="view">
     <div class="view-header">
-      <button onclick="go('mais')" style="background:none;border:none;color:var(--text2);font-size:15px;cursor:pointer;padding:0;font-family:var(--sans)">←</button>
-      <div class="view-title">Settings</div>
+      <button class="back-btn" onclick="go('mais')" aria-label="Voltar">←</button>
+      <div class="view-title">Definições</div>
     </div>
 
     <!-- APP -->
@@ -272,7 +272,7 @@
         <div class="mais-item-arrow">→</div>
       </div>
       <div class="mais-item" onclick="go('settings')">
-        <div class="mais-item-label">Settings</div>
+        <div class="mais-item-label">Definições</div>
         <div class="mais-item-arrow">→</div>
       </div>
     </div>
@@ -281,7 +281,7 @@
   <!-- ─── VIEW: HISTORY ─── -->
   <div id="view-history" class="view">
     <div class="view-header">
-      <button onclick="go('mais')" style="background:none;border:none;color:var(--text2);font-size:15px;cursor:pointer;padding:0;font-family:var(--sans)">←</button>
+      <button class="back-btn" onclick="go('mais')" aria-label="Voltar">←</button>
       <div>
         <div class="view-title">Histórico</div>
         <div class="view-sub">kcal · delta vs manutenção · custo</div>
@@ -295,7 +295,7 @@
   <!-- ─── VIEW: PROMOÇÕES ─── -->
   <div id="view-promo" class="view">
     <div class="view-header">
-      <button onclick="go('mais')" style="background:none;border:none;color:var(--text2);font-size:15px;cursor:pointer;padding:0;font-family:var(--sans)">←</button>
+      <button class="back-btn" onclick="go('mais')" aria-label="Voltar">←</button>
       <div>
         <div class="view-title">Promoções</div>
         <div class="view-sub" id="promo-sub"></div>
@@ -308,13 +308,13 @@
   <!-- ─── VIEW: STATS ─── -->
   <div id="view-stats" class="view">
     <div class="view-header">
-      <button onclick="go('mais')" style="background:none;border:none;color:var(--text2);font-size:15px;cursor:pointer;padding:0;font-family:var(--sans)">←</button>
+      <button class="back-btn" onclick="go('mais')" aria-label="Voltar">←</button>
       <div>
         <div class="view-title">Estatísticas</div>
         <div class="view-sub" id="stats-period"></div>
       </div>
     </div>
-    <div id="stats-period-chips" style="display:flex;gap:8px;padding:12px 20px 0">
+    <div id="stats-period-chips" style="display:flex;gap:8px;padding:18px 20px 6px">
       <button class="sort-chip active" data-p="7"  onclick="setStatsPeriod(7)">7 dias</button>
       <button class="sort-chip"        data-p="14" onclick="setStatsPeriod(14)">14 dias</button>
       <button class="sort-chip"        data-p="30" onclick="setStatsPeriod(30)">30 dias</button>
@@ -421,14 +421,14 @@
           </div>
           <div class="macro-preview" style="flex-wrap:wrap;gap:6px">
             <div class="mp-chip"><div class="mp-val kcal" id="prev-kcal">0</div><div class="mp-lbl">kcal</div></div>
-            <div class="mp-chip"><div class="mp-val g" id="prev-fat">0</div><div class="mp-lbl">fat</div></div>
-            <div class="mp-chip"><div class="mp-val carb" id="prev-carb">0</div><div class="mp-lbl">carbs</div></div>
-            <div class="mp-chip"><div class="mp-val prot" id="prev-prot">0</div><div class="mp-lbl">prot</div></div>
+            <div class="mp-chip"><div class="mp-val g" id="prev-fat">0</div><div class="mp-lbl">FAT</div></div>
+            <div class="mp-chip"><div class="mp-val carb" id="prev-carb">0</div><div class="mp-lbl">CARBS</div></div>
+            <div class="mp-chip"><div class="mp-val prot" id="prev-prot">0</div><div class="mp-lbl">PROT</div></div>
           </div>
           <div id="log-promo-preview" class="promo-preview"></div>
           <div class="price-override">
             <div class="r2">
-              <label><span class="lt">Preço <span data-promo-label>Promo</span> (€)</span><input type="number" id="log-price-eur" inputmode="decimal" step="0.01" placeholder="—" oninput="updatePreview()"></label>
+              <label><span class="lt">Preço pontual (€)</span><input type="number" id="log-price-eur" inputmode="decimal" step="0.01" placeholder="—" oninput="updatePreview()"></label>
               <label><span class="lt">Gramas do preço</span><input type="number" id="log-price-qty" inputmode="decimal" placeholder="—" oninput="updatePreview()"></label>
             </div>
             <div id="log-price-hint" class="cost-hint"></div>
@@ -447,12 +447,12 @@
         <label><span class="lt">Nome</span><input type="text" id="q-name" placeholder="ex: Frango assado no restaurante"></label>
         <label><span class="lt">Calorias</span><input type="number" id="q-kcal" inputmode="decimal" placeholder="0"></label>
         <div class="r2">
-          <label><span class="lt">Gordura (g)</span><input type="number" id="q-fat" inputmode="decimal" placeholder="0"></label>
-          <label><span class="lt">Hidratos (g)</span><input type="number" id="q-carb" inputmode="decimal" placeholder="0"></label>
+          <label><span class="lt">FAT (g)</span><input type="number" id="q-fat" inputmode="decimal" placeholder="0"></label>
+          <label><span class="lt">CARBS (g)</span><input type="number" id="q-carb" inputmode="decimal" placeholder="0"></label>
         </div>
         <div class="r2">
           <label><span class="lt">Fibra (g)</span><input type="number" id="q-fiber" inputmode="decimal" placeholder="0"></label>
-          <label><span class="lt">Proteína (g)</span><input type="number" id="q-prot" inputmode="decimal" placeholder="0"></label>
+          <label><span class="lt">PROT (g)</span><input type="number" id="q-prot" inputmode="decimal" placeholder="0"></label>
         </div>
         <label><span class="lt">Custo (€, opcional)</span><input type="number" id="q-cost" inputmode="decimal" step="0.01" placeholder="—"></label>
         <button type="button" class="btn btn-secondary btn-sm" onclick="setFree('q-cost')">Grátis (0 €)</button>
@@ -487,16 +487,16 @@
       <div class="section-label">Valores por 100g</div>
       <label><span class="lt">Calorias (kcal) *</span><input type="number" id="f-kcal" inputmode="decimal" placeholder="0"></label>
       <div class="r2">
-        <label><span class="lt">Gordura (g) *</span><input type="number" id="f-fat" inputmode="decimal" placeholder="0"></label>
+        <label><span class="lt">FAT (g) *</span><input type="number" id="f-fat" inputmode="decimal" placeholder="0"></label>
         <label><span class="lt">Gord. Saturada (g)</span><input type="number" id="f-satfat" inputmode="decimal" placeholder="0"></label>
       </div>
       <div class="r2">
-        <label><span class="lt">Hidratos (g) *</span><input type="number" id="f-carb" inputmode="decimal" placeholder="0"></label>
+        <label><span class="lt">CARBS (g) *</span><input type="number" id="f-carb" inputmode="decimal" placeholder="0"></label>
         <label><span class="lt">Açúcar (g)</span><input type="number" id="f-sugar" inputmode="decimal" placeholder="0"></label>
       </div>
       <div class="r2">
         <label><span class="lt">Fibra (g)</span><input type="number" id="f-fiber" inputmode="decimal" placeholder="0"></label>
-        <label><span class="lt">Proteína (g) *</span><input type="number" id="f-prot" inputmode="decimal" placeholder="0"></label>
+        <label><span class="lt">PROT (g) *</span><input type="number" id="f-prot" inputmode="decimal" placeholder="0"></label>
       </div>
       <button class="btn btn-primary" onclick="saveFood()">Guardar alimento</button>
       <button class="btn btn-danger" id="del-food-btn" style="display:none" onclick="deleteFood()">Eliminar alimento</button>
@@ -541,17 +541,18 @@
       </div>
       <div class="macro-preview" style="flex-wrap:wrap;gap:6px" id="edit-preview">
         <div class="mp-chip"><div class="mp-val kcal" id="ep-kcal">0</div><div class="mp-lbl">kcal</div></div>
-        <div class="mp-chip"><div class="mp-val g"    id="ep-fat">0</div><div class="mp-lbl">fat</div></div>
-        <div class="mp-chip"><div class="mp-val carb" id="ep-carb">0</div><div class="mp-lbl">carbs</div></div>
-        <div class="mp-chip"><div class="mp-val prot" id="ep-prot">0</div><div class="mp-lbl">prot</div></div>
+        <div class="mp-chip"><div class="mp-val g"    id="ep-fat">0</div><div class="mp-lbl">FAT</div></div>
+        <div class="mp-chip"><div class="mp-val carb" id="ep-carb">0</div><div class="mp-lbl">CARBS</div></div>
+        <div class="mp-chip"><div class="mp-val prot" id="ep-prot">0</div><div class="mp-lbl">PROT</div></div>
       </div>
       <div id="edit-promo-preview" class="promo-preview"></div>
       <div id="edit-price-block" class="price-override">
         <div class="r2">
-          <label><span class="lt">Preço <span data-promo-label>Promo</span> (€)</span><input type="number" id="edit-price-eur" inputmode="decimal" step="0.01" placeholder="—" oninput="onEditPriceInput()"></label>
+          <label><span class="lt">Preço pontual (€)</span><input type="number" id="edit-price-eur" inputmode="decimal" step="0.01" placeholder="—" oninput="onEditPriceInput()"></label>
           <label><span class="lt">Gramas do preço</span><input type="number" id="edit-price-qty" inputmode="decimal" placeholder="—" oninput="onEditPriceInput()"></label>
         </div>
         <div id="edit-price-hint" class="cost-hint"></div>
+        <div id="edit-price-note" class="cost-hint" style="display:none">Preencher cria um preço pontual e solta o lote.</div>
         <div class="r2">
           <button type="button" class="btn btn-secondary btn-sm" onclick="resetEditPrice()">Preço do alimento</button>
           <button type="button" class="btn btn-secondary btn-sm" onclick="setFree('edit-price-eur','edit-price-qty')">Grátis (0 €)</button>
@@ -573,20 +574,20 @@
 
 <div id="toast" aria-live="polite"></div>
 
-<script src="js/config.js?v=20261008e"></script>
-<script src="js/nutrition.js?v=20261008e"></script>
-<script src="js/db.js?v=20261008e"></script>
-<script src="js/ui.js?v=20261008e"></script>
-<script src="js/views/diary.js?v=20261008e"></script>
-<script src="js/views/log.js?v=20261008e"></script>
-<script src="js/views/foods.js?v=20261008e"></script>
-<script src="js/views/meals.js?v=20261008e"></script>
-<script src="js/views/targets.js?v=20261008e"></script>
-<script src="js/views/stats.js?v=20261008e"></script>
-<script src="js/views/promo.js?v=20261008e"></script>
-<script src="js/views/cost.js?v=20261008e"></script>
-<script src="js/views/history.js?v=20261008e"></script>
-<script src="js/views/body.js?v=20261008e"></script>
-<script src="js/app.js?v=20261008e"></script>
+<script src="js/config.js?v=20261008g"></script>
+<script src="js/nutrition.js?v=20261008g"></script>
+<script src="js/db.js?v=20261008g"></script>
+<script src="js/ui.js?v=20261008g"></script>
+<script src="js/views/diary.js?v=20261008g"></script>
+<script src="js/views/log.js?v=20261008g"></script>
+<script src="js/views/foods.js?v=20261008g"></script>
+<script src="js/views/meals.js?v=20261008g"></script>
+<script src="js/views/targets.js?v=20261008g"></script>
+<script src="js/views/stats.js?v=20261008g"></script>
+<script src="js/views/promo.js?v=20261008g"></script>
+<script src="js/views/cost.js?v=20261008g"></script>
+<script src="js/views/history.js?v=20261008g"></script>
+<script src="js/views/body.js?v=20261008g"></script>
+<script src="js/app.js?v=20261008g"></script>
 </body>
 </html>

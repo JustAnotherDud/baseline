@@ -71,8 +71,8 @@ function deriveBlocks(blocksActive) {
         if (!(n > 0)) return;
         sum += n;
         const label = activityEntries.length > 1
-          ? `Actividade ${activityId}`
-          : 'Actividade';
+          ? `Atividade ${activityId}`
+          : 'Atividade';
         chips.push({ label, value: n });
       });
       continue;

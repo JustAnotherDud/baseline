@@ -115,7 +115,8 @@ function pushSheetState() {
   history.pushState({ sheet: true }, '', location.hash);
 }
 
-// Loader de cada view com dados que podem mudar noutro dispositivo.
+// Loader de cada view com dados que podem mudar noutro dispositivo ou numa sincronização (Diário e Manutenção
+// leem daily_targets: o refresh ao voltar à app evita mostrar alvos antigos).
 function loadView(view) {
   if (view === 'today') loadToday();
   else if (view === 'foods') { if (currentFoodsTab === 'foods') loadFoods(); else loadMeals(); }
@@ -123,6 +124,7 @@ function loadView(view) {
   else if (view === 'stats') loadStats();
   else if (view === 'history') loadHistory();
   else if (view === 'promo') loadPromo();
+  else if (view === 'targets') refreshTargets();
 }
 
 function go(view, _pushState = true) {

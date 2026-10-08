@@ -65,13 +65,13 @@ test('actividades expandem uma entrada por id, agregadas na soma', () => {
     core_kcal: 2700,
     activity_kcal_by_id: { i1: 300, i2: 200 },
   });
-  assert.deepEqual(arr(chips.map(c => c.label)), ['Núcleo', 'Actividade i1', 'Actividade i2']);
+  assert.deepEqual(arr(chips.map(c => c.label)), ['Núcleo', 'Atividade i1', 'Atividade i2']);
   assert.equal(sum, 3200);
 });
 
 test('uma só actividade não leva o id no rótulo', () => {
   const { chips } = deriveBlocks({ activity_kcal_by_id: { i1: 300 } });
-  assert.deepEqual(arr(chips.map(c => c.label)), ['Actividade']);
+  assert.deepEqual(arr(chips.map(c => c.label)), ['Atividade']);
 });
 
 test('blocos a zero não aparecem', () => {
@@ -92,7 +92,7 @@ test('linha pré-035 (sem core_kcal) não rebenta', () => {
     work_kcal_today: 596,
     activity_kcal_by_id: { i1: 300 },
   });
-  assert.deepEqual(arr(chips.map(c => c.label)), ['Actividade']);
+  assert.deepEqual(arr(chips.map(c => c.label)), ['Atividade']);
   assert.equal(sum, 300);
 });
 

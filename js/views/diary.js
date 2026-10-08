@@ -12,7 +12,7 @@ const NUTRIENT_MAP = {
 // Cabeçalho de uma refeição. À esquerda: nome (quebra em vez de reticências) e, por baixo, hora e macros
 // sem quebrar; o nome e a hora são tocáveis (sublinhado pontilhado) e abrem o sheet da refeição. À
 // direita: coluna kcal (em cima) e custo (em baixo), alinhada à direita, com algarismos tabulares; seta
-// pequena (sem caixa) e "+" (≥ 44 px). Tocar na seta ou no resto do cabeçalho expande/encolhe.
+// (caixa discreta, toque ≥ 40 px) e "+" (≥ 44 px). Os macros quebram em 2 linhas se não couberem. Tocar na seta ou no resto do cabeçalho expande/encolhe.
 // Refeição sem entradas: sem coluna kcal/€ nem seta.
 function mealHeaderHtml(meal, mes, showCost) {
   const r = n => Math.round(n);

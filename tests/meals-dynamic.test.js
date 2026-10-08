@@ -91,7 +91,7 @@ const loadDiary = () => loadScript(['js/nutrition.js', 'js/ui.js', 'js/views/dia
   history: { pushState: () => {} },
 });
 
-test('mealHeaderHtml: nome e hora tocáveis, kcal/€ à direita, seta sem caixa e "+"; sem linha ✎', () => {
+test('mealHeaderHtml: nome e hora tocáveis, kcal/€ à direita, seta e "+"; sem linha ✎', () => {
   const s = loadDiary();
   const meal = { id: 1, name: '<b>Pós-treino</b>', no: 2, sort_at: s.hmToTimestamp('2026-10-08', '07:30') };
   const mes = [{ calories: 190, protein: 6.5, carbs: 30, fat: 3.5, cost_eur: 0.3 }, { calories: 90, protein: 4, carbs: 10, fat: 1, cost_eur: 0.2 }];

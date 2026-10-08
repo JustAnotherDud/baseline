@@ -781,6 +781,15 @@ input[type="range"]::-moz-range-thumb {
 .price-override { display: flex; flex-direction: column; gap: 6px; }
 .cost-hint { font-family: var(--mono); font-size: 11px; color: var(--text3); min-height: 14px; }
 .cost-dim { opacity: .55; }
+.promo-preview { font-family: var(--mono); font-size: 12px; color: var(--price-gold); }
+.promo-preview:empty { display: none; }
+.promo-lot { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; }
+.promo-lot-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.promo-lot-name { font-size: 15px; font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
+.promo-lot-left { font-family: var(--mono); font-size: 13px; font-weight: 600; white-space: nowrap; }
+.promo-lot-line { font-family: var(--mono); font-size: 11px; color: var(--text3); }
+.promo-lot-warn { font-size: 12px; color: var(--yellow); }
+.promo-lot-actions { display: flex; gap: 8px; margin-top: 6px; }
 .cost-eff-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .cost-eff-row > .msc { min-width: 0; }
 .cost-eff-label { font-family: var(--mono); font-size: 10px; color: var(--text3); letter-spacing: .02em; }

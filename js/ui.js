@@ -243,12 +243,14 @@ async function openEditEntry(id) {
 function fillEditPrice(data) {
   document.getElementById('edit-price-eur').value = data.price_eur ?? '';
   document.getElementById('edit-price-qty').value = data.price_qty_g ?? '';
-  const src = { default: 'preço do alimento', override: `preço ${PROMO_LABEL}`, manual: 'custo manual' }[data.cost_source] || 'sem custo';
+  const src = { default: 'preço do alimento', override: `preço ${PROMO_LABEL}`, manual: 'custo manual', promo: `stock ${PROMO_LABEL.toLowerCase()}` }[data.cost_source] || 'sem custo';
   document.getElementById('edit-price-hint').textContent = `${src} · ${formatEur(data.cost_eur)}`;
+  if (data.cost_source === 'promo') loadPromoSplit(data);
 }
 
 function onEditPriceInput() {
   if (editingEntry) editingEntry._resetPrice = false;
+  updateEditPreview();
 }
 
 // Volta ao default: ao guardar, limpa o override e recopia o preço actual do alimento.
@@ -660,6 +662,12 @@ function updateEditPreview() {
   document.getElementById('ep-fat').textContent   = c(editingEntry.fat);
   document.getElementById('ep-carb').textContent  = c(editingEntry.carbs);
   document.getElementById('ep-prot').textContent  = c(editingEntry.protein);
+  // Pré-visualização do stock promo; override e custo manual da entrada não consomem lote.
+  const ov = editPricePatch(editingEntry, document.getElementById('edit-price-eur').value,
+    document.getElementById('edit-price-qty').value, !!editingEntry._resetPrice);
+  const fixed = !editingEntry._resetPrice && ['override', 'manual'].includes(editingEntry.cost_source);
+  showPromoPreview('edit-promo-preview', editingEntry.food_id, editingEntry.date, g, editingEntry.id,
+    fixed || ov.cost_source === 'override' || !!ov.error);
   const serving = editingEntry._serving_size_g;
   if (serving) {
     const infoEl = document.getElementById('edit-dose-info');

@@ -32,14 +32,14 @@ Ordem de carregamento em `index.html`: `config.js`, `nutrition.js`, `db.js`, `ui
 - `js/db.js`: queries do diário, scores do date picker e `loadCostConfig` (`app_config`).
 - `js/ui.js`: toast, sheets partilhados (edição, date picker, ranking, donut, mover entrada, sheet da refeição), `parseGramsExpr`.
 - `js/app.js`: `init` e login, router por hash (`go`), Settings, refresh automático.
-- `js/views/`: `diary`, `log` (sheet de registo), `foods`, `meals` (templates), `targets`, `stats`, `cost` (secção de custo das Estatísticas), `history` (Histórico), `body` (Forma).
+- `js/views/`: `diary`, `log` (sheet de registo), `foods`, `meals` (templates), `targets`, `stats`, `promo` (Promoções), `cost` (secção de custo das Estatísticas), `history` (Histórico), `body` (Forma).
 
-Views: Diário, Comida, Forma e Mais (Manutenção, Histórico, Estatísticas, Settings).
+Views: Diário, Comida, Forma e Mais (Manutenção, Histórico, Promoções, Estatísticas, Settings).
 
 ## Schema Supabase
 
 - `foods`: `name`, `brand`, `serving_size_g`, `calories_per_100g`, `protein_per_100g`, `carbs_per_100g`, `fat_per_100g`, `saturated_fat_per_100g`, `sugar_per_100g`, `fiber_per_100g`, `price_eur` e `price_qty_g` (preço da embalagem e gramas que cobre; os dois ou nenhum).
-- `diary`: uma linha por item. `date`, `meal_id` (refeição do dia, FK para `meals`; `meal` é o slot antigo, legado até à fase 4), `food_id` (null em entrada rápida), `food_name`, `grams` (null em entrada rápida), `calories`, `protein`, `carbs`, `fat`, `saturated_fat`, `sugar`, `fiber`, `has_tara`, `logged_at`. Os nutrientes são um snapshot do momento do registo. Custo: `price_eur`, `price_qty_g` (snapshot do preço usado), `cost_eur` e `cost_source` (`default` do food, `override` = preço pontual, etiqueta *Promo*, `manual`). Food sem preço: `cost_eur` NULL, nunca 0. Grátis é 0 explícito (`price_eur = 0` com gramas > 0, ou `cost_eur = 0` manual) e conta como custo conhecido. Entrada sem `food_id` é sempre `manual`: o trigger converte `default`/`override` em custo manual.
+- `diary`: uma linha por item. `date`, `meal_id` (refeição do dia, FK para `meals`; `meal` é o slot antigo, legado até à fase 4), `food_id` (null em entrada rápida), `food_name`, `grams` (null em entrada rápida), `calories`, `protein`, `carbs`, `fat`, `saturated_fat`, `sugar`, `fiber`, `has_tara`, `logged_at`. Os nutrientes são um snapshot do momento do registo. Custo: `price_eur`, `price_qty_g` (snapshot do preço usado), `cost_eur` e `cost_source` (`default` do food, `override` = preço pontual, etiqueta *Promo*, `manual`, `promo` = a entrada consumiu lotes de promoção, ver Promoções). Food sem preço: `cost_eur` NULL, nunca 0. Grátis é 0 explícito (`price_eur = 0` com gramas > 0, ou `cost_eur = 0` manual) e conta como custo conhecido. Entrada sem `food_id` é sempre `manual`: o trigger converte `default`/`override` em custo manual.
 - `daily_targets`: uma linha por `date`, escrita só pelo DCB (sync_hub). Nutrientes como em `diary`, mais `blocks_active` (jsonb: chaves `*_kcal` — `core_kcal`, `work_kcal`, `gym_kcal` — `activity_kcal_by_id`, `energy_diag`) e `updated_at`.
 - `meals`: uma linha por refeição e dia (`date`, `name` opcional, `started_at` editável, `legacy_key` do slot antigo). Sem limite de refeições por dia. Vista `v_meal_day`: `no` (número calculado pela hora, só para mostrar), `is_latest`, `sort_at` (`started_at`, senão 1.ª entrada, senão criação), totais. RPC `meal_new` (cria) e `meal_suggest` (regra das 2 h). Só se apaga uma refeição vazia (`ON DELETE RESTRICT`); o cron `meals-cleanup-empty` limpa vazias de dias anteriores.
 - `meal_templates` (`name`) e `meal_template_items` (`template_id`, `food_id`, `food_name`, `grams` e nutrientes).
@@ -73,6 +73,16 @@ A conta `round(gramas × price_eur / price_qty_g, 2)` vive só na BD (`food_cost
 - Diário: custo por entrada (— sem custo; só o preço Promo leva marca: fundo suave + ↓, texto em `PROMO_LABEL` no `nutrition.js`; *manual* com glifo ✎ antes do valor), subtotal por refeição, total do dia no cabeçalho, ao lado do dia da semana (abaixo de `cost_min_coverage` mostra o mínimo e a cobertura: "≥ 8,40 € · 72%"; acima, só o valor). Preços a dourado (`--price-gold`) no diário, Histórico e Estatísticas.
 - Estatísticas, aderência calórica: tocar num ponto abre um tooltip "dd/mm · N%" (toque noutro ponto troca; tocar fora, no mesmo ponto, Esc ou scroll fecha); o `title` fica para desktop. `adherenceDotText` e `tipLeft` em `nutrition.js`.
 - Estatísticas: custo por dia, semana e mês (médias só sobre os dias com cobertura suficiente, com "média sobre N dias"), maior gasto e custo efetivo do período (€ por 1000 kcal e € por 100 g de proteína, só sobre entradas com custo e só nos dias que contam nas médias; `costEfficiency` em `nutrition.js`, calculado no cliente). As Estatísticas são só de consumo: atributos dos alimentos (€/100g, kcal/€, P/€) ficam nos chips de Alimentos. Vistas: `v_cost_day`, `v_cost_week`, `v_cost_month`, RPC `cost_top_foods`.
+
+## Promoções (lotes)
+
+Inventário só de promoções (não é inventário completo: tolera desvios). Tabelas `promo_lots` (alimento, gramas, `paid_eur`, `ref_eur` = preço normal das mesmas gramas, data, loja, nota, `best_before` opcional) e `promo_alloc` (entrada ↔ lote ↔ gramas; com `diary_id` NULL é saída sem consumo, com motivo). Tudo na BD (`20261008_promo_lots.sql` no sync_hub): o restante, o fecho e a poupança calculam-se em `v_promo_lot`, nada se guarda.
+
+- Registo de entrada com `food_id`, sem preço pontual nem custo manual: consome os lotes abertos do alimento, o mais antigo primeiro, só com data de compra <= data da entrada; o que exceder sai ao preço do alimento. A entrada fica `cost_source = 'promo'` (↓ e custo efectivo no diário; o detalhe mostra o split). Preço pontual ou custo manual ganham e não consomem lote.
+- Editar gramas, data ou apagar a entrada devolve as gramas e replaneia só essa entrada. Criar ou editar um lote realoca as entradas do alimento desde a data de compra, por ordem.
+- Lote aberto: restante >= `promo_close_pct` (5 %, `app_config`) das gramas compradas. Aviso (só visual): validade passada, ou, sem validade, aberto há mais de `promo_warn_days` (90).
+- Abater (`promo_writeoff`: parte do lote, motivo opcional; não conta como poupança) e apagar (`promo_delete`: sem consumos some; com consumos fecha e o custo das entradas fica).
+- Mais → Promoções: lotes abertos (restante, pago, poupança total e realizada), Abater, Apagar e "+" para criar. Alimentos mostra o stock promo restante. No registo e na edição, "X g do stock promo, Y €" (RPC `promo_preview`, o mesmo plano do trigger) antes de gravar. Helpers de formato em `nutrition.js` (`promoPreviewText`, `promoSplitText`, `promoLotModel`, `promoLotPayload`).
 
 ## Histórico
 

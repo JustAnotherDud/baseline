@@ -159,16 +159,96 @@ const PROMO_LABEL = 'Promo';
 
 // Etiqueta do indicador de fonte do custo na lista do diário.
 function costSourceTag(src) {
-  return src === 'override' ? PROMO_LABEL : src === 'manual' ? 'manual' : '';
+  return src === 'override' || src === 'promo' ? PROMO_LABEL : src === 'manual' ? 'manual' : '';
 }
 
-// Custo de uma entrada no diário. Promo (override): pill suave + ↓. manual: glifo ✎ discreto
+// Custo de uma entrada no diário. Promo (override ou lote): pill suave + ↓. manual: glifo ✎ discreto
 // antes do valor. Nenhuma marca depende de title (não existe em mobile).
 function entryCostHtml(entry) {
   const eur = formatEur(entry.cost_eur);
-  if (entry.cost_source === 'override') return `<span class="price-promo">↓ ${eur}</span>`;
+  if (entry.cost_source === 'override' || entry.cost_source === 'promo') return `<span class="price-promo">↓ ${eur}</span>`;
   if (entry.cost_source === 'manual') return `<span class="cost-glyph">✎</span>${eur}`;
   return eur;
+}
+
+// ── Promoções (lotes) ─────────────────────────────────────────────────────────
+// A BD consome os lotes e calcula o custo (diary_cost_trigger, promo_plan). Aqui só se formata.
+
+// Gramas com 1 casa no máximo, vírgula decimal: 700, 12,5.
+function fmtG(n) {
+  return String(Math.round(parseFloat(n) * 10) / 10).replace('.', ',');
+}
+
+// Euros sempre com valor (0 = "0,00 €", não "grátis"): poupanças.
+function eurPlain(n) {
+  const v = Math.round(parseFloat(n) * 100) / 100;
+  return isNaN(v) ? '—' : v.toFixed(2).replace('.', ',') + ' €';
+}
+
+// "700 g do stock promo, 0,71 €" (+ " · 300 g ao preço normal"). p = resposta de promo_preview.
+// '' se a entrada não consome lote.
+function promoPreviewText(p) {
+  if (!p || !(+p.promo_g > 0)) return '';
+  const rest = +p.rest_g > 0 ? ` · ${fmtG(p.rest_g)} g ao preço normal` : '';
+  return `${fmtG(p.promo_g)} g do stock promo, ${formatEur(p.total_eur)}${rest}`;
+}
+
+// Detalhe de uma entrada com consumo de lote, a partir de v_diary_promo:
+// "700 g do stock promo (0,41 €) + 300 g ao preço normal (0,30 €)". '' sem alocações.
+function promoSplitText(entry, allocs) {
+  const g = (allocs || []).reduce((s, a) => s + +a.grams, 0);
+  if (!(g > 0)) return '';
+  const eur = allocs.reduce((s, a) => s + +a.cost_eur, 0);
+  const restG = +entry.grams - g;
+  let t = `${fmtG(g)} g do stock promo (${formatEur(eur)})`;
+  if (restG > 0.05) t += ` + ${fmtG(restG)} g ao preço normal (${formatEur(+entry.cost_eur - eur)})`;
+  return t;
+}
+
+// Uma linha da lista Promoções (v_promo_lot). warns: só informação, nunca bloqueia.
+function promoLotModel(l) {
+  const dm = iso => iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) : '';
+  const warns = [];
+  if (l.warn_expired) warns.push('validade passada');
+  if (l.warn_old) warns.push(`aberto há ${l.age_days} dias`);
+  return {
+    title: l.food_name + (l.brand ? ' · ' + l.brand : ''),
+    left: `${fmtG(l.grams_left)} de ${fmtG(l.grams_bought)} g`,
+    paid: `pago ${formatEur(l.paid_eur)} · normal ${formatEur(l.ref_eur)}`,
+    saving: `poupança ${eurPlain(l.saving_total)} · realizada ${eurPlain(l.saving_realised)}`,
+    meta: [l.store, 'comprado ' + dm(l.bought_on), l.best_before ? 'validade ' + dm(l.best_before) : '', l.note]
+      .filter(Boolean).join(' · '),
+    warns,
+  };
+}
+
+// Payload do INSERT de um lote a partir dos campos do formulário (f.food = linha de foods).
+// Vazio é "falta"; 0 é válido (pago 0 = grátis).
+function promoLotPayload(f) {
+  if (!f.food) return { error: 'Escolhe o alimento' };
+  const grams = parseFloat(f.grams), paid = parseFloat(f.paid), ref = parseFloat(f.ref);
+  if (!(grams > 0)) return { error: 'Indica as gramas compradas' };
+  if (!(paid >= 0)) return { error: 'Indica o preço pago (0 = grátis)' };
+  if (!(ref >= 0)) return { error: 'Indica o preço normal das mesmas gramas' };
+  const t = v => String(v ?? '').trim() || null;
+  return {
+    food_id: f.food.id, bought_on: f.date || localDate(), grams_bought: grams,
+    paid_eur: paid, ref_eur: ref, store: t(f.store), note: t(f.note), best_before: t(f.best_before),
+  };
+}
+
+// Sugestão do preço normal das gramas compradas, a partir do preço do alimento; null sem preço.
+function promoRefSuggestion(food, grams) {
+  const g = parseFloat(grams);
+  if (!food || !(g > 0) || !(food.price_qty_g > 0) || food.price_eur == null) return null;
+  return Math.round(food.price_eur * g / food.price_qty_g * 100) / 100;
+}
+
+// Stock promo aberto por alimento: Map food_id -> gramas (linhas de v_promo_lot com is_open).
+function promoStockMap(lots) {
+  const m = new Map();
+  (lots || []).forEach(l => m.set(l.food_id, (m.get(l.food_id) || 0) + +l.grams_left));
+  return m;
 }
 
 // Total do dia (cabeçalho do diário). Cobertura >= minCoverage: só o valor. Abaixo, o total é

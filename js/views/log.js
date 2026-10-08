@@ -167,6 +167,8 @@ async function pickFood(id) {
   document.getElementById('log-price-qty').value = data.price_qty_g ?? '';
   document.getElementById('log-price-hint').textContent = data.price_eur != null
     ? `Preço do alimento${foodPriceLabel(data)}` : 'Alimento sem preço';
+  const stock = promoStock.get(data.id);
+  if (stock > 0) document.getElementById('log-price-hint').textContent += ` · stock promo ${fmtG(stock)} g`;
 
   const gi = document.getElementById('log-grams');
   gi.value = '';
@@ -182,6 +184,9 @@ function updatePreview() {
   document.getElementById('prev-fat').textContent   = c(selectedFood.fat_per_100g);
   document.getElementById('prev-carb').textContent  = c(selectedFood.carbs_per_100g);
   document.getElementById('prev-prot').textContent  = c(selectedFood.protein_per_100g);
+  const ov = priceOverridePayload(selectedFood,
+    document.getElementById('log-price-eur').value, document.getElementById('log-price-qty').value);
+  showPromoPreview('log-promo-preview', selectedFood.id, currentDate, g, null, ov.cost_source === 'override' || !!ov.error);
   if (selectedFood.serving_size_g) {
     const doses = g > 0 ? (g / selectedFood.serving_size_g).toFixed(1) : '';
     const infoEl = document.getElementById('dose-info');
@@ -194,6 +199,7 @@ function backToSearch() {
   document.getElementById('log-stage-grams').classList.remove('active');
   selectedFood=null;
   resetLogTara();
+  document.getElementById('log-promo-preview').textContent = '';
   const infoEl = document.getElementById('dose-info');
   if (infoEl) infoEl.textContent = '';
 }
@@ -319,6 +325,7 @@ async function handleSaveDiary() {
     document.getElementById('log-results').innerHTML =
       '<div class="loading">Começa a escrever para pesquisar</div>';
     loadToday();
+    refreshPromoStock();
     setTimeout(() => document.getElementById('log-q').focus(), 100);
   } finally {
     _savingDiary = false;

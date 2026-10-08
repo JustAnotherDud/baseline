@@ -64,6 +64,7 @@ async function loadFoods() {
     return;
   }
   allFoods = data || [];
+  promoStock = await fetchPromoStock();
   document.getElementById('foods-count').textContent = `${allFoods.length} alimentos`;
   filterFoods();
   if (pendingFoodEdit != null) {
@@ -180,7 +181,9 @@ function renderFoods(foods) {
     const detail = document.createElement('div');
     detail.className = 'fi-detail';
     const servingStr = f.serving_size_g ? ` · porção ${f.serving_size_g}g` : '';
-    detail.innerHTML = `${pStr} ${cStr} ${gStr}${servingStr}${foodPriceLabel(f)}`;
+    const stock = promoStock.get(f.id);
+    const stockStr = stock > 0 ? ` · <span class="price-promo">↓ ${fmtG(stock)} g</span>` : '';
+    detail.innerHTML = `${pStr} ${cStr} ${gStr}${servingStr}${foodPriceLabel(f)}${stockStr}`;
     if (f.brand) {
       detail.insertBefore(document.createTextNode(f.brand + ' · '), detail.firstChild);
     }

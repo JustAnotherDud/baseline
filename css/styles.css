@@ -261,7 +261,8 @@ body {
 .diary-entry:nth-child(odd)  { background: transparent; }
 .diary-entry:nth-child(even) { background: rgba(255,255,255,0.03); }
 .entry-info { flex: 1; min-width: 0; }
-.entry-name { font-size: 13px; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.entry-name { font-size: 13px; font-weight: 400; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow-wrap: anywhere; }
+.mp { white-space: nowrap; }
 .entry-detail { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-top: 2px; }
 .entry-kcal { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--text3); min-width: 40px; text-align: right; }
 .entry-tara-flag { font-size: 11px; color: var(--orange); margin-top: 3px; font-family: var(--mono); }

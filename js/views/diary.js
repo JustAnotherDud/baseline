@@ -9,6 +9,11 @@ const NUTRIENT_MAP = {
   fiber:    { key: 'fiber',    label: 'Fibra',     unit: 'g',    color: 'var(--accent)' },
 };
 
+// "F 88 · C 40 · P 76": cada par letra+valor é indivisível (.mp, nowrap); a linha só quebra nos " · ".
+function macroPairs(pairs) {
+  return pairs.map(([l, v]) => `<span class="mp">${l} ${v}</span>`).join(' · ');
+}
+
 // Cabeçalho de uma refeição. À esquerda: nome (quebra em vez de reticências) e, por baixo, hora e macros
 // sem quebrar; o nome e a hora são tocáveis (sublinhado pontilhado) e abrem o sheet da refeição. À
 // direita: coluna kcal (em cima) e custo (em baixo), alinhada à direita, com algarismos tabulares; seta
@@ -29,7 +34,7 @@ function mealHeaderHtml(meal, mes, showCost) {
     ? '<button type="button" class="meal-chev" aria-label="Expandir ou encolher refeição"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button>'
     : '';
   const macros = has
-    ? `<div class="meal-macros">${hm ? tap(hm) + ' · ' : ''}F ${r(sum('fat'))} · C ${r(sum('carbs'))} · P ${r(sum('protein'))}</div>`
+    ? `<div class="meal-macros">${hm ? tap(hm) + ' · ' : ''}${macroPairs([['F', r(sum('fat'))], ['C', r(sum('carbs'))], ['P', r(sum('protein'))]])}</div>`
     : (hm ? `<div class="meal-macros">${tap(hm)}</div>` : '');
   return `
       <div class="meal-header">
@@ -209,7 +214,7 @@ function renderToday(entries, t) {
         entryEl.innerHTML = `
           <div class="entry-info">
             <div class="entry-name"></div>
-            <div class="entry-detail">${entry.grams ? entry.grams + 'g · ' : ''}F ${r(entry.fat)}g · C ${r(entry.carbs)}g · P ${r(entry.protein)}g</div>
+            <div class="entry-detail">${entry.grams ? entry.grams + 'g · ' : ''}${macroPairs([['F', r(entry.fat) + 'g'], ['C', r(entry.carbs) + 'g'], ['P', r(entry.protein) + 'g']])}</div>
             ${entry.has_tara ? '<div class="entry-tara-flag">⚖ tem tara</div>' : ''}
           </div>
           <div class="entry-right">

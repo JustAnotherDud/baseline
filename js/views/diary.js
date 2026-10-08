@@ -10,28 +10,35 @@ const NUTRIENT_MAP = {
 };
 
 // Cabeçalho de uma refeição. À esquerda: nome (quebra em vez de reticências) e, por baixo, hora e macros
-// sem quebrar. À direita, junto ao "+": coluna kcal (em cima) e custo (em baixo), alinhada à direita, com
-// algarismos tabulares; vazia numa refeição sem entradas. Nenhum botão além do "+" (≥ 44 px): o resto
-// do cabeçalho expande/encolhe.
+// sem quebrar; o nome e a hora são tocáveis (sublinhado pontilhado) e abrem o sheet da refeição. À
+// direita: coluna kcal (em cima) e custo (em baixo), alinhada à direita, com algarismos tabulares; seta
+// pequena (sem caixa) e "+" (≥ 44 px). Tocar na seta ou no resto do cabeçalho expande/encolhe.
+// Refeição sem entradas: sem coluna kcal/€ nem seta.
 function mealHeaderHtml(meal, mes, showCost) {
   const r = n => Math.round(n);
   const sum = k => mes.reduce((s, e) => s + +e[k], 0);
   const hm = fmtHM(meal.sort_at);
-  const figs = mes.length > 0
+  const tap = t => `<button type="button" class="meal-tap" data-meal-edit aria-label="Editar nome e hora">${t}</button>`;
+  const has = mes.length > 0;
+  const figs = has
     ? `<div class="meal-figs"><span class="meal-kcal-val">${r(sum('calories'))}</span>`
       + (showCost ? `<span class="meal-cost-val price" title="Custo da refeição">${formatEur(costSummary(mes).total)}</span>` : '')
       + '</div>'
     : '';
-  const macros = mes.length > 0
-    ? `<div class="meal-macros">${hm ? hm + ' · ' : ''}F ${r(sum('fat'))} · C ${r(sum('carbs'))} · P ${r(sum('protein'))}</div>`
-    : (hm ? `<div class="meal-macros">${hm}</div>` : '');
+  const chev = has
+    ? '<button type="button" class="meal-chev" aria-label="Expandir ou encolher refeição"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button>'
+    : '';
+  const macros = has
+    ? `<div class="meal-macros">${hm ? tap(hm) + ' · ' : ''}F ${r(sum('fat'))} · C ${r(sum('carbs'))} · P ${r(sum('protein'))}</div>`
+    : (hm ? `<div class="meal-macros">${tap(hm)}</div>` : '');
   return `
-      <div class="meal-header" role="button" tabindex="0">
+      <div class="meal-header">
         <div class="meal-header-left">
-          <div class="meal-name">${escHtml(mealLabel(meal))}</div>
+          <div class="meal-name">${tap(escHtml(mealLabel(meal)))}</div>
           ${macros}
         </div>
         ${figs}
+        ${chev}
         <button type="button" class="meal-add" aria-label="Registar nesta refeição">+</button>
       </div>`;
 }
@@ -144,7 +151,7 @@ function renderToday(entries, t) {
 
   const container = document.getElementById('diary-container');
   container.innerHTML = '';
-  const visible = diaryMeals(currentMeals, entries, localDate());
+  const visible = withVirtualMeal(diaryMeals(currentMeals, entries, localDate()), currentDate, localDate());
   const openId = mealOpenDefault(visible, entries);
   visible.forEach(meal => {
     const mes = entries.filter(e => e.meal_id === meal.id);
@@ -156,45 +163,45 @@ function renderToday(entries, t) {
     if (collapsed) div.classList.add('collapsed');
     div.innerHTML = mealHeaderHtml(meal, mes, showCost);
     const headerEl = div.querySelector('.meal-header');
-    headerEl.setAttribute('aria-expanded', String(hasEntries && !collapsed));
+    const chevEl = div.querySelector('.meal-chev');
+    const syncChev = () => {
+      if (!chevEl) return;
+      const open = !div.classList.contains('collapsed');
+      chevEl.setAttribute('aria-expanded', String(open));
+      chevEl.setAttribute('aria-label', (open ? 'Encolher' : 'Expandir') + ' refeição');
+    };
+    syncChev();
     // Toggle anima via CSS (classe .collapsed) — sem re-render, sem perder o estado.
     const toggle = () => {
       if (!hasEntries) return;
       const nc = !div.classList.contains('collapsed');
       mealToggles.set(meal.id, nc);
       div.classList.toggle('collapsed', nc);
-      headerEl.setAttribute('aria-expanded', String(!nc));
+      syncChev();
     };
-    // Tocar em qualquer parte do cabeçalho (menos no "+") expande/encolhe.
+    // Tocar na seta ou em qualquer parte do cabeçalho (menos no nome, na hora e no "+") expande/encolhe.
     headerEl.addEventListener('click', toggle);
-    headerEl.addEventListener('keydown', e => {
-      if (e.target === headerEl && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); toggle(); }
-    });
+    // Nome e hora abrem o sheet da refeição (a virtual, que ainda não existe na BD, abre-o em modo criar).
+    headerEl.querySelectorAll('[data-meal-edit]').forEach(b => b.addEventListener('click', e => {
+      e.stopPropagation();
+      openMealSheet(meal.virtual ? null : meal.id);
+    }));
     div.querySelector('.meal-add').addEventListener('click', e => {
       e.stopPropagation();
-      openLogForMeal(meal.id);
+      openLogForMeal(meal.virtual ? 'new' : meal.id);
     });
-
-    // Editar nome/hora: linha discreta dentro da refeição (no topo do bloco expandido).
-    const editRow = document.createElement('button');
-    editRow.type = 'button';
-    editRow.className = 'meal-edit-row';
-    editRow.textContent = '✎ nome e hora';
-    editRow.addEventListener('click', () => openMealSheet(meal.id));
 
     if (!hasEntries) {
       const noEntry = document.createElement('div');
       noEntry.className = 'no-entries';
       noEntry.textContent = 'Sem registos';
       div.appendChild(noEntry);
-      div.appendChild(editRow);
     } else {
       // Entradas sempre no DOM, dentro de um wrapper colapsável (grid-rows).
       const wrap = document.createElement('div');
       wrap.className = 'meal-entries';
       const inner = document.createElement('div');
       inner.className = 'meal-entries-inner';
-      inner.appendChild(editRow);
       mes.forEach(entry => {
         const entryEl = document.createElement('div');
         entryEl.className = 'diary-entry';

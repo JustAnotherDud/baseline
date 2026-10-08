@@ -283,6 +283,13 @@ function diaryMeals(meals, entries, today) {
   return meals.concat(extra).filter(m => m.n_entries > 0 || (m.is_latest && m.date >= today));
 }
 
+// Dia sem refeições a mostrar (hoje ou passado): uma "Refeição 1" vazia, só no cliente (não há linha
+// na BD). O "+" regista normalmente e a BD cria a refeição real na 1.ª entrada. Nunca em dias futuros.
+function withVirtualMeal(visible, date, today) {
+  if (visible.length || date > today) return visible;
+  return [{ id: null, virtual: true, name: null, no: 1, date, n_entries: 0, sort_at: null, is_latest: true }];
+}
+
 // Aberta por defeito: a mais recente com entradas; as outras abrem encolhidas.
 function mealOpenDefault(visible, entries) {
   const withEntries = visible.filter(m => entries.some(e => e.meal_id === m.id));

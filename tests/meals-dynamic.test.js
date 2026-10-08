@@ -86,32 +86,50 @@ test('db.js: populateMealSelect e moveEntryToMeal usam ids, não chaves de slot'
   assert.match(opts[1], /^<option value="new">/);                  // aplicar modelo: "Nova" primeiro
 });
 
-test('mealHeaderHtml: sem seta nem lápis; só o "+"; nome escapado; hora e macros na 2.ª linha', () => {
-  const s = loadScript(['js/nutrition.js', 'js/ui.js', 'js/views/diary.js'], {
-    document: { documentElement: {}, getElementById: () => null, querySelectorAll: () => [] },
-    history: { pushState: () => {} },
-  });
-  const ts = s.hmToTimestamp('2026-10-08', '07:30');
-  const meal = { id: 1, name: '<b>Pós-treino</b>', no: 2, sort_at: ts };
-  const mes = [{ calories: 190, protein: 6.5, carbs: 30, fat: 3.5, cost_eur: 0.3 }, { calories: 90, protein: 4, carbs: 10, fat: 1, cost_eur: 0.2 }];
-  const h = s.mealHeaderHtml(meal, mes, true);
-  assert.ok(!/meal-collapse-btn|meal-edit-btn|\+ LOG|<svg/.test(h));
-  assert.equal((h.match(/<button/g) || []).length, 1);
-  assert.match(h, /<button type="button" class="meal-add" aria-label="Registar nesta refeição">\+<\/button>/);
-  assert.ok(!h.includes('<b>Pós') && h.includes('&lt;b&gt;'));                         // escHtml
-  // nome e (por baixo) hora+macros à esquerda; coluna kcal/custo à direita, antes do "+"
-  assert.match(h, /meal-header-left">\s*<div class="meal-name">[^]*<div class="meal-macros">[^]*<\/div>\s*<\/div>\s*<div class="meal-figs"><span class="meal-kcal-val">280<\/span><span class="meal-cost-val[^>]*>0,50 €<\/span><\/div>\s*<button/);
-  assert.match(h, /<div class="meal-macros">07:30 · F 5 · C 40 · P 11<\/div>/);          // hora e macros na linha 2
-  const noCost = s.mealHeaderHtml(meal, mes, false);
-  assert.ok(!/meal-cost-val/.test(noCost) && /meal-kcal-val">280</.test(noCost));      // sem custo: só kcal na coluna
+const loadDiary = () => loadScript(['js/nutrition.js', 'js/ui.js', 'js/views/diary.js'], {
+  document: { documentElement: {}, getElementById: () => null, querySelectorAll: () => [] },
+  history: { pushState: () => {} },
 });
 
-test('mealHeaderHtml: refeição vazia só tem nome, hora e "+"', () => {
-  const s = loadScript(['js/nutrition.js', 'js/ui.js', 'js/views/diary.js'], {
-    document: { documentElement: {}, getElementById: () => null, querySelectorAll: () => [] },
-    history: { pushState: () => {} },
-  });
+test('mealHeaderHtml: nome e hora tocáveis, kcal/€ à direita, seta sem caixa e "+"; sem linha ✎', () => {
+  const s = loadDiary();
+  const meal = { id: 1, name: '<b>Pós-treino</b>', no: 2, sort_at: s.hmToTimestamp('2026-10-08', '07:30') };
+  const mes = [{ calories: 190, protein: 6.5, carbs: 30, fat: 3.5, cost_eur: 0.3 }, { calories: 90, protein: 4, carbs: 10, fat: 1, cost_eur: 0.2 }];
+  const h = s.mealHeaderHtml(meal, mes, true);
+  assert.ok(!/meal-edit-row|meal-edit-btn|✎|\+ LOG|role="button"/.test(h));
+  assert.ok(!h.includes('<b>Pós') && h.includes('&lt;b&gt;'));                                  // escHtml
+  // nome e hora são botões "meal-tap" (sublinhado pontilhado), sem ícone
+  const taps = h.match(/<button type="button" class="meal-tap" data-meal-edit[^>]*>[^<]*<\/button>/g);
+  assert.equal(taps.length, 2);
+  assert.ok(taps[0].includes('&lt;b&gt;') && taps[1].includes('07:30'));
+  assert.match(h, /<div class="meal-name"><button[^>]*meal-tap/);
+  assert.match(h, /<div class="meal-macros"><button[^>]*>07:30<\/button> · F 5 · C 40 · P 11<\/div>/);
+  // ordem: esquerda, coluna kcal/€, seta, "+"
+  const at = x => h.indexOf(x);
+  assert.ok(at('meal-header-left') < at('class="meal-figs"') && at('class="meal-figs"') < at('class="meal-chev"') && at('class="meal-chev"') < at('class="meal-add"'));
+  assert.match(h, /<div class="meal-figs"><span class="meal-kcal-val">280<\/span><span class="meal-cost-val[^>]*>0,50 €<\/span><\/div>/);
+  assert.match(h, /class="meal-chev"[^>]*><svg[^>]*><polyline/);
+  assert.match(h, /<button type="button" class="meal-add" aria-label="Registar nesta refeição">\+<\/button>/);
+  const noCost = s.mealHeaderHtml(meal, mes, false);
+  assert.ok(!/meal-cost-val/.test(noCost) && /meal-kcal-val">280</.test(noCost));
+});
+
+test('mealHeaderHtml: refeição vazia = nome, hora e "+"; sem coluna kcal/€ nem seta', () => {
+  const s = loadDiary();
   const h = s.mealHeaderHtml({ id: 4, name: null, no: 5, sort_at: s.hmToTimestamp('2026-10-08', '21:10') }, [], true);
-  assert.ok(h.includes('Refeição 5') && !h.includes('meal-figs') && !h.includes('meal-kcal-val'));   // coluna vazia, sem placeholders
-  assert.match(h, /<div class="meal-macros">21:10<\/div>/);
+  assert.ok(h.includes('Refeição 5') && !h.includes('meal-figs') && !h.includes('meal-kcal-val') && !h.includes('meal-chev'));
+  assert.match(h, /<div class="meal-macros"><button[^>]*>21:10<\/button><\/div>/);
+  const noTime = s.mealHeaderHtml({ id: null, virtual: true, name: null, no: 1, sort_at: null }, [], true);
+  assert.ok(noTime.includes('Refeição 1') && !noTime.includes('meal-macros'));          // virtual: sem hora, sem linha 2
+});
+
+test('withVirtualMeal: dia sem refeições mostra "Refeição 1" virtual (hoje e passado), nunca no futuro', () => {
+  const v = c.withVirtualMeal([], '2026-10-08', '2026-10-08');
+  assert.equal(v.length, 1);
+  assert.deepEqual(plain(v[0]), { id: null, virtual: true, name: null, no: 1, date: '2026-10-08', n_entries: 0, sort_at: null, is_latest: true });
+  assert.equal(c.mealLabel(v[0]), 'Refeição 1');
+  assert.equal(c.withVirtualMeal([], '2026-10-01', '2026-10-08').length, 1);              // dia passado sem registos
+  assert.equal(c.withVirtualMeal([], '2026-10-09', '2026-10-08').length, 0);              // futuro: nada
+  const real = [{ id: 3, n_entries: 1 }];
+  assert.equal(c.withVirtualMeal(real, '2026-10-08', '2026-10-08'), real);                // já há refeições: não acrescenta
 });

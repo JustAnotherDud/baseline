@@ -214,7 +214,7 @@ body {
 #diary-container { padding-top: 2px; }
 .meal-section { border-radius: 12px; overflow: hidden; margin: 8px 12px; border: 1px solid var(--border); }
 .meal-header { display: flex; align-items: stretch; border-top: 1px solid var(--surface3); }
-.meal-header-left { flex: 1; min-width: 0; padding: 8px 8px 8px 14px; background: var(--surface2); min-height: 52px; cursor: pointer; display: flex; flex-direction: column; justify-content: center; }
+.meal-header-left { flex: 1; min-width: 0; padding: 8px 4px 8px 14px; background: var(--surface2); min-height: 52px; cursor: pointer; display: flex; flex-direction: column; justify-content: center; }
 /* Toggle de recolher/expandir refeição (chevron). */
 /* Alvo de toque ≥44×44 (uso a uma mão) sem mudar o visual de 28px. */
 /* Chevron base aponta ▼ (expandir); refeição aberta roda para ▲ (recolher). */
@@ -224,18 +224,24 @@ body {
 .meal-section.collapsed .meal-entries { grid-template-rows: 0fr; }
 .meal-name { font-size: 12px; font-family: var(--mono); color: var(--text); font-weight: 500; text-transform: uppercase; letter-spacing: .04em; min-width: 0; flex: 0 1 auto; white-space: normal; overflow-wrap: anywhere; display: block; }
 /* kcal em cima, custo em baixo, à direita (como nas entradas); tabular-nums alinha os dígitos entre cartões. */
-.meal-figs { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 2px; padding: 0 10px 0 6px; background: var(--surface2); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.meal-figs { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 2px; padding: 0 2px 0 4px; background: var(--surface2); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .meal-figs .meal-cost-val { margin: 0; padding: 0; border: 0; }
 .meal-kcal-val { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent); flex-shrink: 0; }
 /* "+" compacto: área de toque >= 44 px (52 x 52). */
 .meal-add { flex: 0 0 52px; align-self: stretch; min-height: 52px; padding: 0; border: none; background: var(--accent-a06); color: var(--accent); font-family: var(--mono); font-size: 26px; line-height: 1; cursor: pointer; transition: background .15s ease, transform .12s var(--ease-out-quart); }
 .meal-add:active { background: var(--accent-a12); transform: scale(0.96); }
-/* Linha discreta para editar nome e hora, no topo do bloco expandido. */
-.meal-edit-row { display: block; width: 100%; box-sizing: border-box; min-height: 44px; padding: 0 14px; text-align: left; background: none; border: none; border-top: 1px solid var(--surface3); color: var(--text3); font-family: var(--mono); font-size: 11px; letter-spacing: .04em; cursor: pointer; }
-.meal-edit-row:active { background: var(--surface2); }
+/* Seta pequena, sem caixa (sem fundo nem borda), entre a coluna kcal/€ e o "+". */
+.meal-chev { flex: 0 0 auto; align-self: stretch; display: flex; align-items: center; padding: 0 4px 0 0; background: var(--surface2); border: none; color: var(--text3); cursor: pointer; }
+.meal-chev svg { width: 14px; height: 14px; transition: transform .26s var(--ease-out-quart); }
+.meal-section:not(.collapsed) .meal-chev svg { transform: rotate(180deg); }
+/* Nome e hora tocáveis: botões sem aspecto de botão, com sublinhado pontilhado subtil. */
+.meal-tap { display: inline; padding: 0; margin: 0; background: none; border: none; font: inherit; color: inherit; letter-spacing: inherit; text-transform: inherit; text-align: left; overflow-wrap: anywhere; cursor: pointer; text-decoration: underline dotted rgba(154,154,154,.55); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.meal-tap:active { text-decoration-color: var(--accent); }
 /* "+ Refeição" com a largura dos cartões (.meal-section: margem 12 px). Fora de .btn, que traz width:100%. */
 .meal-add-btn { display: block; box-sizing: border-box; width: calc(100% - 24px); margin: 8px 12px 16px; min-height: 44px; padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-family: var(--sans); font-size: 15px; font-weight: 500; cursor: pointer; }
 .meal-add-btn:active { opacity: .8; }
+/* Ecrãs estreitos (360 px): macros um pouco mais pequenos para a 2.ª linha nunca quebrar nem sair do cartão. */
+@media (max-width: 380px) { .meal-macros { font-size: 10.5px; } }
 .meal-macros { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-top: 3px; white-space: nowrap; }
 
 /* ── MEAL BREAKDOWN SHEET ── */

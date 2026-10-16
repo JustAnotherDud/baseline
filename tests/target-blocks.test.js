@@ -106,11 +106,20 @@ test('energyNotes: gasto medido com margem e janela', () => {
   const notes = energyNotes({
     expenditure_estimate_kcal: 3352,
     expenditure_se_kcal: 108,
-    lookback_days_used: 28,
-    days_logged_in_window: 19,
+    lookback_days_used: 56,
+    days_logged_in_window: 40,
   });
   assert.equal(notes.length, 1);
-  assert.match(notes[0], /3352 ±108 kcal\/dia · janela 28d \(19d logados\)/);
+  assert.match(notes[0], /3350 ±110 kcal\/dia · janela 56d \(40d logados\)/);
+});
+
+test('energyNotes: ingestão 7d face ao gasto, arredondada a 10', () => {
+  const neg = energyNotes({ expenditure_estimate_kcal: 3352, intake_7d_delta_kcal: -123.4 });
+  assert.match(neg[1], /Ingestão 7d −120 kcal face ao gasto/);
+  const pos = energyNotes({ expenditure_estimate_kcal: 3352, intake_7d_delta_kcal: 87 });
+  assert.match(pos[1], /Ingestão 7d \+90 kcal/);
+  assert.equal(energyNotes({ expenditure_estimate_kcal: 3352 }).length, 1);
+  assert.equal(energyNotes({ expenditure_estimate_kcal: 3352, intake_7d_delta_kcal: null }).length, 1);
 });
 
 test('energyNotes: fallback modelado diz-se explicitamente', () => {

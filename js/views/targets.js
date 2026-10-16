@@ -88,6 +88,14 @@ function deriveBlocks(blocksActive) {
   return { chips, sum: Math.round(sum) };
 }
 
+// O SE do gasto medido ronda 130 kcal (plans/036): mostrar kcal com mais
+// precisão que isso é falsa exactidão. Baseline e gasto a 50, margem a 10.
+const roundTo = (n, step) => Math.round(n / step) * step;
+
+// Janela normal de current_trend_weight_adaptive (primeiro valor do default).
+// Só serve de recurso para linhas sem `lookback_expanded` no diagnóstico.
+const NORMAL_LOOKBACK_DAYS = 56;
+
 // Notas de contexto energético a partir de blocks_active.energy_diag.
 function energyNotes(diag) {
   if (!diag || typeof diag !== 'object') return [];
@@ -96,13 +104,20 @@ function energyNotes(diag) {
   const exp = +diag.expenditure_estimate_kcal;
   if (Number.isFinite(exp)) {
     const se = +diag.expenditure_se_kcal;
-    const margin = Number.isFinite(se) && se > 0 ? ` ±${Math.round(se)}` : '';
+    const margin = Number.isFinite(se) && se > 0 ? ` ±${roundTo(se, 10)}` : '';
     const days = diag.lookback_days_used;
     const logged = diag.days_logged_in_window;
     const win = days ? ` · janela ${days}d (${logged ?? '—'}d logados)` : '';
-    notes.push(`Gasto medido ${Math.round(exp)}${margin} kcal/dia${win}`);
+    notes.push(`Gasto medido ${roundTo(exp, 50)}${margin} kcal/dia${win}`);
   } else if (diag.energy_source === 'modeled_fallback') {
     notes.push('Energia por fallback modelado — sem dias suficientes de diário para medir o gasto.');
+  }
+
+  // Ingestão registada dos 7 dias anteriores (sem hoje) contra o gasto medido.
+  const d7 = diag.intake_7d_delta_kcal;
+  if (d7 != null && Number.isFinite(+d7)) {
+    const n = roundTo(+d7, 10);
+    notes.push(`Ingestão 7d ${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(n)} kcal face ao gasto`);
   }
 
   // unallocated > 0 é bug do backend: mostrar.
@@ -159,13 +174,14 @@ async function refreshTargets() {
   const lookbackDays = diag?.lookback_days_used ?? blocks?.energy_lookback_days_used;
   const loggedDays   = diag?.days_logged_in_window ?? blocks?.energy_days_logged_in_window;
 
-  // Badge só quando a janela passou dos 28d normais.
-  if (Number.isFinite(lookbackDays) && lookbackDays > 28) {
+  // Badge só quando a janela foi alargada para além da normal (56d é o normal).
+  const expanded = diag?.lookback_expanded ?? (Number.isFinite(lookbackDays) ? lookbackDays > NORMAL_LOOKBACK_DAYS : false);
+  if (expanded === true && Number.isFinite(lookbackDays)) {
     coverageEl.textContent = `Estimativa alargada a ${lookbackDays}d (${loggedDays ?? '—'}d logados)`;
     show(coverageEl, 'inline-block');
   }
 
-  document.getElementById('t-kcal').textContent  = row.calories ?? '—';
+  document.getElementById('t-kcal').textContent  = Number.isFinite(+row.calories) && row.calories != null ? roundTo(+row.calories, 50) : '—';
   document.getElementById('t-fat').textContent   = row.fat      ?? '—';
   document.getElementById('t-carb').textContent  = row.carbs    ?? '—';
   document.getElementById('t-fiber').textContent = row.fiber    ?? '—';

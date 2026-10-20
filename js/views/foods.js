@@ -287,6 +287,7 @@ const SCAN_FIELDS = [
   ['carbs_g', 'f-carb', 'CARBS'], ['sugars_g', 'f-sugar', 'Açúcar'], ['fiber_g', 'f-fiber', 'Fibra'],
   ['protein_g', 'f-prot', 'PROT'], ['salt_g', null, 'Sal'], // sal: só informativo, foods não tem coluna
 ];
+const EUR_PER_USD = 0.89; // fixo, sem chamadas externas; só para mostrar o custo
 let _scan = null;
 let _scanBusy = false;
 
@@ -386,7 +387,7 @@ function renderLabelScan() {
   const el = document.getElementById('f-scan');
   el.innerHTML = `<div class="scan-head"><img src="${thumb}" alt="Rótulo" class="scan-thumb">` +
     `<div class="cost-hint">Confiança: ${escHtml(res.confidence)}${res.converted.length ? ' · convertido da dose: ' + escHtml(res.converted.join(', ')) : ''}` +
-    `<br>${escHtml(res.notes || '')}<br>$${res.usage.cost_usd.toFixed(5)} · ${res.usage.tokens_in}+${res.usage.tokens_out} tok</div></div>` +
+    `<br>${escHtml(res.notes || '')}<br>€${(res.usage.cost_usd * EUR_PER_USD).toFixed(5)} · ${res.usage.tokens_in}+${res.usage.tokens_out} tok</div></div>` +
     `<table class="scan-table"><tr><th></th>${editing ? '<th>Atual</th>' : ''}<th>Rótulo</th><th></th></tr>${rows}</table>` +
     (editing ? `<button type="button" class="btn btn-secondary btn-sm" onclick="applyLabelScan()">Aplicar ao formulário</button>` : '');
 }

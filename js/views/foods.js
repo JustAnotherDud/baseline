@@ -218,6 +218,7 @@ function editFood(id) {
   document.getElementById('f-price-eur').value=f.price_eur??'';
   document.getElementById('f-price-qty').value=f.price_qty_g??'';
   updateFoodPriceCalc();
+  resetLabelScan();
   document.getElementById('sheet-food').classList.add('open');
 }
 
@@ -276,4 +277,118 @@ async function deleteFood() {
   const {error}=await db.from('foods').delete().eq('id',editingFoodId);
   if (error) { toast('Erro ao eliminar'); return; }
   toast('Eliminado'); closeAddFood(); loadFoods();
+}
+
+// ── Foto do rótulo (Edge Function label-scan, Haiku) ─────────────────────────
+// Nada é gravado aqui: preenche o formulário e o José carrega em Guardar.
+const SCAN_FIELDS = [
+  ['name', 'f-name', 'Nome'], ['brand', 'f-brand', 'Marca'], ['serving_size_g', 'f-serving', 'Dose (g)'],
+  ['kcal', 'f-kcal', 'kcal'], ['fat_g', 'f-fat', 'FAT'], ['sat_fat_g', 'f-satfat', 'Saturada'],
+  ['carbs_g', 'f-carb', 'CARBS'], ['sugars_g', 'f-sugar', 'Açúcar'], ['fiber_g', 'f-fiber', 'Fibra'],
+  ['protein_g', 'f-prot', 'PROT'], ['salt_g', null, 'Sal'], // sal: só informativo, foods não tem coluna
+];
+let _scan = null;
+let _scanBusy = false;
+
+// Lado maior 1568 px, JPEG 0.8 -> Blob.
+async function shrinkLabelImage(file) {
+  const bmp = await createImageBitmap(file);
+  const k = Math.min(1, 1568 / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas');
+  c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  return new Promise(res => c.toBlob(res, 'image/jpeg', 0.8));
+}
+
+function blobToBase64(blob) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(String(r.result).split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(blob);
+  });
+}
+
+function resetLabelScan() {
+  _scan = null;
+  const el = document.getElementById('f-scan');
+  if (el) { el.style.display = 'none'; el.innerHTML = ''; }
+  document.querySelectorAll('#sheet-food .scan-flag').forEach(i => i.classList.remove('scan-flag'));
+}
+
+async function scanLabel(input) {
+  const file = input.files[0];
+  input.value = '';
+  if (!file || _scanBusy) return;
+  _scanBusy = true;
+  const el = document.getElementById('f-scan');
+  resetLabelScan();
+  el.style.display = 'block';
+  el.textContent = 'A ler o rótulo…';
+  try {
+    const blob = await shrinkLabelImage(file);
+    const { data: { session } } = await db.auth.getSession();
+    if (!session) throw new Error('sem sessão');
+    const r = await fetch(`${localStorage.getItem('nt_url')}/functions/v1/label-scan`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        apikey: localStorage.getItem('nt_key'),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ image_base64: await blobToBase64(blob), media_type: 'image/jpeg' }),
+    });
+    const res = await r.json().catch(() => ({}));
+    if (!r.ok || !res.ok) {
+      el.textContent = res.error === 'daily_limit' ? `Limite diário atingido (${res.limit}).` : `Erro ao ler o rótulo (${res.error || r.status}).`;
+      return;
+    }
+    _scan = { res, thumb: URL.createObjectURL(blob) };
+    renderLabelScan();
+    if (!editingFoodId) applyLabelScan(); // novo alimento: preenche já; em edição espera pelo Aplicar
+  } catch (e) {
+    el.textContent = 'Erro ao ler o rótulo.';
+  } finally {
+    _scanBusy = false;
+  }
+}
+
+function _scanCurrent(inputId) {
+  const v = inputId ? document.getElementById(inputId).value.trim() : '';
+  return v === '' ? null : v;
+}
+
+function renderLabelScan() {
+  const { res, thumb } = _scan;
+  const editing = !!editingFoodId;
+  const rows = SCAN_FIELDS.map(([k, id, label]) => {
+    const val = res[k], w = res.warnings[k];
+    const cur = editing && id ? _scanCurrent(id) : null;
+    const flag = val === null || w;
+    return `<tr class="${flag ? 'scan-row-flag' : ''}"><td>${escHtml(label)}</td>` +
+      (editing ? `<td>${cur === null ? '—' : escHtml(cur)}</td>` : '') +
+      `<td>${val === null ? '—' : escHtml(val)}${k === 'salt_g' && val !== null ? ' g/100g' : ''}</td>` +
+      `<td>${w ? escHtml(w) : (val === null && k !== 'brand' && k !== 'name' ? 'não lido' : '')}</td></tr>`;
+  }).join('');
+  const el = document.getElementById('f-scan');
+  el.innerHTML = `<div class="scan-head"><img src="${thumb}" alt="Rótulo" class="scan-thumb">` +
+    `<div class="cost-hint">Confiança: ${escHtml(res.confidence)}${res.converted.length ? ' · convertido da dose: ' + escHtml(res.converted.join(', ')) : ''}` +
+    `<br>${escHtml(res.notes || '')}<br>$${res.usage.cost_usd.toFixed(5)} · ${res.usage.tokens_in}+${res.usage.tokens_out} tok</div></div>` +
+    `<table class="scan-table"><tr><th></th>${editing ? '<th>Atual</th>' : ''}<th>Rótulo</th><th></th></tr>${rows}</table>` +
+    (editing ? `<button type="button" class="btn btn-secondary btn-sm" onclick="applyLabelScan()">Aplicar ao formulário</button>` : '');
+}
+
+// Copia os valores lidos para o formulário. Null não apaga o que lá está; fica a vermelho.
+function applyLabelScan() {
+  if (!_scan) return;
+  const { res } = _scan;
+  for (const [k, id] of SCAN_FIELDS) {
+    if (!id) continue;
+    const input = document.getElementById(id);
+    if (res[k] !== null) input.value = res[k];
+    if (res[k] === null || res.warnings[k]) {
+      input.classList.add('scan-flag');
+      input.addEventListener('input', () => input.classList.remove('scan-flag'), { once: true });
+    }
+  }
 }

@@ -120,6 +120,7 @@ function openAddFood() {
   document.getElementById('del-food-btn').style.display='none';
   ['f-name','f-brand','f-serving','f-kcal','f-prot','f-carb','f-fat','f-satfat','f-sugar','f-fiber','f-price-eur','f-price-qty'].forEach(id=>document.getElementById(id).value='');
   updateFoodPriceCalc();
+  resetLabelScan();
   document.getElementById('sheet-food').classList.add('open');
   setTimeout(()=>document.getElementById('f-name').focus(),300);
 }

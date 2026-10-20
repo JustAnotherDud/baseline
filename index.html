@@ -471,6 +471,9 @@
       <div class="sheet-close" onclick="closeAddFood()">×</div>
     </div>
     <div class="form-body">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('f-label-file').click()">Foto do rótulo</button>
+      <input type="file" id="f-label-file" accept="image/*" capture="environment" hidden onchange="scanLabel(this)">
+      <div id="f-scan" class="scan-panel" style="display:none"></div>
       <div class="r2">
         <label><span class="lt">Nome *</span><input type="text" id="f-name" placeholder="ex: Iogurte Natural"></label>
         <label><span class="lt">Marca</span><input type="text" id="f-brand" placeholder="opcional"></label>

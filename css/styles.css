@@ -821,3 +821,12 @@ input[type="range"]::-moz-range-thumb {
 .hist-end { padding: 16px 20px; font-family: var(--mono); font-size: 11px; color: var(--text3); text-align: center; }
 #history-foot { padding: 12px 20px 20px; }
 #history-foot .hist-end { padding: 4px 0; }
+
+/* Foto do rótulo (formulário de alimento) */
+.scan-panel { font-size: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.scan-head { display: flex; gap: 10px; align-items: flex-start; }
+.scan-thumb { width: 72px; height: 72px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
+.scan-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 11px; }
+.scan-table th, .scan-table td { text-align: left; padding: 3px 4px; }
+.scan-row-flag td { color: var(--red); }
+#sheet-food input.scan-flag { border-color: var(--red); }

@@ -309,6 +309,16 @@ function blobToBase64(blob) {
   });
 }
 
+function scanErrorText(code, limit, status) {
+  const c = String(code || '');
+  if (c === 'daily_limit') return `Limite diário atingido (${limit} fotos por 24 h). Volta amanhã ou preenche à mão.`;
+  if (c === 'unauthorized' || status === 401) return 'Sessão expirada. Volta a iniciar sessão e tenta outra vez.';
+  if (c === 'invalid_image') return 'Imagem inválida ou demasiado grande.';
+  if (c === 'no_result') return 'Não consegui ler o rótulo. Tenta outra foto, mais direita e com boa luz.';
+  if (c.startsWith('anthropic_') || status >= 500) return 'O serviço de leitura falhou. Tenta outra vez daqui a pouco.';
+  return `Erro ao ler o rótulo (${c || status}).`;
+}
+
 function resetLabelScan() {
   _scan = null;
   const el = document.getElementById('f-scan');
@@ -321,6 +331,8 @@ async function scanLabel(input) {
   input.value = '';
   if (!file || _scanBusy) return;
   _scanBusy = true;
+  const btn = document.getElementById('f-label-btn');
+  btn.disabled = true; // sem pedidos duplicados enquanto o Haiku responde
   const el = document.getElementById('f-scan');
   resetLabelScan();
   el.style.display = 'block';
@@ -340,16 +352,17 @@ async function scanLabel(input) {
     });
     const res = await r.json().catch(() => ({}));
     if (!r.ok || !res.ok) {
-      el.textContent = res.error === 'daily_limit' ? `Limite diário atingido (${res.limit}).` : `Erro ao ler o rótulo (${res.error || r.status}).`;
+      el.textContent = scanErrorText(res.error, res.limit, r.status);
       return;
     }
     _scan = { res, thumb: URL.createObjectURL(blob) };
     renderLabelScan();
     if (!editingFoodId) applyLabelScan(); // novo alimento: preenche já; em edição espera pelo Aplicar
   } catch (e) {
-    el.textContent = 'Erro ao ler o rótulo.';
+    el.textContent = 'Sem ligação ou falha ao enviar a foto. Tenta outra vez.';
   } finally {
     _scanBusy = false;
+    btn.disabled = false;
   }
 }
 

@@ -56,6 +56,19 @@ test('promoLotModel: linhas e avisos (só informação)', () => {
   assert.equal(plain(c.promoLotModel({ ...lot, brand: null, paid_eur: 0 })).paid, 'pago grátis · normal 0,99 €');
 });
 
+test('promoListModel: linha compacta, preço por unidade, marca = loja some', () => {
+  const lot = { food_name: 'Esparguete', brand: 'Lidl', store: 'Lidl', grams_left: 250, grams_bought: 1000, paid_eur: 0.84 };
+  const m = plain(c.promoListModel(lot, 500, false));
+  assert.equal(m.name, 'Esparguete');
+  assert.equal(m.store, '');
+  assert.equal(m.left, '250/1000 g');
+  assert.equal(m.pct, 25);
+  assert.equal(m.unit, '0,42 €/un');                                   // 2 embalagens de 500 g
+  assert.equal(plain(c.promoListModel(lot, null, true)).unit, '0,84 €/kg');   // sem embalagem: €/kg
+  assert.equal(plain(c.promoListModel(lot, 500, true)).store, 'Lidl');
+  assert.equal(plain(c.promoListModel({ ...lot, brand: 'Milaneza' }, 500, false)).name, 'Esparguete · Milaneza');
+});
+
 test('promoLotModel: eliminar mesmo só num lote que nunca foi consumido (abates não contam)', () => {
   const lot = { food_name: 'X', grams_left: 100, grams_bought: 100, paid_eur: 1, ref_eur: 2, saving_total: 1, saving_realised: 0, bought_on: '2026-10-08' };
   assert.equal(c.promoLotModel({ ...lot, grams_eaten: 0, grams_written_off: 40 }).canDelete, true);

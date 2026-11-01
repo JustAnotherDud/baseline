@@ -37,104 +37,94 @@ async function loadPromo() {
     el.innerHTML = '<div class="empty"><div class="empty-icon">🏷️</div><div class="empty-text">Sem lotes abertos.<br>Clica em + para criar um.</div></div>';
     return;
   }
-  data.forEach(l => el.appendChild(promoLotEl(l)));
+  const { data: foods } = await db.from('foods').select('id,price_qty_g').in('id', [...new Set(data.map(l => l.food_id))]);
+  const pack = new Map((foods || []).map(f => [f.id, +f.price_qty_g]));
+  const mixed = new Set(data.map(l => (l.store || '').trim().toLowerCase())).size > 1;
+  data.forEach(l => el.appendChild(promoLotEl(l, pack.get(l.food_id), mixed)));
 }
 
-function promoLotEl(l) {
-  const m = promoLotModel(l);
+function promoLotEl(l, packG, mixed) {
+  const m = promoListModel(l, packG, mixed);
   const div = document.createElement('div');
-  div.className = 'promo-lot';
-  const line = (cls, text) => {
-    const d = document.createElement('div');
-    d.className = cls;
-    d.textContent = text;
-    return d;
+  div.className = 'promo-row';
+  div.onclick = () => openPromoDetail(l);
+  const span = (cls, text) => {
+    const s = document.createElement('span');
+    s.className = cls;
+    s.textContent = text;
+    return s;
   };
-  const head = document.createElement('div');
-  head.className = 'promo-lot-head';
-  head.appendChild(line('promo-lot-name', m.title));
-  head.appendChild(line('promo-lot-left price', m.left));
-  div.appendChild(head);
-  div.appendChild(line('promo-lot-line', m.paid));
-  div.appendChild(line('promo-lot-line', m.saving));
-  if (m.meta) div.appendChild(line('promo-lot-line', m.meta));
-  if (m.warns.length) div.appendChild(line('promo-lot-warn', '⚠ ' + m.warns.join(' · ')));
-  const actions = document.createElement('div');
-  actions.className = 'promo-lot-actions';
-  const buttons = [['Abater', 'writeoff', 'btn btn-secondary btn-sm'], ['Fechar lote', 'close', 'btn btn-secondary btn-sm']];
-  if (m.canDelete) buttons.push(['Eliminar', 'delete', 'btn btn-danger btn-sm']);
-  buttons.forEach(([label, mode, cls]) => {
-    const b = document.createElement('button');
-    b.className = cls;
-    b.style.flex = '1';
-    b.textContent = label;
-    b.onclick = () => openPromoAction(l, mode);
-    actions.appendChild(b);
-  });
-  div.appendChild(actions);
+  const top = document.createElement('div');
+  top.className = 'promo-row-top';
+  const name = span('promo-row-name', m.name);
+  if (m.store) name.appendChild(span('promo-row-store', m.store));
+  top.appendChild(name);
+  top.appendChild(span('promo-row-left', m.left));
+  const bottom = document.createElement('div');
+  bottom.className = 'promo-row-bottom';
+  const bar = document.createElement('div');
+  bar.className = 'promo-bar';
+  const fill = document.createElement('div');
+  fill.style.width = m.pct.toFixed(1) + '%';
+  bar.appendChild(fill);
+  bottom.appendChild(bar);
+  bottom.appendChild(span('promo-row-unit', m.unit));
+  div.appendChild(top);
+  div.appendChild(bottom);
   return div;
 }
 
-// ── Abater / fechar / eliminar ──────────────────────────────────────────────
+// ── Detalhe / fechar / eliminar ─────────────────────────────────────────────
 
 let promoActionLot = null;
-let promoActionMode = 'writeoff';
 let _promoActing = false;
 
-function openPromoAction(lot, mode) {
+function openPromoDetail(lot) {
   pushSheetState();
   promoActionLot = lot;
-  promoActionMode = mode;
-  const overlay = ensureSheet('promo-action-overlay', {
-    header: '<div class="sheet-title" id="promo-action-title"></div>',
+  const overlay = ensureSheet('promo-detail-overlay', {
+    header: '<div class="sheet-title" id="promo-detail-title"></div>',
     body: `
-    <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:14px">
-      <div id="promo-action-info" class="cost-hint"></div>
-      <label id="promo-action-grams-wrap"><span class="lt">Gramas a abater</span>
-        <input type="number" id="promo-action-grams" inputmode="decimal" placeholder="0"></label>
-      <label><span class="lt">Motivo (opcional)</span>
-        <input type="text" id="promo-action-reason" placeholder="ex.: o meu irmão comeu 2 de 4" autocomplete="off"></label>
-      <button class="btn btn-primary" id="promo-action-go" onclick="submitPromoAction()"></button>
+    <div style="padding:14px 20px 20px;display:flex;flex-direction:column;gap:6px">
+      <div class="promo-lot-left price" id="promo-detail-left"></div>
+      <div class="promo-lot-line" id="promo-detail-paid"></div>
+      <div class="promo-lot-line" id="promo-detail-saving"></div>
+      <div class="promo-lot-line" id="promo-detail-meta"></div>
+      <div class="promo-lot-warn" id="promo-detail-warn"></div>
+      <div class="promo-lot-actions">
+        <button class="btn btn-secondary btn-sm" style="flex:1" onclick="submitPromoAction('close')">Fechar lote</button>
+        <button class="btn btn-danger btn-sm" style="flex:1" id="promo-detail-delete" onclick="submitPromoAction('delete')">Eliminar</button>
+      </div>
     </div>`,
   });
   const m = promoLotModel(lot);
-  const T = {
-    writeoff: ['Abater do lote', `Restam ${m.left}. Não conta como poupança nem muda entradas já registadas.`, 'Abater', 'btn btn-primary'],
-    close:    ['Fechar lote', `Restam ${m.left}. Abate o que resta; o custo das entradas já registadas fica.`, 'Fechar lote', 'btn btn-primary'],
-    delete:   ['Eliminar lote', 'O lote nunca foi consumido: desaparece por completo.', 'Eliminar lote', 'btn btn-danger'],
-  }[mode];
-  document.getElementById('promo-action-title').textContent = T[0] + ' · ' + m.title;
-  document.getElementById('promo-action-info').textContent = T[1];
-  document.getElementById('promo-action-grams-wrap').style.display = mode === 'writeoff' ? '' : 'none';
-  document.getElementById('promo-action-reason').closest('label').style.display = mode === 'delete' ? 'none' : '';
-  document.getElementById('promo-action-grams').value = '';
-  document.getElementById('promo-action-reason').value = '';
-  const go = document.getElementById('promo-action-go');
-  go.textContent = T[2];
-  go.className = T[3];
+  const set = (id, t) => { document.getElementById(id).textContent = t; };
+  set('promo-detail-title', m.title);
+  set('promo-detail-left', 'restam ' + m.left);
+  set('promo-detail-paid', m.paid);
+  set('promo-detail-saving', m.saving);
+  set('promo-detail-meta', m.meta);
+  set('promo-detail-warn', m.warns.length ? '⚠ ' + m.warns.join(' · ') : '');
+  document.getElementById('promo-detail-delete').style.display = m.canDelete ? '' : 'none';
   overlay.classList.add('open');
 }
 
-async function submitPromoAction() {
+async function submitPromoAction(mode) {
   if (_promoActing || !promoActionLot) return;
-  const reason = document.getElementById('promo-action-reason').value.trim() || null;
-  let call;
-  if (promoActionMode === 'delete') {
-    call = () => db.rpc('promo_delete', { p_lot_id: promoActionLot.id, p_reason: null });
-  } else if (promoActionMode === 'close') {
-    call = () => db.rpc('promo_writeoff', { p_lot_id: promoActionLot.id, p_grams: null, p_reason: reason });
-  } else {
-    const raw = document.getElementById('promo-action-grams').value.trim();
-    const g = parseFloat(raw);
-    if (!(g > 0)) { toast('Indica as gramas a abater'); return; }
-    call = () => db.rpc('promo_writeoff', { p_lot_id: promoActionLot.id, p_grams: g, p_reason: reason });
-  }
+  const m = promoLotModel(promoActionLot);
+  const ask = mode === 'delete'
+    ? `Eliminar o lote ${m.title}? Desaparece por completo.`
+    : `Fechar o lote ${m.title}? Abate o que resta (${m.left}); o custo das entradas já registadas fica.`;
+  if (!confirm(ask)) return;
+  const call = mode === 'delete'
+    ? () => db.rpc('promo_delete', { p_lot_id: promoActionLot.id, p_reason: null })
+    : () => db.rpc('promo_writeoff', { p_lot_id: promoActionLot.id, p_grams: null, p_reason: null });
   _promoActing = true;
   try {
     const { error } = await call();
     if (error) { toast(error.message); return; }
-    document.getElementById('promo-action-overlay').classList.remove('open');
-    toast({ delete: 'Lote eliminado', close: 'Lote fechado', writeoff: 'Abatido' }[promoActionMode]);
+    document.getElementById('promo-detail-overlay').classList.remove('open');
+    toast(mode === 'delete' ? 'Lote eliminado' : 'Lote fechado');
     loadPromo();
   } finally {
     _promoActing = false;

@@ -523,29 +523,24 @@ test('25. updateEditPreview: sem mudar as gramas não repete o split; ao mudar p
   assert.equal(document.getElementById('edit-promo-preview').textContent, '500 g do stock promo, 0,30 €');
 });
 
-test('26. Promoções: Abater exige gramas; Fechar lote abate tudo com motivo; Eliminar só chama promo_delete', async () => {
+test('26. Promoções: detalhe só mostra Eliminar sem consumos; Fechar e Eliminar pedem confirmação', async () => {
   const { db, calls } = fakeDb({}, {});
-  const { ctx, document, toasts } = load(PROMO_FILES, { db });
+  let sure = false;
+  const { ctx, document, toasts } = load(PROMO_FILES, { db, confirm: () => sure });
   ctx.loadPromo = () => {};   // recarregar a lista fica fora do teste
   const lot = { id: 9, food_name: 'Esparguete', brand: 'Lidl', grams_left: 700, grams_bought: 1000, paid_eur: 0.59, ref_eur: 0.99,
                 saving_total: 0.4, saving_realised: 0.12, bought_on: '2026-10-08', grams_eaten: 300 };
-  ctx.openPromoAction(lot, 'writeoff');
-  await ctx.submitPromoAction();
-  assert.deepEqual(toasts, ['Indica as gramas a abater']);
+  ctx.openPromoDetail(lot);
+  assert.equal(document.getElementById('promo-detail-delete').style.display, 'none');
+  await ctx.submitPromoAction('close');                                  // não confirmou: nada acontece
   assert.equal(calls.filter(c => c.rpc).length, 0);
-  document.getElementById('promo-action-grams').value = '2,5';           // vírgula não é válida em type=number: parseFloat('2,5') = 2
-  document.getElementById('promo-action-grams').value = '100';
-  document.getElementById('promo-action-reason').value = 'irmão';
-  await ctx.submitPromoAction();
-  assert.deepEqual(plain(calls.find(c => c.rpc)), { rpc: 'promo_writeoff', args: { p_lot_id: 9, p_grams: 100, p_reason: 'irmão' } });
+  sure = true;
+  await ctx.submitPromoAction('close');
+  assert.deepEqual(plain(calls.find(c => c.rpc)), { rpc: 'promo_writeoff', args: { p_lot_id: 9, p_grams: null, p_reason: null } });
   calls.length = 0;
-  ctx.openPromoAction(lot, 'close');
-  document.getElementById('promo-action-reason').value = 'acabou-se';
-  await ctx.submitPromoAction();
-  assert.deepEqual(plain(calls.find(c => c.rpc)), { rpc: 'promo_writeoff', args: { p_lot_id: 9, p_grams: null, p_reason: 'acabou-se' } });
-  calls.length = 0;
-  ctx.openPromoAction({ ...lot, grams_eaten: 0 }, 'delete');
-  await ctx.submitPromoAction();
+  ctx.openPromoDetail({ ...lot, grams_eaten: 0 });
+  assert.equal(document.getElementById('promo-detail-delete').style.display, '');
+  await ctx.submitPromoAction('delete');
   assert.deepEqual(plain(calls.find(c => c.rpc)), { rpc: 'promo_delete', args: { p_lot_id: 9, p_reason: null } });
-  assert.deepEqual(toasts.slice(-3), ['Abatido', 'Lote fechado', 'Lote eliminado']);
+  assert.deepEqual(toasts, ['Lote fechado', 'Lote eliminado']);
 });

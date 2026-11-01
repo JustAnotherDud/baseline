@@ -789,9 +789,16 @@ input[type="range"]::-moz-range-thumb {
 .cost-dim { opacity: .55; }
 .promo-preview { font-family: var(--mono); font-size: 12px; color: var(--price-gold); }
 .promo-preview:empty { display: none; }
-.promo-lot { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; }
-.promo-lot-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
-.promo-lot-name { font-size: 15px; font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
+.promo-row { padding: 9px 20px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; cursor: pointer; }
+.promo-row:active { background: var(--surface2); }
+.promo-row-top, .promo-row-bottom { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.promo-row-bottom { align-items: center; }
+.promo-row-name { font-size: 14px; font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.promo-row-store { font-size: 11px; color: var(--text3); font-weight: 400; margin-left: 6px; }
+.promo-row-left, .promo-row-unit { font-family: var(--mono); font-size: 11px; color: var(--text3); white-space: nowrap; }
+.promo-row-left { color: var(--text); font-weight: 600; }
+.promo-bar { flex: 1; height: 4px; border-radius: 2px; background: var(--surface3); overflow: hidden; }
+.promo-bar > div { height: 100%; background: var(--price-gold); }
 .promo-lot-left { font-family: var(--mono); font-size: 13px; font-weight: 600; white-space: nowrap; }
 .promo-lot-line { font-family: var(--mono); font-size: 11px; color: var(--text3); }
 .promo-lot-warn { font-size: 12px; color: var(--yellow); }

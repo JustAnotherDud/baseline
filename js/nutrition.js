@@ -218,6 +218,21 @@ function promoLotModel(l) {
   };
 }
 
+// Linha compacta da lista: nome, restante/total, preço por unidade de compra (packG = gramas da embalagem
+// do alimento; sem isso, €/kg). A marca sai se for igual à loja; a loja só aparece com lotes de várias lojas.
+function promoListModel(l, packG, mixedStores) {
+  const same = (a, b) => a && b && String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
+  const left = +l.grams_left, total = +l.grams_bought;
+  const unit = packG > 0 ? `${formatEur(l.paid_eur / (total / packG))}/un` : `${formatEur(l.paid_eur / total * 1000)}/kg`;
+  return {
+    name: l.food_name + (l.brand && !same(l.brand, l.store) ? ' · ' + l.brand : ''),
+    store: mixedStores ? (l.store || '') : '',
+    left: `${fmtG(left)}/${fmtG(total)} g`,
+    pct: total > 0 ? Math.max(0, Math.min(100, left / total * 100)) : 0,
+    unit,
+  };
+}
+
 // Payload do INSERT de um lote a partir dos campos do formulário (f.food = linha de foods).
 // Vazio é "falta"; 0 é válido (pago 0 = grátis).
 function promoLotPayload(f) {

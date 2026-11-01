@@ -210,7 +210,7 @@ function promoLotModel(l) {
     title: l.food_name + (l.brand ? ' · ' + l.brand : ''),
     left: `${fmtG(l.grams_left)} de ${fmtG(l.grams_bought)} g`,
     paid: `pago ${formatEur(l.paid_eur)} · normal ${formatEur(l.ref_eur)}`,
-    saving: `poupança ${eurPlain(l.saving_total)} · realizada ${eurPlain(l.saving_realised)}`,
+    saving: `poupança ${eurPlain(l.saving_total)}` + (+l.ref_eur > 0 ? ` · desconto ${Math.round(l.saving_total / l.ref_eur * 100)}%` : ''),
     meta: [l.store, 'comprado ' + dm(l.bought_on), l.best_before ? 'validade ' + dm(l.best_before) : '', l.note]
       .filter(Boolean).join(' · '),
     warns,

@@ -47,7 +47,9 @@ test('promoLotModel: linhas e avisos (só informação)', () => {
   assert.equal(m.title, 'Esparguete · Lidl');
   assert.equal(m.left, '700 de 1000 g');
   assert.equal(m.paid, 'pago 0,59 € · normal 0,99 €');
-  assert.equal(m.saving, 'poupança 0,40 € · realizada 0,00 €');       // 0 poupado é "0,00 €", não "grátis"
+  assert.equal(m.saving, 'poupança 0,40 € · desconto 40%');           // 0,40 / 0,99 = 40,4%
+  assert.equal(plain(c.promoLotModel({ ...lot, saving_total: 0 })).saving, 'poupança 0,00 € · desconto 0%');   // 0 poupado é "0,00 €", não "grátis"
+  assert.equal(plain(c.promoLotModel({ ...lot, ref_eur: 0, saving_total: 0 })).saving, 'poupança 0,00 €');     // sem preço normal: sem %
   assert.equal(m.meta, 'Lidl · comprado 08/10 · pontos');
   assert.deepEqual(m.warns, []);
   const w = plain(c.promoLotModel({ ...lot, warn_expired: true, warn_old: true, age_days: 91, best_before: '2026-09-01' }));

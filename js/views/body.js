@@ -168,6 +168,7 @@ function bodyFilterByPeriod(rows, period, today = new Date()) {
 // ── Load ──────────────────────────────────────────────────────────────────────
 
 async function loadBody() {
+  if (!db) return;   // sem sessão (como os outros loaders): nada a carregar
   const gen = ++loadBodyGen;
   const c = document.getElementById('body-container');
   if (!c) return;

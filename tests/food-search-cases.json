@@ -4,8 +4,6 @@
   {
    "name": "Atum Natural",
    "brand": "Continente",
-   "price_eur": 2,
-   "price_qty_g": 100,
    "uses": [
     1,
     2,
@@ -15,8 +13,6 @@
   {
    "name": "Aveia",
    "brand": "Continente",
-   "price_eur": null,
-   "price_qty_g": null,
    "uses": [
     5
    ]
@@ -24,15 +20,11 @@
   {
    "name": "Arroz",
    "brand": "Pingo Doce",
-   "price_eur": 1,
-   "price_qty_g": 100,
    "uses": []
   },
   {
    "name": "Continente Light Iogurte",
    "brand": null,
-   "price_eur": null,
-   "price_qty_g": null,
    "uses": [
     70
    ]
@@ -40,15 +32,11 @@
   {
    "name": "Pao de Forma",
    "brand": "Continente",
-   "price_eur": null,
-   "price_qty_g": null,
    "uses": []
   },
   {
    "name": "Gratis Maca",
    "brand": null,
-   "price_eur": 0,
-   "price_qty_g": 100,
    "uses": [
     1
    ]
@@ -56,8 +44,6 @@
   {
    "name": "Atum Light",
    "brand": "Bom Petisco",
-   "price_eur": 3,
-   "price_qty_g": 100,
    "uses": []
   }
  ],
@@ -110,55 +96,6 @@
    ]
   },
   {
-   "q": "continente&!price",
-   "order": [
-    "Continente Light Iogurte",
-    "Aveia",
-    "Pao de Forma"
-   ]
-  },
-  {
-   "q": "continente&price",
-   "order": [
-    "Atum Natural"
-   ]
-  },
-  {
-   "q": "!price",
-   "order": [
-    "Aveia",
-    "Continente Light Iogurte",
-    "Pao de Forma"
-   ]
-  },
-  {
-   "q": "price",
-   "order": [
-    "Atum Natural",
-    "Gratis Maca",
-    "Arroz",
-    "Atum Light"
-   ]
-  },
-  {
-   "q": "preco",
-   "order": [
-    "Atum Natural",
-    "Gratis Maca",
-    "Arroz",
-    "Atum Light"
-   ]
-  },
-  {
-   "q": "PREÇO",
-   "order": [
-    "Atum Natural",
-    "Gratis Maca",
-    "Arroz",
-    "Atum Light"
-   ]
-  },
-  {
    "q": "atum, arroz",
    "order": [
     "Atum Natural",
@@ -183,10 +120,10 @@
    ]
   },
   {
-   "q": "continente&!price, arroz",
+   "q": "continente&!light, arroz",
    "order": [
     "Arroz",
-    "Continente Light Iogurte",
+    "Atum Natural",
     "Aveia",
     "Pao de Forma"
    ]

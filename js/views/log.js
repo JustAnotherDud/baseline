@@ -82,7 +82,7 @@ function buildFoodItem(food) {
   const item = document.createElement('div');
   item.className = 'sr-item';
   item.innerHTML = `
-      <div><div class="sr-name">${highlightFoodKeywords(food.name)}</div><div class="sr-detail">${food.brand?escHtml(food.brand)+' · ':''}${food.calories_per_100g} kcal · P${food.protein_per_100g} C${food.carbs_per_100g} F${food.fat_per_100g}${foodPriceLabel(food)}</div></div>
+      <div><div class="sr-name">${highlightFoodKeywords(food.name)}</div><div class="sr-detail">${food.brand?escHtml(food.brand)+' · ':''}${food.calories_per_100g} kcal · P${food.protein_per_100g} C${food.carbs_per_100g} F${food.fat_per_100g}</div></div>
       <div class="sr-kcal">${food.calories_per_100g}<br><span style="font-size:9px;color:var(--text3)">kcal/100g</span></div>`;
   item.onclick = () => pickFood(food.id);
   return item;
@@ -123,7 +123,7 @@ function toggleFoodGroup(name, items, wrapper) {
       item.className = 'food-brand-item';
       item.innerHTML = `
         <span class="food-brand-name">${food.brand ? escHtml(food.brand) : 'Genérico'}</span>
-        <span class="food-brand-kcal">${Math.round(food.calories_per_100g)} kcal${foodPriceLabel(food)}</span>
+        <span class="food-brand-kcal">${Math.round(food.calories_per_100g)} kcal</span>
       `;
       item.onclick = () => pickFood(food.id);
       brandsEl.appendChild(item);
@@ -162,14 +162,6 @@ async function pickFood(id) {
     }
   }
 
-  // Preço pontual pré-preenchido com o do alimento; só se grava se o mudares.
-  document.getElementById('log-price-eur').value = data.price_eur ?? '';
-  document.getElementById('log-price-qty').value = data.price_qty_g ?? '';
-  document.getElementById('log-price-hint').textContent = data.price_eur != null
-    ? `Preço do alimento${foodPriceLabel(data)}` : 'Alimento sem preço';
-  const stock = promoStock.get(data.id);
-  if (stock > 0) document.getElementById('log-price-hint').textContent += ` · stock promo ${fmtG(stock)} g`;
-
   const gi = document.getElementById('log-grams');
   gi.value = '';
   updatePreview();
@@ -184,9 +176,6 @@ function updatePreview() {
   document.getElementById('prev-fat').textContent   = c(selectedFood.fat_per_100g);
   document.getElementById('prev-carb').textContent  = c(selectedFood.carbs_per_100g);
   document.getElementById('prev-prot').textContent  = c(selectedFood.protein_per_100g);
-  const ov = priceOverridePayload(selectedFood,
-    document.getElementById('log-price-eur').value, document.getElementById('log-price-qty').value);
-  showPromoPreview('log-promo-preview', selectedFood.id, currentDate, g, null, ov.cost_source === 'override' || !!ov.error);
   if (selectedFood.serving_size_g) {
     const doses = g > 0 ? numPt(g / selectedFood.serving_size_g, 1) : '';
     const infoEl = document.getElementById('dose-info');
@@ -199,7 +188,6 @@ function backToSearch() {
   document.getElementById('log-stage-grams').classList.remove('active');
   selectedFood=null;
   resetLogTara();
-  document.getElementById('log-promo-preview').textContent = '';
   const infoEl = document.getElementById('dose-info');
   if (infoEl) infoEl.textContent = '';
 }
@@ -211,8 +199,6 @@ async function saveQuick() {
   try {
     const name = document.getElementById('q-name').value.trim();
     if (!name) { toast('Indica o nome'); return; }
-    const cost = manualCostPatch({}, document.getElementById('q-cost').value);
-    if (cost.error) { toast(cost.error); return; }
     const mealId = await resolveMealId();
     if (mealId == null) return;
     const {error} = await db.from('diary').insert({
@@ -222,7 +208,6 @@ async function saveQuick() {
       carbs:    parseFloat(document.getElementById('q-carb').value)||0,
       fiber:    parseFloat(document.getElementById('q-fiber').value)||0,
       protein:  parseFloat(document.getElementById('q-prot').value)||0,
-      ...cost
     });
     if (error) { toast('Erro ao guardar'); return; }
     toast('Registado'); closeLog(); clearQuick(); go('today');
@@ -232,7 +217,7 @@ async function saveQuick() {
 }
 
 function clearQuick() {
-  ['q-name','q-kcal','q-fat','q-carb','q-fiber','q-prot','q-cost'].forEach(id=>document.getElementById(id).value='');
+  ['q-name','q-kcal','q-fat','q-carb','q-fiber','q-prot'].forEach(id=>document.getElementById(id).value='');
 }
 
 function openLogForMeal(mealId) {
@@ -325,7 +310,6 @@ async function handleSaveDiary() {
     document.getElementById('log-results').innerHTML =
       '<div class="loading">Começa a escrever para pesquisar</div>';
     loadToday();
-    refreshPromoStock();
     setTimeout(() => document.getElementById('log-q').focus(), 100);
   } finally {
     _savingDiary = false;

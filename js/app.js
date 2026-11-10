@@ -123,7 +123,6 @@ function loadView(view) {
   else if (view === 'forma') loadBody();
   else if (view === 'stats') loadStats();
   else if (view === 'history') loadHistory();
-  else if (view === 'promo') loadPromo();
   else if (view === 'targets') refreshTargets();
 }
 

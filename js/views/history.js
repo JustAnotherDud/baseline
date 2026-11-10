@@ -41,14 +41,12 @@ function historyRowHtml(r) {
   const m = historyRowModel(r);
   if (m.gap) return `<div class="hist-row hist-gap">${escHtml(m.title)}</div>`;
   const dim = m.dimNums ? ' hist-dim' : '';
-  const cov = m.cov ? ` <span class="hist-cov">${escHtml(m.cov)}</span>` : '';
   const tags = m.tags.map(t => `<span class="hist-tag">${escHtml(t)}</span>`).join('');
   return `<div class="hist-row hist-tap" role="button" tabindex="0" onclick="openHistoryDay('${escHtml(m.key)}')">
     <div class="hist-l1">
       <span class="hist-date">${escHtml(m.title)}</span>
       <span class="hist-num${dim}">${escHtml(m.kcal)}</span>
       <span class="hist-num${dim}">${escHtml(m.delta)}</span>
-      <span class="hist-num hist-cost price${m.costDim ? ' hist-dim' : ''}">${escHtml(m.cost)}${cov}</span>
     </div>
     <div class="hist-l2"><span class="hist-macros">${escHtml(m.macros)}</span><span class="hist-tags">${tags}</span></div>
   </div>`;

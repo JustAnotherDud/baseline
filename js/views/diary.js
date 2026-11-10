@@ -16,19 +16,17 @@ function macroPairs(pairs) {
 
 // Cabeçalho de uma refeição. À esquerda: nome (quebra em vez de reticências) e, por baixo, hora e macros
 // sem quebrar; o nome e a hora são tocáveis (sublinhado pontilhado) e abrem o sheet da refeição. À
-// direita: coluna kcal (em cima) e custo (em baixo), alinhada à direita, com algarismos tabulares; seta
+// direita: coluna kcal, alinhada à direita, com algarismos tabulares; seta
 // (caixa discreta, toque ≥ 40 px) e "+" (≥ 44 px). Os macros quebram em 2 linhas se não couberem. Tocar na seta ou no resto do cabeçalho expande/encolhe.
-// Refeição sem entradas: sem coluna kcal/€ nem seta.
-function mealHeaderHtml(meal, mes, showCost) {
+// Refeição sem entradas: sem coluna kcal nem seta.
+function mealHeaderHtml(meal, mes) {
   const r = n => Math.round(n);
   const sum = k => mes.reduce((s, e) => s + +e[k], 0);
   const hm = fmtHM(meal.sort_at);
   const tap = t => `<button type="button" class="meal-tap" data-meal-edit aria-label="Editar nome e hora">${t}</button>`;
   const has = mes.length > 0;
   const figs = has
-    ? `<div class="meal-figs"><span class="meal-kcal-val">${r(sum('calories'))}</span>`
-      + (showCost ? `<span class="meal-cost-val price" title="Custo da refeição">${formatEur(costSummary(mes).total)}</span>` : '')
-      + '</div>'
+    ? `<div class="meal-figs"><span class="meal-kcal-val">${r(sum('calories'))}</span></div>`
     : '';
   const chev = has
     ? '<button type="button" class="meal-chev" aria-label="Expandir ou encolher refeição"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button>'
@@ -119,21 +117,6 @@ function renderToday(entries, t) {
     </div>`;
   }).join('');
 
-  // Custo: só a partir de cost_tracking_start (antes não há custo registado).
-  const showCost = !!costConfig && currentDate >= costConfig.start;
-  // Total do dia no cabeçalho, ao lado do dia da semana. Sem badge de cobertura:
-  // só se marca "≥ … · N%" (total mínimo) quando abaixo de cost_min_coverage (o total está incompleto).
-  const costEl = document.getElementById('tot-cost');
-  if (costEl) {
-    if (showCost && hasData) {
-      const cs = costSummary(entries);
-      costEl.innerHTML = dayCostHtml(cs, costConfig.minCoverage);
-      costEl.style.display = '';
-    } else {
-      costEl.style.display = 'none';
-    }
-  }
-
   const summary = document.querySelector('#view-today .macro-summary');
   summary.innerHTML = `
     <div class="diary-kcal-row" style="justify-content:flex-start;align-items:baseline;gap:8px">
@@ -166,7 +149,7 @@ function renderToday(entries, t) {
     const hasEntries = mes.length > 0;
     const collapsed = hasEntries && isMealCollapsed(meal.id, openId, mealToggles);
     if (collapsed) div.classList.add('collapsed');
-    div.innerHTML = mealHeaderHtml(meal, mes, showCost);
+    div.innerHTML = mealHeaderHtml(meal, mes);
     const headerEl = div.querySelector('.meal-header');
     const chevEl = div.querySelector('.meal-chev');
     const syncChev = () => {
@@ -219,7 +202,6 @@ function renderToday(entries, t) {
           </div>
           <div class="entry-right">
             <div class="entry-kcal">${r(entry.calories)}</div>
-            ${showCost ? `<div class="entry-cost price${entry.cost_eur != null && +entry.cost_eur === 0 ? ' free' : ''}">${entryCostHtml(entry)}</div>` : ''}
           </div>`;
         entryEl.querySelector('.entry-name').innerHTML = highlightFoodKeywords(entry.food_name);
         entryEl.addEventListener('click', () => openEditEntry(entry.id));
@@ -243,8 +225,6 @@ function setDateLabel() {
   const d = new Date(currentDate+'T12:00:00');
   const fullEl = document.getElementById('today-date-full');
   if (fullEl) fullEl.textContent = d.toLocaleDateString('pt-PT',{day:'numeric',month:'long'});
-  const costEl = document.getElementById('tot-cost');
-  if (costEl) costEl.style.display = 'none'; // até o diário carregar (evita o total do dia anterior)
   const wdEl = document.getElementById('today-weekday');
   if (wdEl) wdEl.textContent = d.toLocaleDateString('pt-PT',{weekday:'long'});
   const moEl = document.getElementById('today-month');

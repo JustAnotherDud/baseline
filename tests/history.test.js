@@ -1,5 +1,5 @@
 // Histórico: formatação de uma linha de v_day_totals (nutrition.js) e paginação (views/history.js).
-// A agregação, o colapso de dias vazios, o delta e a cobertura vêm da vista (testes SQL);
+// A agregação, o colapso de dias vazios e o delta vêm da vista (testes SQL);
 // aqui só se testa o que a PWA mostra e como pagina.
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -9,12 +9,11 @@ const plain = x => JSON.parse(JSON.stringify(x));
 const c = loadScript('js/nutrition.js');
 const DASH = '\u2014', MINUS = '\u2212';
 
-// Linha base: dia com entradas, delta e custo acompanhados, cobertura total.
+// Linha base: dia com entradas e delta acompanhado.
 const row = (o = {}) => ({
   date: '2026-10-02', date_from: '2026-10-02', n_days: 1, is_gap: false, n_entries: 12,
   kcal: 3657.6, protein: 190.4, carbs: 410.5, fat: 120.2, fiber: 33.4,
-  delta_kcal: 184.4, delta_tracked: true, cost_eur: 9.67, coverage: 1, counts_in_avg: true,
-  cost_tracked: true, is_today: false, ...o,
+  delta_kcal: 184.4, delta_tracked: true, is_today: false, ...o,
 });
 
 test('dia com entradas: kcal, macros e fibra arredondados', () => {
@@ -25,18 +24,17 @@ test('dia com entradas: kcal, macros e fibra arredondados', () => {
   assert.equal(m.empty, false); assert.equal(m.gap, false);
 });
 
-test('dia sem entradas: kcal, macros, delta e custo são "—" (nem 0, nem delta negativo)', () => {
+test('dia sem entradas: kcal, macros e delta são "—" (nem 0, nem delta negativo)', () => {
   const m = c.historyRowModel(row({ n_entries: 0, kcal: null, protein: null, carbs: null, fat: null, fiber: null,
-    delta_kcal: null, cost_eur: null, coverage: null, counts_in_avg: null }));
+    delta_kcal: null }));
   assert.equal(m.empty, true);
-  for (const k of ['kcal', 'macros', 'delta', 'cost']) assert.equal(m[k], DASH, k);
-  assert.equal(m.cov, ''); assert.deepEqual(plain(m.tags), []);
+  for (const k of ['kcal', 'macros', 'delta']) assert.equal(m[k], DASH, k);
+  assert.deepEqual(plain(m.tags), []);
 });
 
 test('dia vazio antes do tracking também é "—" em tudo (não célula vazia)', () => {
-  const m = c.historyRowModel(row({ n_entries: 0, kcal: null, delta_kcal: null, delta_tracked: false, cost_tracked: false,
-    cost_eur: null, coverage: null }));
-  assert.equal(m.delta, DASH); assert.equal(m.cost, DASH);
+  const m = c.historyRowModel(row({ n_entries: 0, kcal: null, delta_kcal: null, delta_tracked: false }));
+  assert.equal(m.delta, DASH);
 });
 
 test('delta: sinal, sinal de menos tipográfico e arredondamento', () => {
@@ -55,35 +53,12 @@ test('delta com entradas mas sem target: "—"', () => {
   assert.equal(c.historyRowModel(row({ delta_kcal: null })).delta, DASH);
 });
 
-test('custo antes de cost_tracking_start: vazio (não 0, não "—"), sem cobertura', () => {
-  const m = c.historyRowModel(row({ cost_tracked: false, cost_eur: null, coverage: null, counts_in_avg: null }));
-  assert.equal(m.cost, ''); assert.equal(m.cov, ''); assert.deepEqual(plain(m.tags), []);
-});
-
-test('custo acompanhado: valor e cobertura; sem custo registado é "—"', () => {
-  const ok = c.historyRowModel(row());
-  assert.equal(ok.cost, '9,67 \u20AC'); assert.equal(ok.cov, '100%'); assert.equal(ok.costDim, false);
-  const none = c.historyRowModel(row({ cost_eur: null, coverage: 0, counts_in_avg: false }));
-  assert.equal(none.cost, DASH); assert.equal(none.cov, '0%');
-});
-
-test('cobertura baixa: custo esbatido e etiqueta, como nas estatísticas', () => {
-  const m = c.historyRowModel(row({ cost_eur: 4, coverage: 0.5, counts_in_avg: false }));
-  assert.equal(m.cost, '4,00 \u20AC'); assert.equal(m.cov, '50%');
-  assert.equal(m.costDim, true); assert.deepEqual(plain(m.tags), ['cobertura baixa']);
-});
-
-test('hoje: etiqueta "em curso" e kcal/delta esbatidos; custo e cobertura normais', () => {
+test('hoje: etiqueta "em curso" e kcal/delta esbatidos', () => {
   const m = c.historyRowModel(row({ date: '2026-10-05', is_today: true, delta_kcal: -1591 }));
   assert.equal(m.today, true); assert.equal(m.dimNums, true);
   assert.deepEqual(plain(m.tags), ['em curso']);
   assert.equal(m.delta, MINUS + '1591'); assert.equal(m.kcal, '3658');
   assert.equal(c.historyRowModel(row()).dimNums, false);
-});
-
-test('hoje com cobertura baixa: as duas etiquetas', () => {
-  const m = c.historyRowModel(row({ is_today: true, counts_in_avg: false, coverage: 0.3 }));
-  assert.deepEqual(plain(m.tags), ['em curso', 'cobertura baixa']);
 });
 
 test('hoje sem entradas: linha vazia "em curso" (nunca delta negativo)', () => {
@@ -172,7 +147,7 @@ test('refresh recarrega o que já está carregado (60 linhas), não só 30', asy
 
 test('render: linha vazia e intervalo colapsado aparecem; só a linha de dia é tocável', async () => {
   const gap = { date: '2026-07-18', date_from: '2026-07-12', n_days: 7, is_gap: true, n_entries: 0 };
-  const empty = row({ date: '2026-07-20', date_from: '2026-07-20', n_entries: 0, kcal: null, delta_kcal: null, cost_eur: null, coverage: null });
+  const empty = row({ date: '2026-07-20', date_from: '2026-07-20', n_entries: 0, kcal: null, delta_kcal: null });
   const { ctx, els } = load([ok([empty, gap])]);
   await ctx.loadHistory();
   const html = els['history-list'].innerHTML;

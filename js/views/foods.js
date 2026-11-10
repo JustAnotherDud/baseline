@@ -6,9 +6,6 @@ const SORT_CONFIG = {
   p_kcal:   { asc: 'P/Kcal ↓', desc: 'P/Kcal ↑', default: 'desc' },
   c_kcal:   { asc: 'C/Kcal ↓', desc: 'C/Kcal ↑', default: 'desc' },
   f_kcal:   { asc: 'F/Kcal ↓', desc: 'F/Kcal ↑', default: 'desc' },
-  eur_100g: { asc: '€/100g ↓', desc: '€/100g ↑', default: 'asc'  },
-  kcal_eur: { asc: 'Kcal/€ ↓', desc: 'Kcal/€ ↑', default: 'desc' },
-  prot_eur: { asc: 'P/€ ↓',    desc: 'P/€ ↑',    default: 'desc' },
 };
 
 // Linha de ajuda por baixo dos chips: ordem activa (+ filtro de pesquisa, se houver).
@@ -18,23 +15,13 @@ const SORT_HELP = {
   p_kcal:   { asc: 'menos proteína por kcal primeiro', desc: 'mais proteína por kcal primeiro' },
   c_kcal:   { asc: 'menos hidratos por kcal primeiro', desc: 'mais hidratos por kcal primeiro' },
   f_kcal:   { asc: 'menos gordura por kcal primeiro', desc: 'mais gordura por kcal primeiro' },
-  eur_100g: { asc: 'mais barato primeiro', desc: 'mais caro primeiro' },
-  kcal_eur: { asc: 'menos kcal por € primeiro', desc: 'mais kcal por € primeiro' },
-  prot_eur: { asc: 'menos proteína por € primeiro', desc: 'mais proteína por € primeiro' },
 };
 
 function foodsHelpLines(sort, dir, rawQuery) {
-  const sortTxt = 'Ordem: ' + SORT_HELP[sort][dir] + (COST_SORT_META[sort] ? ' · sem preço no fim' : '');
+  const sortTxt = 'Ordem: ' + SORT_HELP[sort][dir];
   const q = describeFoodQuery(rawQuery);
   return { sort: sortTxt, filter: q ? 'Filtro: ' + q : '' };
 }
-
-// Chips de custo: valor mostrado na coluna direita. Sem preço: '—' e fim da lista.
-const COST_SORT_META = {
-  eur_100g: { label: '€/100g',  dec: 2 },
-  kcal_eur: { label: 'kcal/€',  dec: 0 },
-  prot_eur: { label: 'g P/€',   dec: 1 },
-};
 
 // Chips de rácio macro/kcal.
 const RATIO_META = {
@@ -64,7 +51,6 @@ async function loadFoods() {
     return;
   }
   allFoods = data || [];
-  promoStock = await fetchPromoStock();
   document.getElementById('foods-count').textContent = `${allFoods.length} alimentos`;
   filterFoods();
   if (pendingFoodEdit != null) {
@@ -83,14 +69,6 @@ function sortFoodsBy(foods, sort, dir) {
   const arr = [...foods];
   const mul = dir === 'asc' ? 1 : -1;
   const ratio = (val, kcal) => kcal ? (val || 0) / kcal : 0;
-  if (COST_SORT_META[sort]) {
-    // Sem preço vai sempre para o fim, qualquer que seja a direcção.
-    return arr.sort((a, b) => {
-      const x = foodCostMetric(a, sort), y = foodCostMetric(b, sort);
-      if (x === null || y === null) return x === y ? a.name.localeCompare(b.name, 'pt') : x === null ? 1 : -1;
-      return x === y ? 0 : mul * (x - y);   // grátis: kcal/€ e P/€ são Infinity
-    });
-  }
   switch (sort) {
     case 'calories': return arr.sort((a,b) => mul * (a.calories_per_100g - b.calories_per_100g));
     case 'p_kcal':
@@ -152,11 +130,7 @@ function renderFoods(foods) {
 
     // Coluna direita: rácio no sort por rácio, senão kcal/100g (só números).
     let rightCol;
-    if (COST_SORT_META[sort]) {
-      const meta = COST_SORT_META[sort], v = foodCostMetric(f, sort);
-      const val = v === null ? '—' : foodCostMetric(f, 'eur_100g') === 0 ? 'grátis' : (meta.dec ? v.toFixed(meta.dec).replace('.', ',') : Math.round(v));
-      rightCol = `<div class="fi-kcal" style="${v === null ? '' : HL}">${val}<br><span style="font-size:9px;color:var(--text3)">${meta.label}</span></div>`;
-    } else if (RATIO_META[sort]) {
+    if (RATIO_META[sort]) {
       const meta  = RATIO_META[sort];
       const kcal  = f.calories_per_100g || 0;
       const ratio = kcal ? numPt(f[meta.field] / kcal, 2) : '—';
@@ -181,9 +155,7 @@ function renderFoods(foods) {
     const detail = document.createElement('div');
     detail.className = 'fi-detail';
     const servingStr = f.serving_size_g ? ` · porção ${numPt(f.serving_size_g)} g` : '';
-    const stock = promoStock.get(f.id);
-    const stockStr = stock > 0 ? ` · <span class="price-promo">↓ ${fmtG(stock)} g</span>` : '';
-    detail.innerHTML = `${pStr} ${cStr} ${gStr}${servingStr}${foodPriceLabel(f)}${stockStr}`;
+    detail.innerHTML = `${pStr} ${cStr} ${gStr}${servingStr}`;
     if (f.brand) {
       detail.insertBefore(document.createTextNode(f.brand + ' · '), detail.firstChild);
     }
@@ -215,17 +187,8 @@ function editFood(id) {
   document.getElementById('f-satfat').value=f.saturated_fat_per_100g||'';
   document.getElementById('f-sugar').value=f.sugar_per_100g||'';
   document.getElementById('f-fiber').value=f.fiber_per_100g||'';
-  document.getElementById('f-price-eur').value=f.price_eur??'';
-  document.getElementById('f-price-qty').value=f.price_qty_g??'';
-  updateFoodPriceCalc();
   resetLabelScan();
   document.getElementById('sheet-food').classList.add('open');
-}
-
-// €/100g calculado do preço da embalagem (só para mostrar).
-function updateFoodPriceCalc() {
-  const v = eurPer100g(document.getElementById('f-price-eur').value, document.getElementById('f-price-qty').value);
-  document.getElementById('f-price-calc').textContent = v === null ? '' : `= ${formatEur(v, ' / 100g')}`;
 }
 
 let _savingFood = false;
@@ -239,8 +202,6 @@ async function saveFood() {
     const carb=parseFloat(document.getElementById('f-carb').value);
     const fat=parseFloat(document.getElementById('f-fat').value);
     if (!name||isNaN(kcal)||isNaN(prot)||isNaN(carb)||isNaN(fat)) { toast('Preenche os campos obrigatórios (*)'); return; }
-    const price = foodPricePayload(document.getElementById('f-price-eur').value, document.getElementById('f-price-qty').value);
-    if (price.error) { toast(price.error); return; }
     const food={
       name, brand:document.getElementById('f-brand').value.trim()||null,
       serving_size_g:parseFloat(document.getElementById('f-serving').value)||null,
@@ -248,7 +209,6 @@ async function saveFood() {
       saturated_fat_per_100g:parseFloat(document.getElementById('f-satfat').value)||0,
       sugar_per_100g:parseFloat(document.getElementById('f-sugar').value)||0,
       fiber_per_100g:parseFloat(document.getElementById('f-fiber').value)||0,
-      ...price
     };
     let error, data2;
     if (editingFoodId) {

@@ -31,17 +31,8 @@ const PAIRS = [
   ['blue PROT (large)', 'blue', 'bg', 'large'],
   ['yellow CARBS (large)', 'yellow', 'bg', 'large'],
   ['orange FAT (large)', 'orange', 'bg', 'large'],
-  ['price-gold em bg', 'price-gold', 'bg', 'body'],
-  ['price-gold em surface2 (cabeçalho refeição)', 'price-gold', 'surface2', 'body'],
   ['accent-ink em botão accent', 'accent-ink', 'accent', 'body'],
 ];
-
-// price-gold sobre o fundo da pill Promo (rgba .14 de ouro sobre o fundo da linha).
-const blend = (fg, bg, a) => '#' + [1, 3, 5].map(i =>
-  Math.round(parseInt(fg.slice(i, i + 2), 16) * a + parseInt(bg.slice(i, i + 2), 16) * (1 - a)).toString(16).padStart(2, '0')).join('');
-for (const bgTok of ['bg', 'surface']) tok[`promo-pill-${bgTok}`] = blend(tok['price-gold'], tok[bgTok], 0.14);
-PAIRS.push(['price-gold em pill Promo (bg)', 'price-gold', 'promo-pill-bg', 'body'],
-           ['price-gold em pill Promo (surface)', 'price-gold', 'promo-pill-surface', 'body']);
 
 let failed = 0;
 console.log('PAIRING'.padEnd(32), 'RATIO', ' THRESHOLD', 'RESULT');

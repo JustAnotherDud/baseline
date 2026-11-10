@@ -36,24 +36,6 @@ function macroFloorState(key, actual, floor) {
   return { status: 'met', pct };
 }
 
-// ── CUSTO (€) ────────────────────────────────────────────────────────────────
-// O custo de cada entrada é calculado na BD (food_cost_eur + trigger diary_cost).
-// Aqui só se formata, se somam custos já calculados e se montam os payloads de
-// preço. A única conta feita aqui é o €/100g, para mostrar; nunca se grava.
-
-// 0 é "grátis" (custo conhecido); NULL/vazio é "—" (sem preço). unit só se mostra com valor.
-function formatEur(n, unit = '') {
-  const v = Math.round(parseFloat(n) * 100) / 100;
-  if (isNaN(v)) return '—';
-  return v === 0 ? 'grátis' : v.toFixed(2).replace('.', ',') + ' €' + unit;
-}
-
-// €/100g de um preço de embalagem; null sem preço válido. Preço 0 = grátis (0, não null).
-function eurPer100g(priceEur, qtyG) {
-  const p = parseFloat(priceEur), q = parseFloat(qtyG);
-  return p >= 0 && q > 0 ? p / q * 100 : null;
-}
-
 // Aderência calórica (Estatísticas): texto do ponto de um dia ("05/10 · 94%").
 function adherenceDotText(label, pct) {
   return pct !== null && pct !== undefined ? `${label} · ${Math.round(pct)}%` : `${label} · sem dados`;
@@ -66,9 +48,7 @@ function tipLeft(centerX, tipWidth, viewportWidth, margin) {
 }
 
 // Pesquisa de alimentos. "," separa alternativas (ou); dentro de cada uma, "&" junta
-// condições (e) e "!" nega. Texto procura em nome e marca; `price` (ou preco/preço)
-// é "tem preço". Ex.: "continente&!price" = Continente sem preço.
-const PRICE_KEYS = ['price', 'preco', 'preço'];
+// condições (e) e "!" nega. Texto procura em nome e marca. Ex.: "continente&!light".
 
 // "a&!b, c" -> [[{k:'a',neg:false},{k:'b',neg:true}],[{k:'c',neg:false}]]
 function parseFoodQuery(raw) {
@@ -82,253 +62,18 @@ function parseFoodQuery(raw) {
 function foodMatchesQuery(food, raw) {
   const groups = parseFoodQuery(raw);
   if (!groups.length) return true;
-  const hasPrice = eurPer100g(food.price_eur, food.price_qty_g) !== null;
   const name = (food.name || '').toLowerCase(), brand = (food.brand || '').toLowerCase();
   const test = ({ k, neg }) => {
-    const hit = PRICE_KEYS.includes(k) ? hasPrice : name.includes(k) || brand.includes(k);
+    const hit = name.includes(k) || brand.includes(k);
     return neg ? !hit : hit;
   };
   return groups.some(g => g.every(test));
 }
 
-// Frase para a linha de ajuda: "continente e sem preço" / "atum ou arroz". '' sem filtro.
+// Frase para a linha de ajuda: "continente e sem “light”" / "atum ou arroz". '' sem filtro.
 function describeFoodQuery(raw) {
-  const term = ({ k, neg }) => PRICE_KEYS.includes(k) ? (neg ? 'sem preço' : 'com preço')
-    : neg ? `sem “${k}”` : `“${k}”`;
+  const term = ({ k, neg }) => neg ? `sem “${k}”` : `“${k}”`;
   return parseFoodQuery(raw).map(g => g.map(term).join(' e ')).join(' ou ');
-}
-
-// Métricas de custo de um alimento (ordenar/mostrar na lista); null sem preço.
-//   eur_100g: €/100g · kcal_eur: kcal por € · prot_eur: g de proteína por €
-function foodCostMetric(food, key) {
-  const e = eurPer100g(food.price_eur, food.price_qty_g);
-  if (e === null) return null;
-  if (key === 'eur_100g') return e;
-  if (key === 'kcal_eur') return (+food.calories_per_100g || 0) / e;
-  if (key === 'prot_eur') return (+food.protein_per_100g || 0) / e;
-  return null;
-}
-
-// " · 0,53 €/100g" para listas de alimentos; " · grátis"; '' sem preço.
-function foodPriceLabel(food) {
-  const v = eurPer100g(food.price_eur, food.price_qty_g);
-  return v === null ? '' : ` · ${formatEur(v, '/100g')}`;
-}
-
-// Custo de um conjunto de entradas: total (null se nenhuma tem custo; 0 = tudo grátis)
-// e cobertura = kcal das entradas com custo / kcal totais (null sem kcal).
-function costSummary(entries) {
-  let kcal = 0, kcalCosted = 0, total = 0, n = 0;
-  entries.forEach(e => {
-    const k = +(e.calories || 0);
-    kcal += k;
-    if (e.cost_eur != null) { total += +e.cost_eur; kcalCosted += k; n++; }
-  });
-  return {
-    total: n ? Math.round(total * 100) / 100 : null,
-    coverage: kcal > 0 ? kcalCosted / kcal : null,
-  };
-}
-
-// Custo efectivo do período: € por 1000 kcal e € por 100 g de proteína, só sobre entradas com
-// custo (cobertura coerente) e só nos dias que contam nas médias (countedDates: Set de datas).
-// kcal e proteína são das mesmas entradas que somam o custo. null sem denominador.
-function costEfficiency(entries, countedDates) {
-  let cost = 0, kcal = 0, protein = 0;
-  const days = new Set();
-  for (const e of entries) {
-    if (e.cost_eur == null || !countedDates.has(e.date)) continue;
-    cost += +e.cost_eur; kcal += +(e.calories || 0); protein += +(e.protein || 0);
-    days.add(e.date);
-  }
-  return {
-    n_days: days.size, cost, kcal, protein,
-    per1000kcal: kcal > 0 ? cost / kcal * 1000 : null,
-    per100gProtein: protein > 0 ? cost / protein * 100 : null,
-  };
-}
-
-// Média diária só sobre os dias de v_cost_day que contam (cobertura >= limiar).
-function costAverage(days) {
-  const c = days.filter(d => d.counts_in_avg && d.cost_eur != null);
-  return { n: c.length, avg: c.length ? c.reduce((s, d) => s + +d.cost_eur, 0) / c.length : null };
-}
-
-// Etiqueta do preço pontual (cost_source = override). Único sítio a editar.
-const PROMO_LABEL = 'Promo';
-
-// Custo de uma entrada no diário. Promo (override ou lote): pill suave + ↓. manual: glifo ✎ discreto
-// antes do valor. Nenhuma marca depende de title (não existe em mobile).
-function entryCostHtml(entry) {
-  const eur = formatEur(entry.cost_eur);
-  if (entry.cost_source === 'override' || entry.cost_source === 'promo') return `<span class="price-promo">↓ ${eur}</span>`;
-  if (entry.cost_source === 'manual') return `<span class="cost-glyph">✎</span>${eur}`;
-  return eur;
-}
-
-// ── Promoções (lotes) ─────────────────────────────────────────────────────────
-// A BD consome os lotes e calcula o custo (diary_cost_trigger, promo_plan). Aqui só se formata.
-
-// Gramas com 1 casa no máximo, vírgula decimal: 700, 12,5.
-function fmtG(n) {
-  return String(Math.round(parseFloat(n) * 10) / 10).replace('.', ',');
-}
-
-// Euros sempre com valor (0 = "0,00 €", não "grátis"): poupanças.
-function eurPlain(n) {
-  const v = Math.round(parseFloat(n) * 100) / 100;
-  return isNaN(v) ? '—' : v.toFixed(2).replace('.', ',') + ' €';
-}
-
-// "700 g do stock promo, 0,71 €" (+ " · 300 g ao preço normal"). p = resposta de promo_preview.
-// '' se a entrada não consome lote.
-function promoPreviewText(p) {
-  if (!p || !(+p.promo_g > 0)) return '';
-  const rest = +p.rest_g > 0 ? ` · ${fmtG(p.rest_g)} g ao preço normal` : '';
-  return `${fmtG(p.promo_g)} g do stock promo, ${formatEur(p.total_eur)}${rest}`;
-}
-
-// Detalhe de uma entrada com consumo de lote, a partir de v_diary_promo:
-// "700 g do stock promo (0,41 €) + 300 g ao preço normal (0,30 €)". '' sem alocações.
-function promoSplitText(entry, allocs) {
-  const g = (allocs || []).reduce((s, a) => s + +a.grams, 0);
-  if (!(g > 0)) return '';
-  const eur = allocs.reduce((s, a) => s + +a.cost_eur, 0);
-  const restG = +entry.grams - g;
-  let t = `${fmtG(g)} g do stock promo (${formatEur(eur)})`;
-  if (restG > 0.05) t += ` + ${fmtG(restG)} g ao preço normal (${formatEur(+entry.cost_eur - eur)})`;
-  return t;
-}
-
-// Uma linha da lista Promoções (v_promo_lot). warns: só informação, nunca bloqueia.
-function promoLotModel(l) {
-  const dm = iso => iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) : '';
-  const warns = [];
-  if (l.warn_expired) warns.push('validade passada');
-  if (l.warn_old) warns.push(`aberto há ${l.age_days} dias`);
-  return {
-    title: l.food_name + (l.brand ? ' · ' + l.brand : ''),
-    left: `${fmtG(l.grams_left)} de ${fmtG(l.grams_bought)} g`,
-    paid: `pago ${formatEur(l.paid_eur)} · normal ${formatEur(l.ref_eur)}`,
-    saving: `poupança ${eurPlain(l.saving_total)}` + (+l.ref_eur > 0 ? ` · desconto ${Math.round(l.saving_total / l.ref_eur * 100)}%` : ''),
-    meta: [l.store, 'comprado ' + dm(l.bought_on), l.best_before ? 'validade ' + dm(l.best_before) : '', l.note]
-      .filter(Boolean).join(' · '),
-    warns,
-    canDelete: !(+l.grams_eaten > 0),   // eliminar mesmo só num lote que nunca foi consumido
-  };
-}
-
-// Linha compacta da lista: nome, restante/total, preço por unidade de compra (packG = gramas da embalagem
-// do alimento; sem isso, €/kg). A marca sai se for igual à loja; a loja só aparece com lotes de várias lojas.
-function promoListModel(l, packG, mixedStores) {
-  const same = (a, b) => a && b && String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
-  const left = +l.grams_left, total = +l.grams_bought;
-  const unit = packG > 0 ? `${formatEur(l.paid_eur / (total / packG))}/un` : `${formatEur(l.paid_eur / total * 1000)}/kg`;
-  return {
-    name: l.food_name + (l.brand && !same(l.brand, l.store) ? ' · ' + l.brand : ''),
-    store: mixedStores ? (l.store || '') : '',
-    left: `${fmtG(left)}/${fmtG(total)} g`,
-    pct: total > 0 ? Math.max(0, Math.min(100, left / total * 100)) : 0,
-    unit,
-  };
-}
-
-// Payload do INSERT de um lote a partir dos campos do formulário (f.food = linha de foods).
-// Vazio é "falta"; 0 é válido (pago 0 = grátis).
-function promoLotPayload(f) {
-  if (!f.food) return { error: 'Escolhe o alimento' };
-  const grams = parseFloat(f.grams), paid = parseFloat(f.paid), ref = parseFloat(f.ref);
-  if (!(grams > 0)) return { error: 'Indica as gramas compradas' };
-  if (!(paid >= 0)) return { error: 'Indica o preço pago (0 = grátis)' };
-  if (!(ref >= 0)) return { error: 'Indica o preço normal das mesmas gramas' };
-  const t = v => String(v ?? '').trim() || null;
-  return {
-    food_id: f.food.id, bought_on: f.date || localDate(), grams_bought: grams,
-    paid_eur: paid, ref_eur: ref, store: t(f.store), note: t(f.note), best_before: t(f.best_before),
-  };
-}
-
-// Sugestão do preço normal das gramas compradas, a partir do preço do alimento; null sem preço.
-function promoRefSuggestion(food, grams) {
-  const g = parseFloat(grams);
-  if (!food || !(g > 0) || !(food.price_qty_g > 0) || food.price_eur == null) return null;
-  return Math.round(food.price_eur * g / food.price_qty_g * 100) / 100;
-}
-
-// Stock promo aberto por alimento: Map food_id -> gramas (linhas de v_promo_lot com is_open).
-function promoStockMap(lots) {
-  const m = new Map();
-  (lots || []).forEach(l => m.set(l.food_id, (m.get(l.food_id) || 0) + +l.grams_left));
-  return m;
-}
-
-// Total do dia (cabeçalho do diário). Cobertura >= minCoverage: só o valor. Abaixo, o total é
-// um mínimo: "≥ 8,40 € · 72%" (% = kcal do dia com custo / kcal do dia).
-function dayCostHtml(summary, minCoverage) {
-  const eur = formatEur(summary.total);
-  const ok = summary.coverage !== null && summary.coverage >= minCoverage;
-  if (ok) return eur;
-  return `<span class="cost-glyph">≥</span>${eur}<span class="cost-pct"> · ${Math.round((summary.coverage || 0) * 100)}%</span>`;
-}
-
-// Preço em dourado (--price-gold): entradas, refeição, total do dia, Histórico, Estatísticas.
-function priceHtml(n) {
-  return `<span class="price">${formatEur(n)}</span>`;
-}
-
-const PRICE_PAIR_ERROR = `Preço ${PROMO_LABEL}: indica o preço e as gramas que cobre`;
-
-// Preço 0 = grátis; só o campo vazio (NaN) é "sem preço". Gramas continuam > 0.
-// Preço pontual no registo (food = alimento escolhido). Igual ao default do
-// alimento não se envia: o trigger copia o preço actual do alimento.
-// Gramas omitidas com o alimento a ter preço: a BD usa as do alimento.
-function priceOverridePayload(food, priceStr, qtyStr) {
-  const p = parseFloat(priceStr), q = parseFloat(qtyStr);
-  const hasP = p >= 0, hasQ = q > 0;
-  if (!hasP && !hasQ) return {};
-  if (hasP && hasQ && p === +food.price_eur && q === +food.price_qty_g) return {};
-  if (hasP && !hasQ && food.price_qty_g > 0) {
-    return p === +food.price_eur ? {} : { price_eur: p, cost_source: 'override' };
-  }
-  if (hasP && hasQ) return { price_eur: p, price_qty_g: q, cost_source: 'override' };
-  return { error: PRICE_PAIR_ERROR };
-}
-
-// Preço pontual na edição de uma entrada com gramas. Só envia o que mudou face
-// ao snapshot da entrada. reset: volta ao default (limpa o override; o trigger
-// recopia o preço actual do alimento).
-function editPricePatch(entry, priceStr, qtyStr, reset) {
-  if (reset) return { cost_source: 'default', price_eur: null, price_qty_g: null };
-  const p = parseFloat(priceStr), q = parseFloat(qtyStr);
-  const hasP = p >= 0, hasQ = q > 0;
-  if (!hasP && !hasQ) return {};
-  if (hasP && hasQ && p === +entry.price_eur && q === +entry.price_qty_g) return {};
-  if (hasP && hasQ) return { price_eur: p, price_qty_g: q, cost_source: 'override' };
-  // só o preço: as gramas que ele cobre vêm do snapshot da entrada (a BD completa)
-  if (hasP && !hasQ && entry.price_qty_g > 0) return { price_eur: p, cost_source: 'override' };
-  return { error: PRICE_PAIR_ERROR };
-}
-
-// Preço do alimento (formulário). Vazio = sem preço (null); 0 = grátis, com 100 g por
-// defeito se faltarem gramas; senão preço e gramas vêm juntos.
-function foodPricePayload(priceStr, qtyStr) {
-  const p = parseFloat(priceStr), q = parseFloat(qtyStr);
-  const hasP = p >= 0, hasQ = q > 0;
-  if (!hasP && !hasQ) return { price_eur: null, price_qty_g: null };
-  if (hasP && p === 0 && !hasQ) return { price_eur: 0, price_qty_g: 100 };
-  if (hasP !== hasQ) return { error: 'Preço e gramas da embalagem vêm juntos' };
-  return { price_eur: p, price_qty_g: q };
-}
-
-// Custo manual (entrada rápida). Campo vazio limpa um custo manual existente.
-function manualCostPatch(entry, costStr) {
-  const raw = String(costStr ?? '').trim();
-  const had = entry.cost_eur != null;
-  if (raw === '' || isNaN(parseFloat(raw))) return had ? { cost_source: null, cost_eur: null } : {};
-  const c = parseFloat(raw);
-  if (c < 0) return { error: 'Custo inválido' };
-  if (had && entry.cost_source === 'manual' && +entry.cost_eur === c) return {};
-  return { cost_source: 'manual', cost_eur: c };
 }
 
 // ── REFEIÇÕES DINÂMICAS ──────────────────────────────────────────────────────
@@ -396,11 +141,10 @@ function isMealCollapsed(id, openId, overrides) {
 
 // ── HISTÓRICO ────────────────────────────────────────────────────────────────
 // Uma linha de v_day_totals -> texto das células. Só formata: a agregação, o colapso de
-// dias vazios, o delta e a cobertura vêm prontos da vista (nada de contas em JS).
-//   dia sem entradas        -> kcal, macros, delta e custo "—"
+// dias vazios e o delta vêm prontos da vista (nada de contas em JS).
+//   dia sem entradas        -> kcal, macros e delta "—"
 //   delta_tracked = false   -> delta '' (antes da manutenção pura: célula vazia, não "—")
-//   cost_tracked = false    -> custo '' (antes do tracking de custo)
-//   cobertura baixa e hoje  -> etiquetas; hoje esbate kcal e delta (dia a meio, não é défice)
+//   hoje                    -> etiqueta; esbate kcal e delta (dia a meio, não é défice)
 
 const HIST_DASH = '\u2014';
 const HIST_MINUS = '\u2212';
@@ -420,8 +164,8 @@ function historyRowModel(r) {
   const wd = HIST_WEEKDAYS[new Date(r.date + 'T12:00:00').getDay()];
   const m = {
     gap: false, key: r.date, title: `${wd} ${histDdMm(r.date)}`, today: !!r.is_today,
-    empty: r.n_entries === 0, kcal: HIST_DASH, macros: HIST_DASH, delta: HIST_DASH, cost: HIST_DASH,
-    cov: '', dimNums: false, costDim: false, tags: [],
+    empty: r.n_entries === 0, kcal: HIST_DASH, macros: HIST_DASH, delta: HIST_DASH,
+    dimNums: false, tags: [],
   };
   if (m.today) { m.tags.push('em curso'); m.dimNums = true; }
   if (m.empty) return m;
@@ -434,13 +178,6 @@ function historyRowModel(r) {
   else if (r.delta_kcal != null) {
     const d = Math.round(+r.delta_kcal);
     m.delta = (d > 0 ? '+' : d < 0 ? HIST_MINUS : '') + Math.abs(d);
-  }
-
-  if (!r.cost_tracked) m.cost = '';
-  else {
-    if (r.cost_eur != null) m.cost = formatEur(r.cost_eur);
-    if (r.coverage != null) m.cov = Math.round(+r.coverage * 100) + '%';
-    if (r.counts_in_avg === false) { m.costDim = true; m.tags.push('cobertura baixa'); }
   }
   return m;
 }

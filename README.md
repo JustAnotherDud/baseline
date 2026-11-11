@@ -29,7 +29,7 @@ Ordem de carregamento em `index.html`: `config.js`, `nutrition.js`, `db.js`, `ui
 - `js/db.js`: queries do diário, scores do date picker.
 - `js/ui.js`: toast, sheets partilhados (edição, date picker, ranking, donut, mover entrada, sheet da refeição), `parseGramsExpr`.
 - `js/app.js`: `init` e login, router por hash (`go`), Definições, refresh automático (ao voltar à app e a cada 60 s recarrega a vista atual, sem pisar um sheet aberto; se a app passou a meia-noite de Lisboa, o Diário e a Manutenção que estavam em "hoje" avançam para o novo hoje, e quem estava num dia passado ou futuro fica).
-- `js/views/`: `diary`, `log` (sheet de registo), `foods`, `meals` (templates), `targets`, `stats`, `history` (Histórico), `body` (Forma).
+- `js/views/`: `diary`, `log` (sheet de registo), `foods`, `targets`, `stats`, `history` (Histórico), `body` (Forma).
 
 Views: Diário, Comida, Forma e Mais (Manutenção, Histórico, Estatísticas, Definições).
 
@@ -38,8 +38,7 @@ Views: Diário, Comida, Forma e Mais (Manutenção, Histórico, Estatísticas, D
 - `foods`: `name`, `brand`, `serving_size_g`, `calories_per_100g`, `protein_per_100g`, `carbs_per_100g`, `fat_per_100g`, `saturated_fat_per_100g`, `sugar_per_100g`, `fiber_per_100g`.
 - `diary`: uma linha por item. `date`, `meal_id` (refeição do dia, FK para `meals`; `meal` é o slot antigo, legado até à fase 4), `food_id` (null em entrada rápida), `food_name`, `grams` (null em entrada rápida), `calories`, `protein`, `carbs`, `fat`, `saturated_fat`, `sugar`, `fiber`, `has_tara`, `logged_at`. Os nutrientes são um snapshot do momento do registo.
 - `daily_targets`: uma linha por `date`, escrita só pelo DCB (sync_hub). Nutrientes como em `diary`, mais `blocks_active` (jsonb: chaves `*_kcal` — `core_kcal`, `work_kcal`, `gym_kcal` — `activity_kcal_by_id`, `energy_diag`) e `updated_at`.
-- `meals`: uma linha por refeição e dia (`date`, `name` opcional, `started_at` editável, `legacy_key` do slot antigo). Sem limite de refeições por dia. Vista `v_meal_day`: `no` (número calculado pela hora, só para mostrar), `is_latest`, `sort_at` (`started_at`, senão 1.ª entrada, senão criação), totais. RPC `meal_new` (cria) e `meal_suggest` (regra das 2 h). Só se apaga uma refeição vazia (`ON DELETE RESTRICT`); o cron `meals-cleanup-empty` limpa vazias de dias anteriores.
-- `meal_templates` (`name`) e `meal_template_items` (`template_id`, `food_id`, `food_name`, `grams` e nutrientes).
+- `meals`: uma linha por refeição e dia (`date`, `name` opcional, `started_at` editável, `legacy_key` do slot antigo). Sem limite de refeições por dia. Vista `v_meal_day`: `no` (número calculado pela hora, só para mostrar), `is_latest`, `sort_at` (`started_at`, senão 1.ª entrada, senão criação), totais. RPC `meal_new` (cria) e `meal_suggest` (regra das 2 h). Só se apaga uma refeição vazia (`ON DELETE RESTRICT`); as vazias ficam até as apagares.
 - `app_config`: `maintenance_baseline_start` (2026-09-16: desde aí o target é manutenção pura e o delta é comparável).
 - `body_comp`: `date`, `weight_kg`, `body_fat_pct`, `muscle_mass_kg`, `bone_mass_kg`, `water_pct`. Preenchida pela sincronização do Garmin.
 

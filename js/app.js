@@ -100,8 +100,6 @@ async function resetSetup() {
   localStorage.removeItem('nt_url'); localStorage.removeItem('nt_key'); init();
 }
 
-let currentFoodsTab = 'foods'; // 'foods' | 'meals'
-
 function pushSheetState() {
   history.pushState({ sheet: true }, '', location.hash);
 }
@@ -110,7 +108,7 @@ function pushSheetState() {
 // leem daily_targets: o refresh ao voltar à app evita mostrar alvos antigos).
 function loadView(view) {
   if (view === 'today') loadToday();
-  else if (view === 'foods') { if (currentFoodsTab === 'foods') loadFoods(); else loadMeals(); }
+  else if (view === 'foods') loadFoods();
   else if (view === 'forma') loadBody();
   else if (view === 'stats') loadStats();
   else if (view === 'history') loadHistory();
@@ -131,24 +129,6 @@ function go(view, _pushState = true) {
   if (_pushState) {
     history.pushState({ view }, '', '#' + view);
   }
-}
-
-function switchFoodsTab(tab) {
-  currentFoodsTab = tab;
-  // Sub-tab buttons
-  document.getElementById('subtab-foods').classList.toggle('active', tab === 'foods');
-  document.getElementById('subtab-meals').classList.toggle('active', tab === 'meals');
-  // Panels
-  document.getElementById('foods-panel').style.display = tab === 'foods' ? 'block' : 'none';
-  document.getElementById('meals-panel').style.display = tab === 'meals' ? 'block' : 'none';
-  document.getElementById('foods-tools').style.display = tab === 'foods' ? '' : 'none';
-  // FAB — only on Alimentos
-  const fab = document.getElementById('foods-fab');
-  if (fab) fab.style.display = tab === 'foods' ? 'flex' : 'none';
-  // Sub text
-  document.getElementById('foods-count').textContent = '';
-  if (tab === 'foods') loadFoods();
-  else loadMeals();
 }
 
 async function loadSettingsView() {

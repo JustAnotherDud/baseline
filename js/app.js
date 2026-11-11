@@ -1,10 +1,5 @@
 const { createClient } = supabase;
 let db = null;
-let icuId = null;
-let icuKey = null;
-let hevyKey = '';
-let icuEnabled = true;
-let hevyEnabled = true;
 let currentDate = localDate();
 let selectedMealId = 'new';   // id da refeição escolhida no registo, ou 'new' (cria-se ao gravar)
 let selectedFood = null;
@@ -21,11 +16,8 @@ let appStarted = false;
 async function init() {
   const url = localStorage.getItem('nt_url');
   const key = localStorage.getItem('nt_key');
-  icuId  = localStorage.getItem('icu_id')  || null;
-  icuKey = localStorage.getItem('icu_key') || null;
-  hevyKey = localStorage.getItem('hevy_key') || '';
-  icuEnabled = localStorage.getItem('icu_enabled') !== 'false';
-  hevyEnabled = localStorage.getItem('hevy_enabled') !== 'false';
+  // Chaves da Intervals.icu e da Hevy saíram do browser (plans/042 B2): limpa o que ficou.
+  ['icu_id', 'icu_key', 'hevy_key', 'icu_enabled', 'hevy_enabled'].forEach(k => localStorage.removeItem(k));
   if (!url || !key) { db = null; showLogin(); return; }
   if (!db) {
     db = createClient(url, key, { auth: { persistSession: true, autoRefreshToken: true } });
@@ -89,7 +81,6 @@ async function saveSetup() {
     // URL/key só ficam guardados depois de um login válido.
     localStorage.setItem('nt_url', url);
     localStorage.setItem('nt_key', key);
-    // ICU configura-se em Definições → Intervals.icu, não no setup inicial.
     await init();
   } finally {
     btn.disabled = false;
@@ -163,103 +154,6 @@ function switchFoodsTab(tab) {
 async function loadSettingsView() {
   const verEl = document.getElementById('settings-version');
   if (verEl) verEl.textContent = 'v' + APP_VERSION;
-}
-
-// Toggle ON/OFF dentro dos sheets de configuração (criados lazy e cacheados,
-// por isso o estado é re-aplicado a cada abertura).
-function updateSheetToggle(id, enabled) {
-  const btn = document.getElementById(id);
-  if (!btn) return;
-  btn.textContent = enabled ? 'ON' : 'OFF';
-  btn.style.color = enabled ? 'var(--accent)' : 'var(--text3)';
-}
-
-function editIcuSettings() {
-  pushSheetState();
-  const overlay = ensureSheet('icu-settings-overlay', {
-    header: `<div class="sheet-title">Intervals.icu</div>`,
-    body: `
-    <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:14px">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <span class="lt">Integração</span>
-        <button id="icu-sheet-toggle" class="settings-toggle-inline" style="margin-right:0" onclick="toggleIcu()"></button>
-      </div>
-      <label>
-        <span class="lt">Athlete ID</span>
-        <input type="text" id="icu-settings-id" placeholder="i123456" autocomplete="off">
-      </label>
-      <label>
-        <span class="lt">API Key</span>
-        <input type="password" id="icu-settings-key" placeholder="••••••••" autocomplete="off">
-      </label>
-      <button class="btn btn-primary" onclick="saveIcuSettings()">Guardar</button>
-    </div>`,
-  });
-
-  document.getElementById('icu-settings-id').value  = localStorage.getItem('icu_id')  || '';
-  document.getElementById('icu-settings-key').value = localStorage.getItem('icu_key') || '';
-  updateSheetToggle('icu-sheet-toggle', icuEnabled);
-  overlay.classList.add('open');
-}
-
-function saveIcuSettings() {
-  const idVal  = document.getElementById('icu-settings-id').value.trim();
-  const keyVal = document.getElementById('icu-settings-key').value.trim();
-  if (idVal)  localStorage.setItem('icu_id', idVal);   else localStorage.removeItem('icu_id');
-  if (keyVal) localStorage.setItem('icu_key', keyVal); else localStorage.removeItem('icu_key');
-  icuId  = idVal  || null;
-  icuKey = keyVal || null;
-  document.getElementById('icu-settings-overlay').classList.remove('open');
-  toast('Intervals.icu guardado');
-  loadSettingsView();
-  loadBody();
-}
-
-function editHevySettings() {
-  pushSheetState();
-  const overlay = ensureSheet('hevy-settings-overlay', {
-    header: `<span class="sheet-title">Hevy</span>`,
-    body: `
-    <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:14px">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <span class="lt">Integração</span>
-        <button id="hevy-sheet-toggle" class="settings-toggle-inline" style="margin-right:0" onclick="toggleHevy()"></button>
-      </div>
-      <label>
-        <span class="lt">API Key</span>
-        <input type="password" id="hevy-key-input" placeholder="••••••••" autocomplete="off">
-      </label>
-      <button class="btn btn-primary" onclick="saveHevySettings()">Guardar</button>
-    </div>`,
-  });
-  const input = document.getElementById('hevy-key-input');
-  if (input) input.value = hevyKey || '';
-  updateSheetToggle('hevy-sheet-toggle', hevyEnabled);
-  overlay.classList.add('open');
-}
-
-function saveHevySettings() {
-  const key = document.getElementById('hevy-key-input').value.trim();
-  if (key) localStorage.setItem('hevy_key', key); else localStorage.removeItem('hevy_key');
-  hevyKey = key;
-  document.getElementById('hevy-settings-overlay').classList.remove('open');
-  toast('Hevy guardado');
-  loadSettingsView();
-  loadBody();
-}
-
-function toggleIcu() {
-  icuEnabled = !icuEnabled;
-  localStorage.setItem('icu_enabled', icuEnabled);
-  updateSheetToggle('icu-sheet-toggle', icuEnabled);
-  loadBody();
-}
-
-function toggleHevy() {
-  hevyEnabled = !hevyEnabled;
-  localStorage.setItem('hevy_enabled', hevyEnabled);
-  updateSheetToggle('hevy-sheet-toggle', hevyEnabled);
-  loadBody();
 }
 
 async function clearCacheAndReload() {

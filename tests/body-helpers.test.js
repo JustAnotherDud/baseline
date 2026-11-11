@@ -4,7 +4,7 @@ const { loadScript } = require('./_load.js');
 
 // body.js lê getComputedStyle no topo; o stub em _load.js cobre isso.
 const ctx = loadScript('js/views/body.js');
-const { tNum, tFmtHM, calcGymVolume, bodyFilterByPeriod, tWeekTotals, tDeltaPct } = ctx;
+const { tNum, buildBodyTrendRows, bodyFilterByPeriod } = ctx;
 
 // ── tNum ─────────────────────────────────────────────────────────────────────
 test("tNum('3.5') → 3.5", () => assert.equal(tNum('3.5'), 3.5));
@@ -12,56 +12,15 @@ test("tNum('abc') → null", () => assert.equal(tNum('abc'), null));
 test("tNum(null) → null", () => assert.equal(tNum(null), null));
 test("tNum(0) → 0 (zero é um número finito válido)", () => assert.equal(tNum(0), 0));
 
-// ── tFmtHM ───────────────────────────────────────────────────────────────────
-test("tFmtHM(3661) → '1:01' (1h 1m 1s, minutos com pad)", () => {
-  assert.equal(tFmtHM(3661), '1:01');
-});
-test("tFmtHM(0) → '0:00'", () => assert.equal(tFmtHM(0), '0:00'));
-test("tFmtHM(null) → '—'", () => assert.equal(tFmtHM(null), '—'));
-
-// ── calcGymVolume ─────────────────────────────────────────────────────────────
-test('calcGymVolume: todos os sets com weight e reps truthy (incluindo warmup)', () => {
-  const workout = {
-    exercises: [{
-      sets: [
-        { type: 'normal', weight_kg: 100, reps: 5 },   // conta: 500
-        { type: 'warmup', weight_kg: 60,  reps: 5 },   // conta: 300
-        { type: 'normal', weight_kg: 100, reps: 0 },   // ignorado (reps falsy)
-      ],
-    }],
-  };
-  assert.equal(calcGymVolume(workout), 800);
-});
-
-test('calcGymVolume({}) → 0 (sem exercises)', () => {
-  assert.equal(calcGymVolume({}), 0);
-});
-
-// ── tDeltaPct ────────────────────────────────────────────────────────────────
-test('tDeltaPct(110, 100) → 10 (aumento de 10%)', () => {
-  assert.equal(tDeltaPct(110, 100), 10);
-});
-test('tDeltaPct(50, 0) → null (divisão por zero)', () => {
-  assert.equal(tDeltaPct(50, 0), null);
-});
-test('tDeltaPct(50, null) → null (prev null)', () => {
-  assert.equal(tDeltaPct(50, null), null);
-});
-
-// ── tWeekTotals ───────────────────────────────────────────────────────────────
-test('tWeekTotals: 2 actividades dentro, 1 exactamente em end (exclusivo)', () => {
-  const start = new Date('2026-06-01T00:00:00');
-  const end   = new Date('2026-06-08T00:00:00');
-  const acts = [
-    { start_date_local: '2026-06-03T10:00:00', distance: 1000, moving_time: 600,  icu_training_load: 50 },
-    { start_date_local: '2026-06-05T10:00:00', distance: 2000, moving_time: 1200, icu_training_load: 80 },
-    // Esta actividade é exactamente em `end` → d < end é falso → fica de fora
-    { start_date_local: '2026-06-08T00:00:00', distance: 500,  moving_time: 300,  icu_training_load: 30 },
-  ];
-  const tot = tWeekTotals(acts, start, end);
-  assert.equal(tot.meters, 3000);
-  assert.equal(tot.secs, 1800);
-  assert.equal(tot.load, 130);
+// ── buildBodyTrendRows ─────────────────────────────────────────────────────────
+test('buildBodyTrendRows: ordena por data e converte as colunas de body_comp', () => {
+  const rows = buildBodyTrendRows([
+    { date: '2026-06-05', weight_kg: '80.5', body_fat_pct: '15', muscle_mass_kg: null },
+    { date: '2026-06-01', weight_kg: '81', body_fat_pct: null, muscle_mass_kg: '65' },
+    { date: null, weight_kg: '99' },
+  ]);
+  assert.deepEqual([...rows.map(r => r.date)], ['2026-06-01', '2026-06-05']);
+  assert.deepEqual({ ...rows[1] }, { date: '2026-06-05', weight: 80.5, fat: 15, lbm: null });
 });
 
 // ── bodyFilterByPeriod ────────────────────────────────────────────────────────

@@ -1,30 +1,21 @@
-// View Forma: body_comp (Supabase), forma e actividades (Intervals.icu), ginásio (Hevy).
-// Secções: Forma actual, Última pesagem, Chart Forma, Chart Composição, Últimos 7 dias.
+// View Forma: pesagens e composição corporal (body_comp, Supabase).
+// Secções: Última pesagem, Chart Composição.
 
 let loadBodyGen = 0;
 
-// Instâncias de chart (destruídas antes de cada rebuild).
-let bodyFormChart = null;
+// Instância do chart (destruída antes de cada rebuild).
 let bodyCompChart = null;
 
-// Estado partilhado (o período é comum aos dois charts de histórico).
+// Estado do chart (período e séries visíveis).
 let bodyPeriod = 'month';                                      // week|month|3m|6m|1y|all
-let bodyFormActive = { ctl: true, atl: true };                // Chart 1 — Forma
-let bodyCompActive = { weight: true, fat: true, lbm: true };  // Chart 2 — Composição
+let bodyCompActive = { weight: true, fat: true, lbm: true };
 
 // Dados.
 let bodyAsc       = [];   // body_comp ascendente por data
-let bodyWellness  = [];   // wellness ICU ordenado ascendente
-let bodyTrendRows = [];   // merge wellness + body_comp por data: {date, ctl, atl, weight, fat, lbm}
-let bodyRecentActivities = [];   // activities ICU dos últimos 14 dias (sheet de detalhe)
-let bodyHevyWorkouts = [];       // workouts Hevy dos últimos 14 dias
-let bodyGymCurrent   = [];       // sessões de ginásio na janela [hoje-6, hoje]
-
-const ICU_BASE = 'https://intervals.icu/api/v1';
+let bodyTrendRows = [];   // body_comp por data: {date, weight, fat, lbm}
 
 // Chart.js não resolve CSS vars dentro do canvas; lemos os tokens uma vez.
 const chartTheme = {
-  accent:  getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
   orange:  getComputedStyle(document.documentElement).getPropertyValue('--orange').trim(),
   blue:    getComputedStyle(document.documentElement).getPropertyValue('--blue').trim(),
   red:     getComputedStyle(document.documentElement).getPropertyValue('--red').trim(),
@@ -39,7 +30,7 @@ const chartAnim = () =>
 
 const chartTicks = () => ({ color: chartTheme.tick, font: { family: 'IBM Plex Mono', size: 10 } });
 
-// Opções comuns aos dois charts de linha. label(name, v) formata o tooltip.
+// Opções do chart de linha. label(name, v) formata o tooltip.
 function baseChartOptions(label, yScales) {
   return {
     devicePixelRatio: window.devicePixelRatio * (window.outerWidth / window.innerWidth || 1.5),
@@ -72,25 +63,10 @@ function baseChartOptions(label, yScales) {
 
 function tNum(v) { const n = parseFloat(v); return Number.isFinite(n) ? n : null; }
 
-function tFmtHM(secs) {
-  const s = tNum(secs);
-  if (s == null) return '—';
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  return `${h}:${String(m).padStart(2, '0')}`;
-}
-
 function tDayLabel(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr.length <= 10 ? dateStr + 'T12:00:00' : dateStr);
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
-}
-
-function tWellnessDate(w) { return w.id || w.date || ''; }
-
-function tWellnessSorted(wellness) {
-  return (Array.isArray(wellness) ? wellness.slice() : [])
-    .sort((a, b) => tWellnessDate(a).localeCompare(tWellnessDate(b)));
 }
 
 function tSecLabel(text) {
@@ -102,55 +78,15 @@ function tEmpty(msg) {
 }
 
 // Chip estilo .msc: label mono 9px uppercase + valor 16px/600 + linha extra.
-// opts.onclick → torna o chip clicável (classe .msc-tap + handler).
-function tChip(label, valHtml, extraHtml, opts = {}) {
-  const cls = opts.onclick ? ' msc-tap' : '';
-  const onclick = opts.onclick ? ` onclick="${opts.onclick}"` : '';
-  return `<div class="msc${cls}"${onclick}>
+function tChip(label, valHtml, extraHtml) {
+  return `<div class="msc">
     <span style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">${label}</span>
     <span style="font-size:16px;font-weight:600">${valHtml}</span>
     ${extraHtml || ''}
   </div>`;
 }
 
-// ── ICU fetch ─────────────────────────────────────────────────────────────────
-
-function icuHeaders() { return { 'Authorization': 'Basic ' + btoa('API_KEY:' + icuKey) }; }
-
-function icuDateOffset(days) {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return localDate(d);
-}
-
-async function icuFetch(path) {
-  const res = await fetch(ICU_BASE + path, { headers: icuHeaders() });
-  if (!res.ok) throw new Error('ICU ' + res.status);
-  return res.json();
-}
-
-// ── Hevy fetch ─────────────────────────────────────────────────────────────────
-
-async function hevyFetch(path) {
-  const res = await fetch(`https://api.hevyapp.com${path}`, {
-    headers: { 'api-key': hevyKey },
-  });
-  if (!res.ok) throw new Error(`Hevy ${res.status}`);
-  return res.json();
-}
-
-// Volume de um treino Hevy (kg): soma weight×reps de todos os sets com peso e reps.
-function calcGymVolume(workout) {
-  let vol = 0;
-  (workout.exercises || []).forEach(ex => {
-    (ex.sets || [])
-      .filter(s => s.weight_kg && s.reps)
-      .forEach(s => { vol += s.weight_kg * s.reps; });
-  });
-  return vol;
-}
-
-// ── Período (estado partilhado secções 3/4) ───────────────────────────────────
+// ── Período ──────────────────────────────────────────────────────────────────
 
 function bodyFilterByPeriod(rows, period, today = new Date()) {
   if (period === 'all') return rows;
@@ -173,124 +109,37 @@ async function loadBody() {
   const c = document.getElementById('body-container');
   if (!c) return;
 
-  [bodyFormChart, bodyCompChart].forEach(ch => { if (ch) ch.destroy(); });
-  bodyFormChart = bodyCompChart = null;
+  if (bodyCompChart) { bodyCompChart.destroy(); bodyCompChart = null; }
 
   c.innerHTML = '<div class="loading">A carregar...</div>';
 
-  const hasIcu = !!(icuId && icuKey && icuEnabled);
-  const today  = localDate();
-  const back90 = icuDateOffset(-90);
-  const back14 = icuDateOffset(-14);
-
-  // 4 fetches em paralelo; cada integração degrada sozinha e sem credenciais não
-  // faz rede. Hevy devolve array directo ou {workouts:[...]}.
-  const hevyPage = p => hevyFetch(`/v1/workouts?page=${p}&pageSize=10`)
-    .then(r => Array.isArray(r) ? r : (r?.workouts || []))
-    .catch(() => []);
-  const hevyPromise = (hevyKey && hevyEnabled)
-    ? Promise.all([hevyPage(1), hevyPage(2)]).then(([p1, p2]) => [...p1, ...p2])
-    : Promise.resolve([]);
-
-  const [bodyRes, wellness, activities, rawWorkouts] = await Promise.all([
-    db.from('body_comp').select('*').order('date', { ascending: true }),
-    hasIcu ? icuFetch(`/athlete/${icuId}/wellness?oldest=${back90}&newest=${today}`).catch(() => null)
-           : Promise.resolve(null),
-    hasIcu ? icuFetch(`/athlete/${icuId}/activities?oldest=${back14}&newest=${today}&fields=name,type,distance,moving_time,icu_training_load,start_date_local`).catch(() => null)
-           : Promise.resolve(null),
-    hevyPromise,
-  ]);
+  const bodyRes = await db.from('body_comp').select('*').order('date', { ascending: true });
   if (gen !== loadBodyGen) return;
 
-  bodyAsc      = (bodyRes && !bodyRes.error && bodyRes.data) ? bodyRes.data : [];
-  bodyWellness = tWellnessSorted(wellness);
-  bodyRecentActivities = Array.isArray(activities) ? activities : [];
+  bodyAsc = (bodyRes && !bodyRes.error && bodyRes.data) ? bodyRes.data : [];
+  // Período e séries não se repõem: o auto-refresh apagava a escolha.
 
-  // Hevy: últimos 14 dias e janela [hoje-6, hoje].
-  const todayMid = new Date(); todayMid.setHours(0, 0, 0, 0);
-  const hevy14 = new Date(todayMid); hevy14.setDate(todayMid.getDate() - 14);
-  const hevy7  = new Date(todayMid); hevy7.setDate(todayMid.getDate() - 6);
-  bodyHevyWorkouts = rawWorkouts.filter(w => w.start_time && new Date(w.start_time) >= hevy14);
-  bodyGymCurrent = bodyHevyWorkouts.filter(w => new Date(w.start_time) >= hevy7);
-  // Período e datasets não se repõem: o auto-refresh apagava a escolha.
+  bodyTrendRows = buildBodyTrendRows(bodyAsc);
 
-  bodyTrendRows = buildBodyTrendRows(bodyWellness, bodyAsc);
+  c.innerHTML = bodyWeighInHtml(bodyAsc) + bodyCompChartSectionHtml();
 
-  c.innerHTML =
-      bodyFormaHtml(bodyWellness, hasIcu)
-    + bodyWeighInHtml(bodyAsc)
-    + bodyFormChartSectionHtml(hasIcu)
-    + bodyCompChartSectionHtml()
-    + bodyWeekSectionHtml(activities, hasIcu);
-
-  // Charts construídos depois do innerHTML (canvas já no DOM).
-  buildBodyFormChart();
+  // Chart construído depois do innerHTML (canvas já no DOM).
   buildBodyCompChart();
 }
 
-function buildBodyTrendRows(wSorted, asc) {
-  const map = new Map();
-  wSorted.forEach(w => {
-    const d = tWellnessDate(w); if (!d) return;
-    const row = map.get(d) || { date: d };
-    row.ctl = tNum(w.ctl);
-    row.atl = tNum(w.atl);
-    map.set(d, row);
-  });
-  asc.forEach(b => {
-    const d = b.date; if (!d) return;
-    const row = map.get(d) || { date: d };
-    row.weight = tNum(b.weight_kg);
-    row.fat    = tNum(b.body_fat_pct);
-    row.lbm    = tNum(b.muscle_mass_kg);
-    map.set(d, row);
-  });
-  return [...map.values()].sort((a, b) => a.date.localeCompare(b.date));
+function buildBodyTrendRows(asc) {
+  return asc
+    .filter(b => b.date)
+    .map(b => ({
+      date:   b.date,
+      weight: tNum(b.weight_kg),
+      fat:    tNum(b.body_fat_pct),
+      lbm:    tNum(b.muscle_mass_kg),
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date));
 }
 
-// ── Secção 1 — Forma actual (CTL / ATL / TSB) ─────────────────────────────────
-
-function bodyFormaHtml(wSorted, hasIcu) {
-  const header = tSecLabel('Forma actual');
-  const latest = wSorted.length ? wSorted[wSorted.length - 1] : null;
-
-  if (!latest) {
-    const msg = hasIcu ? 'Sem dados de forma.' : 'Configura o Intervals.icu nas Definições';
-    return `<div style="padding:16px 20px 0">${header}${tEmpty(msg)}</div>`;
-  }
-
-  const ctl = tNum(latest.ctl);
-  const atl = tNum(latest.atl);
-  const tsb = (ctl != null && atl != null) ? ctl - atl : null;
-  const ramp = tNum(latest.rampRate);
-
-  const d0 = v => v != null ? Math.round(v) : '—';
-  const tsbStr   = tsb != null ? (tsb > 0 ? '+' + Math.round(tsb) : Math.round(tsb)) : '—';
-  const tsbColor = tsb != null && tsb < 0 ? 'var(--red)' : 'var(--accent)';
-
-  const colVal = (v, color) => `<span style="color:${color}">${v}</span>`;
-
-  let rampVal;
-  if (ramp != null) {
-    const rampColor = ramp > 0 ? 'var(--accent)' : (ramp < 0 ? 'var(--red)' : 'var(--text2)');
-    rampVal = colVal(`${ramp > 0 ? '+' : ''}${numPt(ramp, 1)}`, rampColor)
-      + `<span style="font-size:11px;color:var(--text3)">/sem</span>`;
-  } else {
-    rampVal = colVal('—', 'var(--text2)');
-  }
-
-  return `<div style="padding:16px 20px 0">
-    ${header}
-    <div class="stat-row-4">
-      ${tChip('Fitness', colVal(d0(ctl), 'var(--accent)'))}
-      ${tChip('Fadiga',  colVal(d0(atl), 'var(--orange)'))}
-      ${tChip('Forma',   colVal(tsbStr, tsbColor))}
-      ${tChip('Ramp',    rampVal)}
-    </div>
-  </div>`;
-}
-
-// ── Secção 2 — Última pesagem (grid 2x2 .msc) ─────────────────────────────────
+// ── Secção 1: Última pesagem (grid .msc) ─────────────────────────────────
 
 function bodyPrevWeighIn(dateStr) {
   const prior = bodyAsc.filter(r => r.date < dateStr && tNum(r.weight_kg) != null);
@@ -320,14 +169,14 @@ function bodyWeighInHtml(asc) {
 
   const val = (v, unit) => {
     const n = tNum(v);
-    return n != null ? `${numPt(n, 1)} <span style="font-size:11px;color:var(--text3)">${unit}</span>` : '—';
+    return n != null ? `${numPt(n, 1)} <span style="font-size:11px;color:var(--text3)">${unit}</span>` : '\u2014';
   };
 
-  // Massa gorda (kg) = peso × %gordura / 100. Sem delta — só valor.
+  // Massa gorda (kg) = peso × %gordura / 100. Sem delta, só valor.
   const bf = tNum(latest.body_fat_pct);
   const mgVal = (wNow != null && bf != null)
     ? `${numPt(wNow * bf / 100, 1)} <span style="font-size:11px;color:var(--text3)">kg</span>`
-    : '—';
+    : '\u2014';
 
   const dateStr = latest.date
     ? new Date(latest.date + 'T12:00:00').toLocaleDateString('pt-PT', { day: 'numeric', month: 'long' })
@@ -345,7 +194,7 @@ function bodyWeighInHtml(asc) {
   </div>`;
 }
 
-// ── Período (chips partilhados pelos dois charts de histórico) ─────────────────
+// ── Chips de período ──────────────────────────────────────────────────────────
 
 function bodyPeriodChipsHtml() {
   const P = [['week', 'Semana'], ['month', 'Mês'], ['3m', '3M'], ['6m', '6M'], ['1y', '1A'], ['all', 'Total']];
@@ -358,69 +207,10 @@ function setBodyPeriod(p) {
   bodyPeriod = p;
   document.querySelectorAll('#body-period-chips .sort-chip').forEach(c =>
     c.classList.toggle('active', c.dataset.period === p));
-  // Destruir e recriar ambos os charts de histórico no novo período.
-  buildBodyFormChart();
   buildBodyCompChart();
 }
 
-// ── Chart Forma (CTL / ATL) ──────────────────────────────────────────────────
-
-function bodyFormChartSectionHtml(hasIcu) {
-  const header = tSecLabel('Fitness');
-  const hasForm = bodyTrendRows.some(r => r.ctl != null || r.atl != null);
-
-  // Os chips de período vivem aqui mas controlam os dois charts.
-  let body;
-  if (hasForm) {
-    const DS = [['ctl', 'CTL'], ['atl', 'ATL']];
-    const chips = DS.map(([k, l]) =>
-      `<button class="sort-chip${bodyFormActive[k] ? ' active' : ''}" data-ds="${k}" onclick="toggleFormDataset('${k}')">${l}</button>`
-    ).join('');
-    body = `<div id="body-form-chips" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">${chips}</div>
-      <div class="treino-chart"><div style="position:relative;height:160px"><canvas id="body-form-chart"></canvas></div></div>`;
-  } else {
-    body = tEmpty(hasIcu ? 'Sem dados de forma.' : 'Configura o Intervals.icu nas Definições');
-  }
-
-  return `<div class="treino-chart-section" style="padding:18px 20px 0;margin-top:20px">
-    ${header}
-    ${bodyPeriodChipsHtml()}
-    ${body}
-  </div>`;
-}
-
-function toggleFormDataset(key) {
-  bodyFormActive[key] = !bodyFormActive[key];
-  document.querySelectorAll('#body-form-chips .sort-chip').forEach(c =>
-    c.classList.toggle('active', bodyFormActive[c.dataset.ds]));
-  buildBodyFormChart();
-}
-
-function buildBodyFormChart() {
-  const ctx = document.getElementById('body-form-chart');
-  if (!ctx) return;
-  if (bodyFormChart) { bodyFormChart.destroy(); bodyFormChart = null; }
-
-  const rows = bodyFilterByPeriod(bodyTrendRows, bodyPeriod);
-  const labels = rows.map(r => tDayLabel(r.date));
-
-  bodyFormChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        { label: 'CTL', data: rows.map(r => r.ctl ?? null), borderColor: chartTheme.accent, backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, tension: 0.3, spanGaps: true, hidden: !bodyFormActive.ctl, yAxisID: 'y' },
-        { label: 'ATL', data: rows.map(r => r.atl ?? null), borderColor: chartTheme.orange, backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, tension: 0.3, spanGaps: true, hidden: !bodyFormActive.atl, yAxisID: 'y' },
-      ],
-    },
-    options: baseChartOptions(
-      (name, v) => `${{ CTL: 'Fitness (CTL)', ATL: 'Fadiga (ATL)' }[name] || name}: ${numPt(v, 1)}`,
-      { y: { position: 'left', suggestedMin: 0, suggestedMax: 60, grid: { color: chartTheme.grid }, ticks: chartTicks(), border: { color: '#2e2e2e' } } },
-    ),
-  });
-}
-
-// ── Chart 2 — Composição · Histórico (Peso / BF% / LBM, dois eixos) ───────────
+// ── Chart Composição, histórico (Peso, BF%, LBM, três eixos) ───────────────
 
 function bodyCompChartSectionHtml() {
   const header = tSecLabel('Composição');
@@ -435,6 +225,7 @@ function bodyCompChartSectionHtml() {
 
   return `<div class="treino-chart-section" style="padding:18px 20px 0;margin-top:20px">
     ${header}
+    ${bodyPeriodChipsHtml()}
     <div id="body-comp-chips" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">${chips}</div>
     <div class="treino-chart"><div style="position:relative;height:200px"><canvas id="body-comp-chart"></canvas></div></div>
   </div>`;
@@ -461,7 +252,7 @@ function buildBodyCompChart() {
   const fatData    = rows.map(r => r.fat ?? null);
   const lbmData    = rows.map(r => r.lbm ?? null);
 
-  // Escala dinâmica com padding — cada métrica no seu próprio eixo (Peso/LBM/BF%)
+  // Escala dinâmica com padding : cada métrica no seu próprio eixo (Peso/LBM/BF%)
   // para que nenhuma comprima as outras. yWeight/yLBM partilham o lado esquerdo:
   // mostra a escala do que estiver activo (Peso tem prioridade quando ambos).
   const pesoValues = weightData.filter(v => v != null);
@@ -513,275 +304,4 @@ function buildBodyCompChart() {
       },
     ),
   });
-}
-
-// ── Secção 5 — Últimos 7 dias ─────────────────────────────────────────────────
-
-function tWeekTotals(activities, start, end) {
-  const tot = { meters: 0, secs: 0, load: 0 };
-  activities.forEach(a => {
-    const ds = a.start_date_local || a.start_date;
-    if (!ds) return;
-    const d = new Date(ds);
-    if (d >= start && d < end) {
-      tot.meters += tNum(a.distance) || 0;
-      tot.secs   += tNum(a.moving_time) || 0;
-      tot.load   += tNum(a.icu_training_load) || 0;
-    }
-  });
-  return tot;
-}
-
-function tDeltaPct(cur, prev) {
-  if (prev == null || prev === 0) return null;
-  return (cur - prev) / prev * 100;
-}
-
-function tDeltaHtml(cur, prev) {
-  const pct = tDeltaPct(cur, prev);
-  if (pct == null) {
-    return `<span style="font-family:var(--mono);font-size:10px;color:var(--text3)">—</span>`;
-  }
-  const rounded = Math.round(pct);
-  if (rounded === 0) {
-    return `<span style="font-family:var(--mono);font-size:10px;color:var(--text3)">= 0%</span>`;
-  }
-  const up = rounded > 0;
-  const arrow = up ? '↑' : '↓';
-  const col = up ? 'var(--accent)' : 'var(--red)';
-  return `<span style="font-family:var(--mono);font-size:10px;color:${col}">${arrow} ${Math.abs(rounded)}%</span>`;
-}
-
-function bodyWeekSectionHtml(activities, hasIcu) {
-  const header = tSecLabel('Últimos 7 dias');
-
-  if (!Array.isArray(activities)) {
-    const msg = hasIcu ? 'Sem dados de actividades.' : 'Configura o Intervals.icu nas Definições';
-    return `<div style="padding:18px 20px 0;margin-top:20px">${header}${tEmpty(msg)}</div>`;
-  }
-
-  // Rolling 7 dias, hoje incluído. Janelas com fim exclusivo (tWeekTotals usa d < end):
-  // actual = [hoje-6, amanhã) → hoje-6 a hoje · anterior = [hoje-13, hoje-6) → hoje-13 a hoje-7
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const tomorrow    = new Date(today); tomorrow.setDate(today.getDate() + 1);
-  const periodStart = new Date(today); periodStart.setDate(today.getDate() - 6);
-  const prevStart   = new Date(today); prevStart.setDate(today.getDate() - 13);
-
-  const cur  = tWeekTotals(activities, periodStart, tomorrow);
-  const prev = tWeekTotals(activities, prevStart, periodStart);
-
-  const km = tChip(
-    'Distância',
-    `${numPt(cur.meters / 1000, 1)} <span style="font-size:11px;color:var(--text3)">km</span>`,
-    tDeltaHtml(cur.meters, prev.meters),
-    { onclick: "openActivityDetailSheet('distance')" },
-  );
-  const tempo = tChip('Tempo', tFmtHM(cur.secs), tDeltaHtml(cur.secs, prev.secs),
-    { onclick: "openActivityDetailSheet('time')" });
-  const carga = tChip('Carga', `${Math.round(cur.load)}`, tDeltaHtml(cur.load, prev.load),
-    { onclick: "openActivityDetailSheet('load')" });
-
-  // Cartão Ginásio (Hevy) — só com key configurada. Volume nas duas janelas de
-  // 7 dias para o delta; bodyGymCurrent já é a janela [hoje-6, hoje].
-  let gymCard = '';
-  if (hevyKey && hevyEnabled) {
-    const gymPrev = bodyHevyWorkouts.filter(w => {
-      const d = new Date(w.start_time);
-      return d >= prevStart && d < periodStart;
-    });
-    const gymVolCurrent = bodyGymCurrent.reduce((s, w) => s + calcGymVolume(w), 0);
-    const gymVolPrev    = gymPrev.reduce((s, w) => s + calcGymVolume(w), 0);
-    const gymDeltaPct = gymVolPrev > 0
-      ? Math.round(((gymVolCurrent - gymVolPrev) / gymVolPrev) * 100)
-      : null;
-    const gymVolT = numPt(gymVolCurrent / 1000, 1);
-
-    let gymSub;
-    if (gymDeltaPct !== null) {
-      const up = gymDeltaPct >= 0;
-      gymSub = `<span style="font-family:var(--mono);font-size:10px;color:${up ? 'var(--accent)' : 'var(--red)'}">${up ? '↑' : '↓'} ${Math.abs(gymDeltaPct)}% vol</span>`;
-    } else {
-      gymSub = `<span style="font-family:var(--mono);font-size:10px;color:var(--text3)">${gymVolT} t</span>`;
-    }
-    gymCard = tChip(
-      'Ginásio',
-      `${bodyGymCurrent.length} <span style="font-size:11px;color:var(--text3)">sess</span>`,
-      gymSub,
-      { onclick: 'openGymDetailSheet()' },
-    );
-  }
-
-  return `<div style="padding:18px 20px 0;margin-top:20px">
-    ${header}
-    <div class="macro-secondary">${km}${tempo}${carga}${gymCard}</div>
-  </div>`;
-}
-
-function formatActivityTime(secs) {
-  const totalMin = Math.round(secs / 60);
-  const h = Math.floor(totalMin / 60);
-  const m = totalMin % 60;
-  return `${h}:${String(m).padStart(2, '0')}`;
-}
-
-// Sheet de detalhe das actividades por trás de cada card do resumo (tap).
-function openActivityDetailSheet(metric) {
-  pushSheetState();
-
-  const METRIC_CONFIG = {
-    distance: { label: 'Distância · 7 dias', unit: 'km',
-                getValue: a => a.distance ? numPt(a.distance / 1000, 1) : null },
-    time:     { label: 'Tempo · 7 dias',     unit: '',
-                getValue: a => a.moving_time ? formatActivityTime(a.moving_time) : null },
-    load:     { label: 'Carga · 7 dias',     unit: '',
-                getValue: a => a.icu_training_load ? Math.round(a.icu_training_load) : null },
-  };
-
-  // Só estes tipos entram no detalhe; o ginásio vem do Hevy.
-  const TYPE_BUCKET = {
-    Run: 'run', VirtualRun: 'run', TrailRun: 'run',
-    Ride: 'ride', VirtualRide: 'ride',
-    Walk: 'walk',
-    Swim: 'swim',
-  };
-  const BUCKET_LABEL = {
-    run:  '🏃 Corrida',
-    ride: '🚴 Bicicleta',
-    walk: '🚶 Caminhada',
-    swim: '🏊 Natação',
-  };
-  const TYPE_EMOJI = { Run: '🏃', VirtualRun: '🏃', Ride: '🚴', VirtualRide: '🚴', Walk: '🚶', Swim: '🏊' };
-
-  const cfg = METRIC_CONFIG[metric];
-
-  // Janela [hoje-6, hoje].
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const periodStart = new Date(today); periodStart.setDate(today.getDate() - 6);
-
-  const activities = bodyRecentActivities
-    .filter(a => {
-      if (!a.name || !TYPE_BUCKET[a.type]) return false;
-      const ds = a.start_date_local || a.start_date;
-      if (!ds) return false;
-      const d = new Date(ds);
-      return d >= periodStart;
-    })
-    .sort((a, b) => (b.start_date_local || '').localeCompare(a.start_date_local || ''));
-
-  // Agrupar por tipo de desporto e calcular subtotais por grupo.
-  const bucketMap = {};
-  for (const a of activities) {
-    const bucket = TYPE_BUCKET[a.type];
-    if (!bucketMap[bucket]) bucketMap[bucket] = { acts: [], meters: 0, secs: 0, load: 0 };
-    bucketMap[bucket].acts.push(a);
-    bucketMap[bucket].meters += tNum(a.distance)  || 0;
-    bucketMap[bucket].secs   += tNum(a.moving_time) || 0;
-    bucketMap[bucket].load   += tNum(a.icu_training_load) || 0;
-  }
-
-  // Ordenar baldes pelo subtotal da métrica activa (descendente).
-  const sortedBuckets = Object.keys(bucketMap).sort((x, y) => {
-    const val = bk => metric === 'distance' ? bucketMap[bk].meters
-               : metric === 'time'          ? bucketMap[bk].secs
-               :                             bucketMap[bk].load;
-    return val(y) - val(x);
-  });
-
-  const rows = sortedBuckets.map(bucket => {
-    const { acts, meters, secs, load } = bucketMap[bucket];
-    const subtotalStr = metric === 'distance' ? `${numPt(meters / 1000, 1)} km`
-                      : metric === 'time'     ? formatActivityTime(secs)
-                      :                        `${Math.round(load)}`;
-    const sep = `<div class="act-detail-sep">${BUCKET_LABEL[bucket]} · ${subtotalStr}</div>`;
-    const actRows = acts.map(a => {
-      const val = cfg.getValue(a);
-      const emoji = TYPE_EMOJI[a.type] || '🎯';
-      const dateStr = a.start_date_local
-        ? new Date(a.start_date_local).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' })
-        : '';
-      return `
-        <div class="act-detail-row">
-          <span class="act-detail-icon">${emoji}</span>
-          <div class="act-detail-info">
-            <span class="act-detail-name">${escHtml(a.name || a.type)}</span>
-            <span class="act-detail-date">${dateStr}</span>
-          </div>
-          <span class="act-detail-val${val ? ' act-detail-val--highlight' : ''}">${val ? val + (cfg.unit ? ' ' + cfg.unit : '') : '—'}</span>
-        </div>`;
-    }).join('');
-    return sep + actRows;
-  }).join('');
-
-  // Secção de ginásio (Hevy) para Tempo/Carga — valor muted para distinguir do ICU.
-  const gymRows = ((metric === 'time' || metric === 'load') && bodyGymCurrent.length > 0)
-    ? `<div class="act-detail-sep">🏋️ Ginásio</div>` +
-      bodyGymCurrent
-        .slice()
-        .sort((a, b) => new Date(b.start_time) - new Date(a.start_time))
-        .map(w => {
-          const dateStr = new Date(w.start_time)
-            .toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' });
-          const val = metric === 'time'
-            ? formatActivityTime(Math.round((new Date(w.end_time) - new Date(w.start_time)) / 1000))
-            : String(Math.round(calcGymVolume(w) / 100));
-          return `
-            <div class="act-detail-row">
-              <span class="act-detail-icon">🏋️</span>
-              <div class="act-detail-info">
-                <span class="act-detail-name">${escHtml(w.title || 'Ginásio')}</span>
-                <span class="act-detail-date">${dateStr}</span>
-              </div>
-              <span class="act-detail-val act-detail-val--muted">${val}</span>
-            </div>`;
-        }).join('')
-    : '';
-
-  const overlay = ensureSheet('act-detail-overlay', {
-    header: `<span id="act-detail-title" class="sheet-title"></span>`,
-    body: `
-    <div id="act-detail-list" class="act-detail-list"></div>`,
-  });
-
-  document.getElementById('act-detail-title').textContent = cfg.label;
-  document.getElementById('act-detail-list').innerHTML = (rows + gymRows) ||
-    '<p style="padding:16px;color:var(--text3)">Sem actividades neste período.</p>';
-  overlay.classList.add('open');
-}
-
-// Sheet de detalhe das sessões de ginásio (Hevy) — mesma janela [hoje-6, hoje].
-function openGymDetailSheet() {
-  pushSheetState();
-
-  const sessions = bodyGymCurrent
-    .slice()
-    .sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
-
-  const rows = sessions.map(w => {
-    const dateStr = new Date(w.start_time)
-      .toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' });
-    const durSecs = Math.round((new Date(w.end_time) - new Date(w.start_time)) / 1000);
-    const vol = calcGymVolume(w);
-    const exCount = (w.exercises || []).length;
-    return `
-      <div class="act-detail-row act-detail-row--gym">
-        <span class="act-detail-icon">🏋️</span>
-        <div class="act-detail-info">
-          <span class="act-detail-name">${escHtml(w.title || 'Ginásio')}</span>
-          <span class="act-detail-date">${dateStr} · ${exCount} ex.</span>
-        </div>
-        <div class="act-detail-gym-meta">
-          <span class="act-detail-val act-detail-val--highlight">${formatActivityTime(durSecs)}</span>
-          <span class="act-detail-gym-vol">${numPt(vol / 1000, 1)} t</span>
-        </div>
-      </div>`;
-  }).join('') || '<p style="padding:16px;color:var(--text3)">Sem sessões neste período.</p>';
-
-  const overlay = ensureSheet('gym-detail-overlay', {
-    header: `<span class="sheet-title">Ginásio · 7 dias</span>`,
-    body: `
-    <div id="gym-detail-list" class="act-detail-list"></div>`,
-  });
-
-  document.getElementById('gym-detail-list').innerHTML = rows;
-  overlay.classList.add('open');
 }

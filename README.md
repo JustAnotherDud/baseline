@@ -1,6 +1,6 @@
 # Baseline
 
-PWA pessoal, mobile-first e tema escuro: diário nutricional, composição corporal e forma de treino. Sem build, sem framework.
+PWA pessoal, mobile-first e tema escuro: diário nutricional e composição corporal. Sem build, sem framework.
 
 App: https://justanotherdud.github.io/baseline/
 
@@ -17,9 +17,6 @@ Tudo em `localStorage`, preenchido no ecrã de setup ou em Definições.
 | Chave | Conteúdo |
 |---|---|
 | `nt_url`, `nt_key` | URL e publishable key do Supabase |
-| `icu_id`, `icu_key` | Athlete ID e API key do Intervals.icu (opcional) |
-| `hevy_key` | API key do Hevy (opcional) |
-| `icu_enabled`, `hevy_enabled` | `'false'` desliga a integração |
 
 Login obrigatório (Supabase Auth, email e palavra-passe, utilizador único, signups desligados). RLS restrito a `authenticated`: a publishable key sozinha não lê nada. A sessão fica em `localStorage` (supabase-js, refresh automático); sem sessão a app fica no ecrã de login. Logout em Settings.
 
@@ -77,14 +74,9 @@ Mais → Histórico: uma linha por dia, do mais recente para o mais antigo, do p
 - Hoje: etiqueta "em curso", kcal e delta esbatidos (um dia a meio não é défice).
 - Sequências de 3 ou mais dias sem entradas vêm colapsadas na vista numa só linha ("12/07 a 18/07 · sem registo"), por isso um bloco são 30 linhas, não 30 dias. Hoje nunca entra numa sequência.
 
-## Integrações (view Forma)
+## View Forma
 
-- Intervals.icu, `https://intervals.icu/api/v1`, Basic auth `API_KEY:<key>`:
-  - `GET /athlete/{id}/wellness?oldest=-90d&newest=hoje` para CTL/ATL/ramp e gráfico.
-  - `GET /athlete/{id}/activities?oldest=-14d&newest=hoje&fields=…` para os últimos 7 dias e a semana anterior.
-- Hevy, `https://api.hevyapp.com`, header `api-key`: `GET /v1/workouts?page=1|2&pageSize=10`.
-
-Cada fetch tem o seu `.catch(() => null)`: uma API em baixo só esvazia a sua secção.
+Só lê `body_comp` (Supabase): última pesagem e gráfico de composição. Sem chamadas ao Intervals.icu nem à Hevy (saíram em 2026-11-11, plans/042 B2); a app limpa do `localStorage` as chaves antigas.
 
 ## Desenvolvimento
 

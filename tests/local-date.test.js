@@ -33,9 +33,3 @@ test('targets abre no dia local às 00:30 em UTC+1', () => {
   // `let` de topo não fica no objecto global do contexto: ler por avaliação.
   assert.equal(vm.runInContext('currentTargetsDate', ctx), '2026-09-25');
 });
-
-test('janelas do Intervals.icu partem do dia local às 00:30 em UTC+1', () => {
-  const { icuDateOffset } = loadScript('js/views/body.js', { Date: FakeDate });
-  assert.equal(icuDateOffset(0), '2026-09-25');
-  assert.equal(icuDateOffset(-14), '2026-09-11');
-});

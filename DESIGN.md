@@ -93,9 +93,6 @@ Desktop (≥768px): uma media query escala tudo ~1.4×. Componente com tamanhos 
 |---|---|
 | 100 | nav |
 | 200 | sheets base |
-| 210 | log-meals |
-| 220 | apply-meal |
-| 250 | meal-create |
 | 300 | date picker |
 | 400 | toast |
 

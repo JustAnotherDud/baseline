@@ -29,7 +29,7 @@ function boot({ hash = '', hidden = false } = {}) {
   };
   const ctx = loadScript(['js/nutrition.js', 'js/views/targets.js', 'js/app.js'], extra);
   // os carregadores das vistas ficam espiões (as funções reais iam à BD)
-  for (const n of ['loadToday', 'loadFoods', 'loadMeals', 'loadBody', 'loadStats', 'loadHistory', 'refreshTargets']) ctx[n] = spy(n);
+  for (const n of ['loadToday', 'loadFoods', 'loadBody', 'loadStats', 'loadHistory', 'refreshTargets']) ctx[n] = spy(n);
   vm.runInContext('db = {}', ctx);     // sessão aberta
   return { ctx, calls, listeners, document };
 }

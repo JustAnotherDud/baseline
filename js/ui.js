@@ -225,7 +225,6 @@ function openFoodFromEntry() {
   if (!id) return;
   closeEditEntry();
   pendingFoodEdit = id;
-  switchFoodsTab('foods');
   go('foods');
 }
 
@@ -437,39 +436,11 @@ function openMealBreakdown(mealId, allEntries) {
     sheetStyle: 'max-height:80dvh;overflow-y:auto',
     header: `<div id="meal-bd-title" class="sheet-title"></div>`,
     body: `
-    <div id="meal-bd-content" class="meal-bd-content"></div>
-    <div style="padding:0 14px 8px">
-      <button id="meal-bd-save-btn" class="btn btn-secondary" style="font-size:13px;padding:10px">
-        Guardar como modelo
-      </button>
-    </div>`,
+    <div id="meal-bd-content" class="meal-bd-content"></div>`,
   });
 
   document.getElementById('meal-bd-title').textContent =
     `${mealTitle.toUpperCase()} · ${Math.round(totalKcal)} KCAL`;
-
-  // Wire "Guardar como modelo" — rebind every open so mes/mealTitle are fresh
-  document.getElementById('meal-bd-save-btn').onclick = () => {
-    overlay.classList.remove('open');
-    const validEntries  = mes.filter(e => e.grams && +e.grams > 0);
-    const skippedCount  = mes.length - validEntries.length;
-    const prefillItems  = validEntries.map(e => ({
-      food_id:       e.food_id || null,
-      food_name:     e.food_name,
-      grams:         e.grams,
-      ...mapNutrients(k => SECONDARY_NUTRIENTS.includes(k) ? e[k] || 0 : e[k]),
-      // Alimento reconstruído do snapshot, para mcGramsChange poder reescalar.
-      _food:         e.food_id ? {
-        id: e.food_id,
-        ...Object.fromEntries(NUTRIENTS.map(k => [k + '_per_100g', (e[k] || 0) / e.grams * 100])),
-        serving_size_g: e.grams,
-      } : null,
-    }));
-    if (skippedCount > 0) {
-      toast(`${skippedCount} entrada${skippedCount > 1 ? 's' : ''} rápida${skippedCount > 1 ? 's' : ''} não incluída${skippedCount > 1 ? 's' : ''}`);
-    }
-    openCreateMeal(mealTitle, prefillItems);
-  };
 
   // ── Donut SVG (F/C/P in kcal space) ─────────────────────────────────────
   function buildMealDonut(protein, carbs, fat, kcal) {
@@ -755,35 +726,6 @@ function highlightFoodKeywords(name) {
     return kw
       ? `<span style="color:${kw.color};font-weight:600">${match}</span>`
       : match;
-  });
-}
-
-// ── SHARED: MEAL TEMPLATE LIST ───────────────────────────────────────────────
-// opts: { showDelete: bool, onItemClick: fn(t), onDeleteClick?: fn(id) }
-function renderMealTemplateList(containerEl, templates, countMap, opts) {
-  containerEl.innerHTML = '';
-  templates.forEach(t => {
-    const n = countMap.get(t.id) || 0;
-    const sub = n === 1 ? '1 alimento' : `${n} alimentos`;
-    const row = document.createElement('div');
-    row.className = 'meal-tpl-row';
-    row.innerHTML = `
-      <div class="meal-tpl-info">
-        <div class="meal-tpl-name"></div>
-        <div class="meal-tpl-sub">${sub}</div>
-      </div>
-      ${opts.showDelete
-        ? '<button class="meal-tpl-del">✕</button>'
-        : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" style="flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>'}`;
-    row.querySelector('.meal-tpl-name').textContent = t.name;
-    if (opts.showDelete) {
-      row.querySelector('.meal-tpl-info').addEventListener('click', () => opts.onItemClick(t));
-      row.querySelector('.meal-tpl-del').addEventListener('click', e => { e.stopPropagation(); opts.onDeleteClick(t.id); });
-    } else {
-      row.style.cursor = 'pointer';
-      row.addEventListener('click', () => opts.onItemClick(t));
-    }
-    containerEl.appendChild(row);
   });
 }
 

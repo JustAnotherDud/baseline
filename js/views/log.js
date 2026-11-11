@@ -255,39 +255,6 @@ async function presetMealSelection() {
   populateMealSelect(sel, selectedMealId);
 }
 
-// ── LOG MEALS SHEET (chip Modelo) ─────────────────────────────────────────
-
-async function openLogMeals() {
-  pushSheetState();
-  const overlay = ensureSheet('log-meals-overlay', {
-    zIndex: 210,
-    sheetStyle: 'max-height:80dvh;overflow-y:auto',
-    header: `<div class="sheet-title">Aplicar modelo</div>`,
-    body: `
-    <div id="log-meals-list"></div>`,
-  });
-
-  const listEl = document.getElementById('log-meals-list');
-  listEl.innerHTML = '<div class="loading">A carregar...</div>';
-  overlay.classList.add('open');
-
-  if (!db) { listEl.innerHTML = '<div class="loading">Sem ligação</div>'; return; }
-
-  const { templates, countMap } = await fetchMealTemplates();
-  if (!templates.length) {
-    listEl.innerHTML = '<div style="padding:20px;font-size:13px;color:var(--text3)">Sem modelos guardados.<br><br>Cria um na tab <b style="color:var(--text2)">Comida → Modelos</b>.</div>';
-    return;
-  }
-
-  renderMealTemplateList(listEl, templates, countMap, {
-    showDelete: false,
-    onItemClick: t => {
-      overlay.classList.remove('open');
-      openApplyMeal(t.id, t.name);
-    },
-  });
-}
-
 // ── SAVE DIARY HANDLER (DOM side of saveDiary) ───────────────────────────────
 
 let _savingDiary = false;

@@ -355,7 +355,6 @@ input[type="number"] { font-family: var(--mono); }
 /* Comida: título, separadores, pesquisa e chips ficam pinados juntos (mesmo padrão do Diário). */
 #foods-head-sticky { position: sticky; top: 0; z-index: 20; background: var(--bg); box-shadow: 0 1px 0 var(--border), 0 4px 16px -4px rgba(0,0,0,.18); }
 #foods-head-sticky .view-header { position: static; padding: 10px 20px 8px; }
-#foods-head-sticky .foods-subtab { padding: 7px 0; }
 #foods-head-sticky .search-wrap { position: static; padding: 8px 20px 2px; }
 #foods-head-sticky .sort-chips { position: static; padding: 8px 20px; }
 .foods-help { padding: 2px 20px 6px; font-family: var(--mono); font-size: 11px; line-height: 1.4; color: var(--text3); }
@@ -643,41 +642,9 @@ input[type="number"] { font-family: var(--mono); }
   .form-body { padding: 20px 24px; gap: 16px; }
 }
 
-/* ── FOODS SUB-TABS ── */
-.foods-subtabs { display: flex; padding: 0 20px 0; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 0; }
-.foods-subtab { flex: 1; padding: 10px 0; font-size: 13px; font-family: var(--mono); color: var(--text3); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; letter-spacing: .04em; transition: color .15s, border-color .15s; }
-.foods-subtab.active { color: var(--accent); border-bottom-color: var(--accent); }
-.foods-subtab { position: relative; }
-.foods-subtab::after { content: ''; position: absolute; inset: -5px 0; }   /* área de toque ≥ 40 px sem mudar o aspeto */
-
 /* Botão ← das subpáginas: 44 × 44 px de toque; a margem negativa mantém o alinhamento do cabeçalho. */
 .back-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px;
   margin: -12px 0 -12px -14px; background: none; border: none; color: var(--text2); font-size: 20px; cursor: pointer; font-family: var(--sans); }
-
-/* ── MEAL TEMPLATE LIST ── */
-.empty-meals { padding: 24px 20px; font-size: 13px; color: var(--text3); font-style: italic; }
-.meal-tpl-row { display: flex; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--border); gap: 12px; }
-.meal-tpl-info { flex: 1; min-width: 0; cursor: pointer; }
-.meal-tpl-name { font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.meal-tpl-sub  { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-top: 3px; }
-.meal-tpl-del  { background: none; border: none; color: var(--text3); font-size: 14px; cursor: pointer; padding: 6px 8px; border-radius: 6px; flex-shrink: 0; }
-.meal-tpl-del:active { color: var(--red); background: var(--surface2); }
-
-/* ── CREATE MEAL SHEET ── */
-.mc-item { background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px; }
-.mc-item-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.mc-item-name { font-size: 13px; font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mc-food-search { width: 100%; margin-top: 4px; }
-.mc-search-results { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; max-height: 160px; overflow-y: auto; }
-.mc-food-option { padding: 8px 10px; background: var(--surface3); border-radius: 6px; cursor: pointer; }
-.mc-food-option:active { background: var(--surface); }
-
-/* ── APPLY MEAL SHEET ── */
-.apply-meal-item { padding: 10px 0; border-bottom: 1px solid var(--border); }
-.apply-meal-item:last-of-type { border-bottom: none; }
-.apply-meal-item-name { font-size: 14px; font-weight: 500; }
-.apply-meal-item-detail { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-top: 3px; }
-.apply-meal-total { font-family: var(--mono); font-size: 13px; color: var(--accent); font-weight: 600; padding-top: 10px; text-align: right; }
 
 /* ── SHEET: MAIS ── */
 .mais-item { display: flex; justify-content: space-between; align-items: center; padding: 18px 20px; border-bottom: 1px solid var(--border); cursor: pointer; font-size: 16px; }

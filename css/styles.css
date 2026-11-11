@@ -771,8 +771,7 @@ input[type="range"]::-moz-range-thumb {
 
 /* ── Entradas ── */
 .entry-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
-.btn-sm { font-size: 13px; padding: 8px; min-height: 44px; }
-.cost-hint { font-family: var(--mono); font-size: 11px; color: var(--text3); min-height: 14px; }
+.meal-hint { font-family: var(--mono); font-size: 11px; color: var(--text3); min-height: 14px; }
 
 /* ── Histórico: 2 linhas por dia, sem scroll horizontal ── */
 .hist-head, .hist-l1 { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, .8fr) minmax(0, .9fr); gap: 6px; align-items: baseline; }

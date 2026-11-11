@@ -677,7 +677,7 @@ function openMealSheet(mealId) {
     <div class="form-body">
       <label><span class="lt">Nome (opcional)</span><input type="text" id="meal-edit-name" maxlength="40" autocomplete="off" placeholder="ex: Pós-treino"></label>
       <label><span class="lt">Hora</span><input type="time" id="meal-edit-time"></label>
-      <div id="meal-edit-hint" class="cost-hint"></div>
+      <div id="meal-edit-hint" class="meal-hint"></div>
       <button class="btn btn-primary" id="meal-edit-save">Guardar</button>
       <button class="btn btn-secondary" id="meal-edit-detail" style="display:none">Ver detalhe</button>
       <button class="btn btn-danger" id="meal-edit-del" style="display:none">Eliminar refeição vazia</button>

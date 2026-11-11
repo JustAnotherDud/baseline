@@ -107,7 +107,6 @@ function openAddFood() {
   document.getElementById('food-sheet-title').textContent='Novo alimento';
   document.getElementById('del-food-btn').style.display='none';
   ['f-name','f-brand','f-serving','f-kcal','f-prot','f-carb','f-fat','f-satfat','f-sugar','f-fiber'].forEach(id=>document.getElementById(id).value='');
-  resetLabelScan();
   document.getElementById('sheet-food').classList.add('open');
   setTimeout(()=>document.getElementById('f-name').focus(),300);
 }

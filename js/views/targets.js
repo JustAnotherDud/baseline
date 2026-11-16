@@ -35,54 +35,27 @@ function updateCountdownBadge() {
   el.classList.remove('countdown-badge-empty');
 }
 
-// Bloco de kcal = chave de topo terminada em `_kcal`, mais `activity_kcal_by_id`
-// (uma entrada por actividade). O resto de blocks_active fica de fora.
-const BLOCK_LABELS = {
-  core_kcal: 'Núcleo',
-  baseline_kcal: 'Núcleo', // chave antiga (até 1 Out 2026), linhas históricas já migradas
-  work_kcal: 'Trabalho',
-  gym_kcal: 'Ginásio',
-};
-// Ordem de apresentação; chaves desconhecidas vão para o fim.
-const BLOCK_ORDER = ['core_kcal', 'baseline_kcal', 'work_kcal', 'gym_kcal', 'activity_kcal_by_id'];
-
-function blockLabel(key) {
-  if (BLOCK_LABELS[key]) return BLOCK_LABELS[key];
-  const bare = key.replace(/_kcal$/, '').replace(/_/g, ' ');
-  return bare.charAt(0).toUpperCase() + bare.slice(1);
-}
-
+// Blocos da forma actual de blocks_active (plans/039 fase 3): `core_kcal` e
+// `activity_kcal_by_id` (uma entrada por actividade). O resto fica de fora.
 function deriveBlocks(blocksActive) {
   const chips = [];
   let sum = 0;
 
-  const keys = Object.keys(blocksActive).sort((a, b) => {
-    const ia = BLOCK_ORDER.indexOf(a), ib = BLOCK_ORDER.indexOf(b);
-    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
-  });
+  const core = +blocksActive.core_kcal;
+  if (core > 0) {
+    sum += core;
+    chips.push({ label: 'Núcleo', value: core });
+  }
 
-  for (const key of keys) {
-    const value = blocksActive[key];
-
-    if (key === 'activity_kcal_by_id' && value && typeof value === 'object') {
-      const activityEntries = Object.entries(value);
-      activityEntries.forEach(([activityId, kcal]) => {
-        const n = +kcal;
-        if (!(n > 0)) return;
-        sum += n;
-        const label = activityEntries.length > 1
-          ? `Atividade ${activityId}`
-          : 'Atividade';
-        chips.push({ label, value: n });
-      });
-      continue;
-    }
-
-    if (!key.endsWith('_kcal')) continue;
-    const n = +value;
-    if (!(n > 0)) continue;
-    sum += n;
-    chips.push({ label: blockLabel(key), value: n });
+  const byId = blocksActive.activity_kcal_by_id;
+  if (byId && typeof byId === 'object') {
+    const entries = Object.entries(byId);
+    entries.forEach(([activityId, kcal]) => {
+      const n = +kcal;
+      if (!(n > 0)) return;
+      sum += n;
+      chips.push({ label: entries.length > 1 ? `Atividade ${activityId}` : 'Atividade', value: n });
+    });
   }
 
   return { chips, sum: Math.round(sum) };
@@ -163,20 +136,22 @@ async function refreshTargets() {
 
   if (!row) {
     TARGET_FIELD_IDS.forEach(id => { document.getElementById(id).textContent = '—'; });
-    hint.textContent = 'Sem baseline de manutenção para esta data. Pede ao DCB para fazer push dos blocos de hoje.';
+    hint.textContent = 'Sem alvo para esta data.';
     show(hint);
     return;
   }
 
-  // Linhas antigas têm o diagnóstico no topo de blocks_active.
+  // Só a forma actual (energy_diag com energy_delta_kcal) mostra blocos e notas;
+  // datas antigas mostram o total e as macros.
   const blocks = row.blocks_active;
   const diag = blocks?.energy_diag ?? null;
-  const lookbackDays = diag?.lookback_days_used ?? blocks?.energy_lookback_days_used;
-  const loggedDays   = diag?.days_logged_in_window ?? blocks?.energy_days_logged_in_window;
+  const currentShape = !!diag && Object.hasOwn(diag, 'energy_delta_kcal');
+  const lookbackDays = diag?.lookback_days_used;
+  const loggedDays   = diag?.days_logged_in_window;
 
   // Badge só quando a janela foi alargada para além da normal (56d é o normal).
   const expanded = diag?.lookback_expanded ?? (Number.isFinite(lookbackDays) ? lookbackDays > NORMAL_LOOKBACK_DAYS : false);
-  if (expanded === true && Number.isFinite(lookbackDays)) {
+  if (currentShape && expanded === true && Number.isFinite(lookbackDays)) {
     coverageEl.textContent = `Estimativa alargada a ${lookbackDays}d (${loggedDays ?? '—'}d logados)`;
     show(coverageEl, 'inline-block');
   }
@@ -187,7 +162,7 @@ async function refreshTargets() {
   document.getElementById('t-fiber').textContent = row.fiber    ?? '—';
   document.getElementById('t-prot').textContent  = row.protein  ?? '—';
 
-  const { chips, sum } = blocks && typeof blocks === 'object' ? deriveBlocks(blocks) : { chips: [] };
+  const { chips, sum } = currentShape ? deriveBlocks(blocks) : { chips: [] };
   if (chips.length) {
     chipsEl.innerHTML = '';
     chips.forEach(({ label, value }) => {
@@ -198,10 +173,10 @@ async function refreshTargets() {
     });
     show(blocksEl);
 
-    // Só linhas com core_kcal (ou baseline_kcal, chave antiga) fecham a soma com o total. Soma != total
-    // indica dupla contagem; 15kcal de folga para o arredondamento dos macros.
+    // A soma dos blocos fecha com o total. Soma != total indica dupla contagem;
+    // 15kcal de folga para o arredondamento dos macros.
     const calories = +row.calories;
-    const diff = (Object.hasOwn(blocks, 'core_kcal') || Object.hasOwn(blocks, 'baseline_kcal')) && Number.isFinite(calories) ? sum - calories : 0;
+    const diff = Number.isFinite(calories) ? sum - calories : 0;
     if (Math.abs(diff) > 15) {
       warningEl.textContent =
         `⚠ Blocos somam ${sum}kcal contra uma baseline de ${calories}kcal ` +

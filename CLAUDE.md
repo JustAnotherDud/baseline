@@ -5,9 +5,9 @@ Mapa da app, schema e integrações: `README.md`. Produto e design: `PRODUCT.md`
 ## Regras
 
 - Sem build, sem bundler, sem ES modules. Scripts por `<script>`, funções globais, `onclick=` no HTML.
-- `escHtml()` em toda a interpolação `innerHTML` com dados externos (alimentos, ICU, Hevy).
+- `escHtml()` em toda a interpolação `innerHTML` com dados externos (alimentos).
 - Diário em snapshot: editar `foods` não muda registos antigos.
-- `daily_targets` (a baseline de manutenção do dia) é só de leitura na PWA. Só o DCB escreve.
+- `daily_targets` (a baseline de manutenção do dia) é só de leitura na PWA. Só a BD escreve (cron 7, SQL).
 - Datas `YYYY-MM-DD` por `localDate()`, nunca `toISOString()`.
 
 ## Antes de cada push

@@ -36,8 +36,8 @@ Views: Diário, Comida, Forma e Mais (Manutenção, Histórico, Estatísticas, D
 ## Schema Supabase
 
 - `foods`: `name`, `brand`, `serving_size_g`, `calories_per_100g`, `protein_per_100g`, `carbs_per_100g`, `fat_per_100g`, `saturated_fat_per_100g`, `sugar_per_100g`, `fiber_per_100g`.
-- `diary`: uma linha por item. `date`, `meal_id` (refeição do dia, FK para `meals`; `meal` é o slot antigo, legado até à fase 4), `food_id` (null em entrada rápida), `food_name`, `grams` (null em entrada rápida), `calories`, `protein`, `carbs`, `fat`, `saturated_fat`, `sugar`, `fiber`, `has_tara`, `logged_at`. Os nutrientes são um snapshot do momento do registo.
-- `daily_targets`: uma linha por `date`, escrita só pelo DCB (sync_hub). Nutrientes como em `diary`, mais `blocks_active` (jsonb: chaves `*_kcal` — `core_kcal`, `work_kcal`, `gym_kcal` — `activity_kcal_by_id`, `energy_diag`) e `updated_at`.
+- `diary`: uma linha por item. `date`, `meal_id` (refeição do dia, FK para `meals`; `meal` é o slot antigo, ainda em uso, preenchido pelo trigger `diary_meal`), `food_id` (null em entrada rápida), `food_name`, `grams` (null em entrada rápida), `calories`, `protein`, `carbs`, `fat`, `saturated_fat`, `sugar`, `fiber`, `has_tara`, `logged_at`. Os nutrientes são um snapshot do momento do registo.
+- `daily_targets`: uma linha por `date`, escrita só pela BD (cron 7, SQL, plano 039). Nutrientes como em `diary`, mais `blocks_active` (jsonb: `core_kcal`, `activity_kcal_by_id`, `energy_diag`) e `updated_at`. Linhas anteriores a 16/11 têm a forma antiga (`work_kcal`, `gym_kcal`, `gym_planned`, `run_type_*`): a PWA mostra só o total e as macros, sem o painel de blocos.
 - `meals`: uma linha por refeição e dia (`date`, `name` opcional, `started_at` editável, `legacy_key` do slot antigo). Sem limite de refeições por dia. Vista `v_meal_day`: `no` (número calculado pela hora, só para mostrar), `is_latest`, `sort_at` (`started_at`, senão 1.ª entrada, senão criação), totais. RPC `meal_new` (cria) e `meal_suggest` (regra das 2 h). Só se apaga uma refeição vazia (`ON DELETE RESTRICT`); as vazias ficam até as apagares.
 - `app_config`: `maintenance_baseline_start` (2026-09-16: desde aí o target é manutenção pura e o delta é comparável).
 - `body_comp`: `date`, `weight_kg`, `body_fat_pct`, `muscle_mass_kg`, `bone_mass_kg`, `water_pct`. Preenchida pela sincronização do Garmin.
@@ -52,7 +52,7 @@ Refeições numeradas e dinâmicas: criadas a pedido ("+ refeição"), sem limit
 
 Dia sem refeições (hoje ou passado, nunca futuro): mostra uma "Refeição 1" vazia só no cliente, sem linha na BD; o "+" regista em "Nova refeição" e a BD cria a real na 1.ª entrada; tocar no nome ou na hora abre o sheet em modo criar.
 
-Registo sem escolha: o select do sheet vem pré-preenchido pelo RPC `meal_suggest` (a refeição mais recente se a última entrada foi há menos de `meal_join_window_minutes` = 120 min em `app_config`, senão "+ Nova refeição") e é editável. "Nova" cria a refeição ao gravar e os registos seguintes vão para ela. Aplicar um modelo cria por defeito uma refeição nova com o nome do modelo (dá para escolher uma existente). O separador Comida → Modelos são os `meal_templates`.
+Registo sem escolha: o select do sheet vem pré-preenchido pelo RPC `meal_suggest` (a refeição mais recente se a última entrada foi há menos de `meal_join_window_minutes` = 120 min em `app_config`, senão "+ Nova refeição") e é editável. "Nova" cria a refeição ao gravar e os registos seguintes vão para ela.
 
 ## Pesquisa de alimentos no registo
 
@@ -60,7 +60,7 @@ O registo (PWA) e o MCP `sync_hub_foods_search` chamam o RPC `foods_search(p_que
 
 ## Alimentos e Estatísticas
 
-Os preços, os custos e as promoções saíram do Baseline (plano 041 do sync_hub). Os dados antigos estão no schema `archive` da BD e em CSV (`D:\backups\baseline-custos-2026-11-10\`). Até à Fase B do plano as colunas de custo ainda existem na BD; a PWA e o MCP já não as usam.
+Os preços, os custos e as promoções saíram do Baseline (plano 041 do sync_hub). Os dados antigos estão no schema `archive` da BD e em CSV (`D:\backups\baseline-custos-2026-11-10\`). A Fase B (16/11/2026) removeu as colunas de custo da BD.
 
 - Alimentos, pesquisa: `,` = ou, `&` = e, `!` nega (nome e marca). Ex.: `continente&!light` (`foodMatchesQuery` em `nutrition.js`). O contador mostra "N de M" com filtro activo. Título, separadores, pesquisa, chips e uma linha de ajuda (ordem activa + filtro em palavras) ficam pinados no topo; `describeFoodQuery` e `foodsHelpLines`.
 - Estatísticas, aderência calórica: tocar num ponto abre um tooltip "dd/mm · N%" (toque noutro ponto troca; tocar fora, no mesmo ponto, Esc ou scroll fecha); o `title` fica para desktop. `adherenceDotText` e `tipLeft` em `nutrition.js`.

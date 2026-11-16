@@ -15,13 +15,12 @@ function lisbonDate(d = new Date()) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Lisbon', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
 }
 
-// Os 7 nutrientes de diary e dos templates (em foods: `<nome>_per_100g`).
+// Os 7 nutrientes de diary (em foods: `<nome>_per_100g`).
 // Os secundários podem vir a null em linhas antigas.
 const NUTRIENTS = ['calories', 'protein', 'carbs', 'fat', 'saturated_fat', 'sugar', 'fiber'];
-const SECONDARY_NUTRIENTS = ['saturated_fat', 'sugar', 'fiber'];
 
 // { calories: fn('calories'), ... } pela ordem de NUTRIENTS.
 const mapNutrients = fn => Object.fromEntries(NUTRIENTS.map(k => [k, fn(k)]));
 
-const APP_VERSION = '20261111d';
+const APP_VERSION = '20261116';
 

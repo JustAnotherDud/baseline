@@ -3,58 +3,20 @@ const assert = require('node:assert/strict');
 const { loadScript } = require('./_load.js');
 const { deriveBlocks, energyNotes } = loadScript('js/views/targets.js');
 
-// Regressões desta função: dois bugs shippados em duas rondas seguidas, ambos
-// do mesmo tipo -- um campo novo em blocks_active que não era kcal passou o
-// teste `+value > 0` e desenhou um chip falso. A blacklist (NON_BLOCK_KEYS)
-// que os corrigia um a um foi substituída em plans/035 pela convenção de
-// sufixo `_kcal`. Estes testes fixam a convenção para que a próxima chave
-// nova falhe aqui e não em produção.
+// deriveBlocks só conhece a forma actual de blocks_active (plans/039 fase 3):
+// `core_kcal` e `activity_kcal_by_id`. Tudo o resto fica de fora.
 
-// Mesmo motivo do `norm` em macro-floor.test.js: os valores voltam do sandbox
-// node:vm, que é outro realm -- deepStrictEqual compara prototypes e falha em
-// arrays/objectos estruturalmente iguais. Spread normaliza para este realm.
-const norm = o => (o == null ? o : { ...o });
+// Os valores voltam do sandbox node:vm, que é outro realm: deepStrictEqual
+// compara prototypes e falha em arrays/objectos estruturalmente iguais.
+// Spread normaliza para este realm.
 const arr = a => (a == null ? a : [...a]);
 
-test('só chaves terminadas em _kcal contam como blocos', () => {
+test('só core_kcal e activity_kcal_by_id contam como blocos', () => {
   const { chips, sum } = deriveBlocks({
     core_kcal: 2739.3,
-    work_kcal: 595.7,
-    gym_kcal: 0,
     activity_kcal_by_id: {},
-    run_type_context: null,
-    run_type_source: 'default',
-    gym_planned: false,
-    gym_source: 'default',
-  });
-  assert.deepEqual(arr(chips.map(c => c.label)), ['Núcleo', 'Trabalho']);
-  assert.equal(sum, 3335);
-});
-
-test('gym_planned=true (booleano) não vira chip de 1kcal', () => {
-  // Bug real, plans/033: +true === 1 passava o teste `n > 0`.
-  const { chips } = deriveBlocks({ gym_planned: true, gym_kcal: 250 });
-  assert.deepEqual(arr(chips.map(c => c.label)), ['Ginásio']);
-  assert.equal(chips[0].value, 250);
-});
-
-test('campos em horas ou médias de diagnóstico não viram chips', () => {
-  // Bug real, plans/034: work_hours_today (6 horas) desenhou "6kcal".
-  const { chips, sum } = deriveBlocks({
-    work_hours_today: 6,
-    avg_work_kcal_per_day: 411.5,
-    work_kcal_per_hour: 108.3,
-    energy_lookback_days_used: 28,
-    core_kcal: 2739,
-  });
-  assert.deepEqual(arr(chips.map(c => c.label)), ['Núcleo']);
-  assert.equal(sum, 2739);
-});
-
-test('energy_diag é objecto aninhado — nunca é lido como bloco', () => {
-  const { chips, sum } = deriveBlocks({
-    core_kcal: 2739,
-    energy_diag: { expenditure_estimate_kcal: 3352, avg_work_kcal_per_day: 411 },
+    energy_diag: { expenditure_estimate_kcal: 3352 },
+    work_kcal: 595.7,
   });
   assert.deepEqual(arr(chips.map(c => c.label)), ['Núcleo']);
   assert.equal(sum, 2739);
@@ -75,25 +37,8 @@ test('uma só actividade não leva o id no rótulo', () => {
 });
 
 test('blocos a zero não aparecem', () => {
-  const { chips } = deriveBlocks({ gym_kcal: 0, work_kcal: 0, core_kcal: 2700 });
-  assert.deepEqual(arr(chips.map(c => c.label)), ['Núcleo']);
-});
-
-test('chave _kcal desconhecida aparece sozinha, com rótulo derivado', () => {
-  // O objectivo original do derive genérico: um bloco novo do backend não
-  // desaparece em silêncio só por o frontend ainda não o conhecer.
-  const { chips } = deriveBlocks({ steps_kcal: 120 });
-  assert.deepEqual(norm(chips[0]), { label: 'Steps', value: 120 });
-});
-
-test('linha pré-035 (sem core_kcal) não rebenta', () => {
-  const { chips, sum } = deriveBlocks({
-    run_type_context: 'z2_curto',
-    work_kcal_today: 596,
-    activity_kcal_by_id: { i1: 300 },
-  });
-  assert.deepEqual(arr(chips.map(c => c.label)), ['Atividade']);
-  assert.equal(sum, 300);
+  const { chips } = deriveBlocks({ core_kcal: 0, activity_kcal_by_id: { i1: 0 } });
+  assert.deepEqual(arr(chips), []);
 });
 
 test('energyNotes: sem diag devolve vazio', () => {
@@ -139,9 +84,4 @@ test('energyNotes: floors_conflict aceita booleano e string', () => {
   assert.match(energyNotes({ floors_conflict: true })[0], /conflito/);
   assert.match(energyNotes({ floors_conflict: 'true' })[0], /conflito/);
   assert.deepEqual(arr(energyNotes({ floors_conflict: false })), []);
-});
-
-test('chave antiga baseline_kcal ainda dá o chip Núcleo (transição)', () => {
-  const { chips } = deriveBlocks({ baseline_kcal: 2700, work_kcal: 0, gym_kcal: 0 });
-  assert.deepEqual(arr(chips.map(c => c.label)), ['Núcleo']);
 });

@@ -478,12 +478,6 @@ input[type="number"] { font-family: var(--mono); }
 .settings-row-label { font-size: 15px; color: var(--text); }
 .settings-row-value { font-family: var(--mono); font-size: 14px; color: var(--text3); }
 .settings-chevron { color: var(--text3); font-size: 18px; margin-left: 8px; }
-.settings-toggle-inline {
-  font-family: var(--mono); font-size: 12px;
-  padding: 2px 8px; margin-right: 8px;
-  background: none; border: 1px solid var(--border); border-radius: 6px;
-  cursor: pointer;
-}
 .countdown-badge { font-family: var(--mono); font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: .08em; padding: 6px 10px; background: var(--accent-a08); border-radius: 6px; display: inline-block; }
 .countdown-badge-empty { color: var(--text3); background: transparent; }
 .blocks-warning { font-family: var(--mono); font-size: 11px; color: var(--red); padding: 8px 10px; margin-top: 8px; background: color-mix(in srgb, var(--red) 10%, transparent); border-radius: 6px; }
